@@ -128,43 +128,81 @@ export function AIAssistantDrawer() {
     setInput('')
     setLoading(true)
 
+    // Create placeholder for streaming response
+    const assistantId = (Date.now() + 1).toString()
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      },
+    ])
+
     try {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content.trim(), context: contextString || undefined }),
+        body: JSON.stringify({ message: content.trim(), context: contextString || undefined, stream: true }),
       })
-      const data = await res.json()
 
-      if (data.success) {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: data.data?.content || '抱歉，我无法处理您的请求。',
-          timestamp: new Date(),
+      if (!res.ok || !res.body) {
+        throw new Error('请求失败')
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let accumulated = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim()
+            if (data === '[DONE]') continue
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.error) {
+                accumulated = parsed.error
+              } else if (parsed.content) {
+                accumulated += parsed.content
+              }
+            } catch {
+              // skip malformed chunks
+            }
+          }
         }
-        setMessages((prev) => [...prev, assistantMessage])
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: data.error || '抱歉，处理您的请求时出错。请重试。',
-            timestamp: new Date(),
-          },
-        ])
+
+        // Update the streaming message
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, content: accumulated } : m))
+        )
+      }
+
+      // If empty, show error
+      if (!accumulated) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, content: '抱歉，未能获得回复。请重试。' }
+              : m
+          )
+        )
       }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: '网络错误，请稍后重试。',
-          timestamp: new Date(),
-        },
-      ])
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, content: '网络错误，请稍后重试。' }
+            : m
+        )
+      )
     } finally {
       setLoading(false)
       inputRef.current?.focus()
@@ -290,6 +328,9 @@ export function AIAssistantDrawer() {
                     : 'bg-muted rounded-tl-sm'
                 )}>
                   {msg.content}
+                  {loading && msg.role === 'assistant' && msg === messages[messages.length - 1] && msg.content && (
+                    <span className="inline-block w-1.5 h-4 bg-emerald-600 dark:bg-emerald-400 ml-0.5 animate-pulse rounded-sm align-middle" />
+                  )}
                 </div>
                 <p className="text-[10px] text-muted-foreground px-1">
                   {formatRelativeTime(msg.timestamp)}
@@ -298,7 +339,7 @@ export function AIAssistantDrawer() {
             </div>
           ))}
 
-          {loading && (
+          {loading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && !messages[messages.length - 1].content && (
             <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <Avatar className="h-8 w-8 shrink-0">
                 <AvatarFallback className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">

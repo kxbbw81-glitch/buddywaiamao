@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ROLE_LABELS } from '@/lib/types'
 import {
-  User, Mail, Building2, Shield, Bell, Globe, Monitor, Info, Layers,
+  Mail, Building2, Shield, Bell, Monitor, Info, Layers,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import {
@@ -74,23 +74,11 @@ export function SettingsView() {
   const { currentUser } = useCRMStore()
   const { theme, setTheme } = useTheme()
 
-  const [initialized, setInitialized] = useState(false)
-  const [notifications, setNotifications] = useState(defaultSettings.notifications)
-  const [compactTable, setCompactTable] = useState(defaultSettings.compactTable)
-  const [pageSize, setPageSize] = useState(defaultSettings.pageSize)
-  const [language, setLanguage] = useState(defaultSettings.language)
-
-  // Debounced save + toast
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Load settings on mount (batch setState to avoid cascading renders)
+  const [settings, setSettings] = useState<SettingsData>(() => loadSettings())
+  const initialized = useRef(false)
+  // Mark initialized after mount to prevent saving defaults on first render
   useEffect(() => {
-    const saved = loadSettings()
-    setNotifications(saved.notifications)
-    setCompactTable(saved.compactTable)
-    setPageSize(saved.pageSize)
-    setLanguage(saved.language)
-    setInitialized(true)
+    initialized.current = true
   }, [])
 
   // Debounced save + toast
@@ -113,48 +101,40 @@ export function SettingsView() {
     }
   }, [])
 
-  const buildSettings = useCallback((
-    notifs: typeof notifications,
-    compact: boolean,
-    size: string,
-    lang: string
-  ): SettingsData => {
-    return {
-      notifications: notifs,
-      compactTable: compact,
-      pageSize: size,
-      language: lang,
-    }
-  }, [])
-
-  const toggleNotif = (key: keyof typeof notifications) => {
-    setNotifications((prev) => {
-      const next = { ...prev, [key]: !prev[key] }
-      if (initialized) {
-        debouncedSave(buildSettings(next, compactTable, pageSize, language))
+  const toggleNotif = (key: keyof SettingsData['notifications']) => {
+    setSettings((prev) => {
+      const next = {
+        ...prev,
+        notifications: { ...prev.notifications, [key]: !prev.notifications[key] },
+      }
+      if (initialized.current) {
+        debouncedSave(next)
       }
       return next
     })
   }
 
   const handleCompactChange = (checked: boolean) => {
-    setCompactTable(checked)
-    if (initialized) {
-      debouncedSave(buildSettings(notifications, checked, pageSize, language))
+    const next = { ...settings, compactTable: checked }
+    setSettings(next)
+    if (initialized.current) {
+      debouncedSave(next)
     }
   }
 
   const handlePageSizeChange = (value: string) => {
-    setPageSize(value)
-    if (initialized) {
-      debouncedSave(buildSettings(notifications, compactTable, value, language))
+    const next = { ...settings, pageSize: value }
+    setSettings(next)
+    if (initialized.current) {
+      debouncedSave(next)
     }
   }
 
   const handleLanguageChange = (value: string) => {
-    setLanguage(value)
-    if (initialized) {
-      debouncedSave(buildSettings(notifications, compactTable, pageSize, value))
+    const next = { ...settings, language: value }
+    setSettings(next)
+    if (initialized.current) {
+      debouncedSave(next)
     }
   }
 
@@ -244,7 +224,7 @@ export function SettingsView() {
               <p className="text-xs text-muted-foreground">新询盘到达时通知</p>
             </div>
             <Switch
-              checked={notifications.inquiry}
+              checked={settings.notifications.inquiry}
               onCheckedChange={() => toggleNotif('inquiry')}
             />
           </div>
@@ -255,7 +235,7 @@ export function SettingsView() {
               <p className="text-xs text-muted-foreground">报价提交审批时通知</p>
             </div>
             <Switch
-              checked={notifications.approval}
+              checked={settings.notifications.approval}
               onCheckedChange={() => toggleNotif('approval')}
             />
           </div>
@@ -266,7 +246,7 @@ export function SettingsView() {
               <p className="text-xs text-muted-foreground">订单状态更新时通知</p>
             </div>
             <Switch
-              checked={notifications.orderStatus}
+              checked={settings.notifications.orderStatus}
               onCheckedChange={() => toggleNotif('orderStatus')}
             />
           </div>
@@ -277,7 +257,7 @@ export function SettingsView() {
               <p className="text-xs text-muted-foreground">逾期付款自动提醒</p>
             </div>
             <Switch
-              checked={notifications.payment}
+              checked={settings.notifications.payment}
               onCheckedChange={() => toggleNotif('payment')}
             />
           </div>
@@ -298,7 +278,7 @@ export function SettingsView() {
               <p className="text-sm font-medium">默认每页条数</p>
               <p className="text-xs text-muted-foreground">列表默认显示的数据条数</p>
             </div>
-            <Select value={pageSize} onValueChange={handlePageSizeChange}>
+            <Select value={settings.pageSize} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="w-20 h-8">
                 <SelectValue />
               </SelectTrigger>
@@ -316,7 +296,7 @@ export function SettingsView() {
               <p className="text-xs text-muted-foreground">减少表格行间距以显示更多数据</p>
             </div>
             <Switch
-              checked={compactTable}
+              checked={settings.compactTable}
               onCheckedChange={handleCompactChange}
             />
           </div>
@@ -337,7 +317,7 @@ export function SettingsView() {
               <p className="text-sm font-medium">界面语言</p>
               <p className="text-xs text-muted-foreground">选择系统显示语言</p>
             </div>
-            <Select value={language} onValueChange={handleLanguageChange}>
+            <Select value={settings.language} onValueChange={handleLanguageChange}>
               <SelectTrigger className="w-32 h-8">
                 <SelectValue />
               </SelectTrigger>
