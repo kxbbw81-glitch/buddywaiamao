@@ -830,3 +830,235 @@ Task: AI助手上下文感知增强 + 角色工作台差异化 + CSS样式细化
 7. **P3**: 多语言支持（英语/中文切换）
 8. **P3**: 数据看板大屏展示（管理层）
 9. **P3**: 客户地图视图（基于国家的客户分布地图）
+
+---
+Task ID: 6-b
+Agent: User Menu Developer
+Task: 为CRM Header添加用户下拉菜单
+
+## 当前状态描述/判断
+
+CRM Header右侧已有通知下拉、AI助手按钮、主题切换按钮，但缺少用户信息交互区域。需要添加一个完整的用户下拉菜单，替代原来显示用户名和角色徽章的简单按钮（实际上当前header中并无该按钮，需要新增）。
+
+## 已完成的修改
+
+### 1. 新建文件: `src/components/crm/user-menu.tsx`
+- **'use client' 组件**，使用 shadcn/ui DropdownMenu 构建
+- **Trigger 区域**:
+  - 32px 圆形 Avatar，显示用户名首字符作为 fallback（emerald 配色）
+  - 用户名文本（`hidden md:block`，移动端隐藏）
+  - 角色徽章 Badge（variant=secondary，emerald 配色，移动端隐藏）
+  - ChevronDown 箭头图标（移动端隐藏）
+  - 整体使用 `<button>` 而非 Button 组件，以获得更灵活的布局控制
+- **DropdownMenuContent** (w-64):
+  - 用户信息区（DropdownMenuLabel，p-0 自定义布局）:
+    - 40px Avatar（首字符 fallback）
+    - 用户名（font-semibold）
+    - 邮箱（text-muted-foreground）
+    - 角色徽章 + 部门文字
+  - Separator
+  - 「个人设置」菜单项（Settings 图标，emerald focus 样式）→ `setCurrentModule('settings')`
+  - Separator
+  - 「退出登录」菜单项（LogOut 图标，red focus 样式）→ `logout()`
+- 从 `@/lib/types` 导入 `ROLE_LABELS` 和 `UserRole` 类型
+- 从 `@/store/use-crm-store` 导入 `useCRMStore`
+- 所有文本为中文，颜色使用 emerald/teal，无 blue/purple
+- 早期返回 `null` 当 `currentUser` 为空时
+
+### 2. 修改文件: `src/components/crm/crm-header.tsx`
+- 新增 `import { UserMenu } from '@/components/crm/user-menu'`
+- 在 NotificationDropdown 之后添加垂直分隔线 `Separator`
+- 添加 `<UserMenu />` 组件
+- 保留所有原有元素（SidebarTrigger、Breadcrumb、GlobalSearchDialog、AI按钮、主题切换、NotificationDropdown）
+
+## 验证结果
+- ✅ ESLint 通过，无错误无警告
+- ✅ 组件使用 shadcn/ui 标准组件（DropdownMenu, Avatar, Badge, Separator）
+- ✅ 响应式设计：移动端仅显示 Avatar，桌面端显示完整信息
+- ✅ emerald/teal 配色方案一致
+
+---
+Task ID: 6-c
+Agent: Activity List Developer
+Task: 创建活动记录列表页面并连接通知下拉"查看全部"按钮
+
+## 当前状态描述/判断
+
+通知下拉组件中的"查看全部"按钮无功能。需要创建完整的活动记录列表视图，并接入模块系统。
+
+## 已完成的修改
+
+### 1. 创建活动记录列表视图
+- **文件**: `src/components/crm/views/activity-list-view.tsx`
+- 标题: "活动记录"，副标题: "查看所有操作记录和系统动态"
+- 返回按钮导航至工作台
+- 筛选行: 搜索输入框、类型筛选(全部类型/跟进/电话/邮件/会议/备注/系统)、时间范围(全部时间/今天/本周/本月)
+- 数据表格: 类型(icon+label)、内容、关联对象(Badge显示客户/询盘/报价/订单)、操作人、相对时间
+- 类型图标映射: follow_up=Clock, call=Phone, email=Mail, meeting=Users, note=FileText, system=Info
+- 使用 emerald/teal 配色
+- 相对时间格式化辅助函数
+- 使用 useQuery 从 @tanstack/react-query 获取数据
+- 分页: 共 N 条，页码导航
+- 空状态: Clock 图标 + "暂无活动记录"
+- 加载状态: 3行骨架屏(animate-pulse)
+
+### 2. 更新 API 路由
+- **文件**: `src/app/api/activities/route.ts`
+- 新增查询参数支持: search(搜索subject/content)、type(类型过滤)、dateRange(today/week/month)、page、pageSize
+- 返回分页结构: { success, data, total, page, pageSize }
+- 保留原有 POST 和 entityType/entityId 参数兼容
+
+### 3. 连接通知下拉"查看全部"按钮
+- **文件**: `src/components/crm/notification-dropdown.tsx`
+- 导入 useCRMStore，点击"查看全部"时关闭下拉并调用 setCurrentModule('activities')
+
+### 4. 模块系统更新
+- **文件**: `src/lib/types.ts`
+- ModuleKey 类型新增 'activities'
+- MODULE_LABELS 新增 activities: '活动记录'
+- **文件**: `src/app/page.tsx`
+- 导入 ActivityListView，ModuleView switch 新增 case 'activities'
+- 未添加到侧边栏(通过通知下拉访问)
+
+## 验证结果
+- `bun run lint` 通过，零错误
+- 所有文件使用中文文本，emerald/teal 配色方案
+
+---
+Task ID: 6-d
+Agent: Inquiry Kanban Developer
+Task: 创建询盘看板视图并集成到询盘列表视图
+
+## 项目当前状态描述/判断
+
+### 已完成
+- ✅ 询盘看板视图组件已创建完成 (inquiry-kanban-view.tsx)
+- ✅ 询盘列表视图已集成看板/列表切换功能
+- ✅ ESLint lint 检查通过，零错误
+- ✅ TypeScript 编译检查通过（新文件无错误）
+
+### 新增文件
+- `src/components/crm/views/inquiry-kanban-view.tsx` — 询盘看板视图组件
+
+### 修改文件
+- `src/components/crm/views/inquiry-list-view.tsx` — 添加列表/看板视图切换
+
+## 当前目标/已完成的修改/验证结果
+
+### 询盘看板视图 (inquiry-kanban-view.tsx)
+1. **4列看板布局**：
+   - 新询盘 (new + assigned) — emerald 翠绿色，Inbox 图标
+   - 跟进中 (following) — amber 琥珀色，Phone 图标
+   - 已报价 (quoted) — sky 天蓝色，FileText 图标
+   - 已成交/流失 (won + lost) — rose 玫红色，CheckCircle 图标
+
+2. **卡片信息展示**：
+   - 询盘编号 (inquiryNo，等宽字体)
+   - 优先级徽章 (StatusBadge type='priority')
+   - 主题 (subject，单行截断)
+   - 客户公司名称
+   - 来源标签 (中文)
+   - 成交/流失图标指示 (CheckCircle/XCircle)
+   - 负责人名称
+   - 相对创建时间（刚刚/N分钟前/N小时前/N天前）
+
+3. **交互功能**：
+   - 点击卡片调用 selectInquiry 打开详情抽屉
+   - 键盘可访问 (Enter/Space)
+   - 流失卡片降低透明度显示
+
+4. **数据获取**：
+   - 通过 useQuery 获取 /api/inquiries
+   - 应用搜索、优先级、来源筛选
+   - 客户端按状态类别分组
+
+5. **响应式设计**：
+   - 桌面端：水平滚动看板，每列固定宽度 288px
+   - 移动端：垂直堆叠列，卡片水平滚动
+   - 列内卡片区域 ScrollArea 支持滚动
+
+6. **动画效果**：
+   - Framer Motion AnimatePresence + layoutId
+   - 卡片 spring 弹性入场/退出动画
+   - 空列状态展示
+
+7. **技术细节**：
+   - 使用 cn() 工具函数替代模板字符串（避免 TSX 解析兼容性问题）
+   - 类型安全：ColumnConfig 接口定义
+   - 无障碍：ARIA 标签、role、tabIndex
+
+### 询盘列表视图更新 (inquiry-list-view.tsx)
+1. **视图切换**：
+   - 新增 ToggleGroup 组件（List/Kanban 切换按钮）
+   - 本地 state viewMode: 'list' | 'kanban'
+   - 看板模式渲染 InquiryKanbanView
+   - 列表模式保持原有 DataTable
+
+2. **筛选保持**：
+   - 搜索、状态、优先级、来源筛选对两种视图均有效
+   - 看板视图通过共享 store 的 filters 获取筛选条件
+
+### 验证结果
+- ✅ `bun run lint` 零错误通过
+- ✅ TypeScript 编译新文件无错误
+- ✅ 遵循与 customer-kanban-view 一致的设计模式
+
+---
+Task ID: 6-e
+Agent: Main Orchestrator
+Task: 客户联系人新建功能 + 综合QA + worklog更新
+
+## 项目当前状态描述/判断
+
+### 系统状态: 🟢 稳定运行
+- Dev server HTTP 200，ESLint 0 错误
+- 新增4个功能模块，所有核心功能正常运行
+- 数据库12个字段，新增 contacts API 端点
+
+### 浏览器QA验证结果 (Agent Browser)
+- ✅ 角色选择→登录→工作台: 全流程正常
+- ✅ 用户菜单下拉: 点击显示"个人设置"+"退出登录" (DropdownMenu)
+- ✅ 订单详情抽屉: 3Tab(订单信息/物流追踪/备注) + 收款子表 + 操作按钮
+- ✅ 系统设置: 个人资料卡片 + 通知偏好(4开关) + 显示设置
+- ✅ 询盘看板: 4列(新询盘7/跟进中6/已报价6/成交流失3)，卡片含编号+优先级+来源+客户
+- ✅ 活动记录页: "查看全部"从通知下拉正确导航，显示搜索+类型筛选+时间筛选
+- ✅ 通知中心: "通知中心"标题 + "暂无通知" + "查看全部"按钮
+
+## 本轮完成内容
+
+### 新功能 (5项)
+1. **用户菜单下拉** (Task 6-b) - DropdownMenu含头像+姓名+角色Badge+邮箱+部门，"个人设置"和"退出登录"
+2. **活动记录列表页** (Task 6-c) - 完整列表页(搜索+类型+时间筛选+分页)，通知"查看全部"导航到此处
+3. **询盘看板视图** (Task 6-d) - 4列状态看板(新询盘/跟进中/已报价/成交流失)，Framer Motion动画
+4. **客户联系人内联新建** - 联系人Tab顶部"添加联系人"按钮，展开表单(姓名/职位/邮箱/电话/WhatsApp/决策者)
+5. **联系人API** - /api/contacts POST端点，支持创建新联系人
+
+### 增强功能 (3项)
+1. **联系人卡片重设计** - 圆形首字母头像(翡翠色)，WhatsApp显示，悬停阴影，决策者Badge样式优化
+2. **联系人空状态增强** - 图标+文字+提示语
+3. **ModuleKey扩展** - types.ts新增'activities'模块类型
+
+### 新增/修改文件清单
+- **新增**: `src/components/crm/user-menu.tsx`, `src/components/crm/views/activity-list-view.tsx`, `src/components/crm/views/inquiry-kanban-view.tsx`, `src/app/api/contacts/route.ts`
+- **修改**: `src/components/crm/crm-header.tsx`, `src/components/crm/notification-dropdown.tsx`, `src/components/crm/views/customer-detail-drawer.tsx`, `src/components/crm/views/inquiry-list-view.tsx`, `src/lib/types.ts`, `src/app/page.tsx`, `src/app/api/activities/route.ts`
+
+## 未解决问题或风险
+
+### 低优先级
+1. **AI聊天端到端测试**: LLM API已对接但实际对话未在浏览器中完整测试
+2. **种子数据清理**: 测试创建的含"--timeout"文字的客户需要清理
+3. **通知为空**: 当前所有活动记录可能已标记已读，导致通知下拉显示"暂无通知"
+4. **看板视图拖拽**: 客户/询盘看板均为静态分组，无拖拽排序功能
+5. **设置页开关不持久**: 通知偏好和显示设置的Switch状态不保存到数据库/本地存储
+
+### 建议下一阶段优先事项
+1. **P1**: AI聊天端到端测试 + 流式响应(SSE)
+2. **P1**: 设置页偏好持久化(localStorage)
+3. **P2**: 种子数据优化（清理测试数据、增加更多样化客户）
+4. **P2**: 看板拖拽排序（客户在级别列之间移动）
+5. **P2**: 权限中心（用户管理、角色配置）
+6. **P2**: 社媒运营模块
+7. **P3**: 多语言支持（英语/中文切换）
+8. **P3**: 数据看板大屏展示（管理层）
+9. **P3**: 客户地图视图（基于国家的客户分布地图）
+10. **P3**: WebSocket实时通知推送

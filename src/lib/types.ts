@@ -13,6 +13,7 @@ export type ModuleKey =
   | 'payments'
   | 'analytics'
   | 'settings'
+  | 'activities'
 
 export interface NavItem {
   key: ModuleKey
@@ -129,6 +130,7 @@ export const MODULE_LABELS: Record<string, string> = {
   payments: '收款管理',
   analytics: '数据分析',
   settings: '系统设置',
+  activities: '活动记录',
 }
 
 // ============ Dashboard Types ============

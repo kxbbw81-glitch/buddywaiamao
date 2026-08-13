@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Bell, Phone, Mail, Info, FileText, ShoppingCart, CheckCheck, Inbox, Loader2 } from 'lucide-react'
+import { useCRMStore } from '@/store/use-crm-store'
 import {
   Popover,
   PopoverContent,
@@ -223,6 +224,10 @@ export function NotificationDropdown() {
             variant="ghost"
             size="sm"
             className="w-full h-8 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+            onClick={() => {
+              setOpen(false)
+              useCRMStore.getState().setCurrentModule('activities')
+            }}
           >
             查看全部
           </Button>

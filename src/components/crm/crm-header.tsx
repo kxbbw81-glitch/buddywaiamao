@@ -9,6 +9,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { NotificationDropdown } from '@/components/crm/notification-dropdown'
 import { GlobalSearchDialog } from '@/components/crm/global-search-dialog'
+import { UserMenu } from '@/components/crm/user-menu'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -60,6 +61,10 @@ export function CRMHeader() {
         </Button>
 
         <NotificationDropdown />
+
+        <Separator orientation="vertical" className="h-6" />
+
+        <UserMenu />
       </div>
     </header>
   )

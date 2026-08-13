@@ -7,6 +7,7 @@ import { zhCN } from 'date-fns/locale'
 import {
   Globe, MapPin, Building2, ExternalLink, Edit, ShoppingCart,
   Phone, Mail, UserCircle, Star, ChevronRight, FileText, Plus,
+  MessageCircle, Loader2, UserPlus,
 } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
 import { StatusBadge } from '@/components/crm/status-badge'
@@ -26,6 +27,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +35,78 @@ const COUNTRY_FLAGS: Record<string, string> = {
   '美国': '🇺🇸', '德国': '🇩🇪', '阿联酋': '🇦🇪', '日本': '🇯🇵', '尼日利亚': '🇳🇬',
   '马来西亚': '🇲🇾', '瑞典': '🇸🇪', '印度': '🇮🇳', '英国': '🇬🇧', '法国': '🇫🇷',
   '巴西': '🇧🇷', '澳大利亚': '🇦🇺', '韩国': '🇰🇷', '中国': '🇨🇳',
+}
+
+function ContactInlineForm({ customerId }: { customerId: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [name, setName] = useState('')
+  const [position, setPosition] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [isDecisionMaker, setIsDecisionMaker] = useState(false)
+  const queryClient = useQueryClient()
+
+  const handleSave = async () => {
+    if (!name.trim()) { toast.error('请输入联系人姓名'); return }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId,
+          name: name.trim(), position: position.trim() || undefined,
+          email: email.trim() || undefined, phone: phone.trim() || undefined,
+          whatsapp: whatsapp.trim() || undefined, isDecisionMaker,
+        }),
+      })
+      if (res.ok) {
+        toast.success('联系人已添加')
+        queryClient.invalidateQueries({ queryKey: ['customer', customerId] })
+        setName(''); setPosition(''); setEmail(''); setPhone(''); setWhatsapp(''); setIsDecisionMaker(false)
+        setExpanded(false)
+      } else { toast.error('添加失败') }
+    } catch { toast.error('网络错误') }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <Card className="border-dashed">
+      {expanded ? (
+        <div className="p-4 space-y-3">
+          <p className="text-sm font-medium flex items-center gap-1.5"><UserPlus className="h-4 w-4 text-emerald-600" />新建联系人</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Input placeholder="姓名 *" value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-sm" />
+            <Input placeholder="职位" value={position} onChange={(e) => setPosition(e.target.value)} className="h-8 text-sm" />
+            <Input placeholder="邮箱" value={email} onChange={(e) => setEmail(e.target.value)} className="h-8 text-sm" type="email" />
+            <Input placeholder="电话" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-8 text-sm" />
+            <Input placeholder="WhatsApp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="h-8 text-sm" />
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer h-8">
+              <input type="checkbox" checked={isDecisionMaker} onChange={(e) => setIsDecisionMaker(e.target.checked)} className="rounded border-input" />
+              决策者
+            </label>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setExpanded(false)}>取消</Button>
+            <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700" onClick={handleSave} disabled={saving || !name.trim()}>
+              {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+              添加
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          className="w-full flex items-center justify-center gap-2 p-3 text-sm text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+          onClick={() => setExpanded(true)}
+        >
+          <UserPlus className="h-4 w-4" />
+          添加联系人
+        </button>
+      )}
+    </Card>
+  )
 }
 
 export function CustomerDetailDrawer() {
@@ -190,28 +264,40 @@ export function CustomerDetailDrawer() {
                 )}
               </TabsContent>
 
-              <TabsContent value="contacts" className="mt-4 pb-6 space-y-3">
+              <TabsContent value="contacts" className="mt-4 pb-6 space-y-3 crm-tab-content">
+                <ContactInlineForm customerId={selectedCustomerId!} />
                 {customer.contacts?.length > 0 ? customer.contacts.map((contact: Record<string, unknown>) => (
-                  <Card key={contact.id as string} className="p-4">
+                  <Card key={contact.id as string} className="p-4 group hover:shadow-sm transition-shadow">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <UserCircle className="h-8 w-8 text-muted-foreground" />
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-medium text-sm shrink-0">
+                          {(contact.name as string)?.charAt(0) || '?'}
+                        </div>
                         <div>
-                          <p className="font-medium text-sm flex items-center gap-1">
+                          <p className="font-medium text-sm flex items-center gap-1.5">
                             {contact.name as string}
                             {contact.isDecisionMaker && <Star className="h-3 w-3 text-amber-500 fill-amber-500" />}
                           </p>
                           <p className="text-xs text-muted-foreground">{contact.position as string || ''}</p>
                         </div>
                       </div>
-                      {contact.isDecisionMaker && <Badge className="text-xs">决策者</Badge>}
+                      {contact.isDecisionMaker && <Badge className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">决策者</Badge>}
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      {contact.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{contact.email as string}</span>}
-                      {contact.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{contact.phone as string}</span>}
+                    <div className="mt-2.5 flex flex-wrap gap-4 text-xs text-muted-foreground">
+                      {contact.email && <span className="flex items-center gap-1 hover:text-emerald-600 transition-colors"><Mail className="h-3 w-3" />{contact.email as string}</span>}
+                      {contact.phone && <span className="flex items-center gap-1 hover:text-emerald-600 transition-colors"><Phone className="h-3 w-3" />{contact.phone as string}</span>}
+                      {contact.whatsapp && <span className="flex items-center gap-1 hover:text-emerald-600 transition-colors"><MessageCircle className="h-3 w-3" />{contact.whatsapp as string}</span>}
                     </div>
                   </Card>
-                )) : <p className="text-sm text-muted-foreground py-8 text-center">暂无联系人</p>}
+                )) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                      <UserCircle className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm">暂无联系人</p>
+                    <p className="text-xs mt-1">使用上方表单添加第一个联系人</p>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="inquiries" className="mt-4 pb-6">

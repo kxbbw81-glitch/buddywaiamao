@@ -36,6 +36,7 @@ import { PaymentListView } from '@/components/crm/views/payment-list-view'
 import { AnalyticsView } from '@/components/crm/views/analytics-view'
 import { AIAssistantDrawer } from '@/components/crm/views/ai-assistant-drawer'
 import { SettingsView } from '@/components/crm/views/settings-view'
+import { ActivityListView } from '@/components/crm/views/activity-list-view'
 
 // UI Components
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
@@ -215,6 +216,7 @@ function ModuleView() {
       case 'payments': return <PaymentListView />
       case 'analytics': return <AnalyticsView />
       case 'settings': return <SettingsView />
+      case 'activities': return <ActivityListView />
       default: return <WorkbenchView />
     }
   }

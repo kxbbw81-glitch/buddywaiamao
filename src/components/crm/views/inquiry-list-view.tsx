@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { Plus, Download } from 'lucide-react'
+import { Plus, Download, LayoutGrid, List } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCRMStore } from '@/store/use-crm-store'
 import { DataTable } from '@/components/crm/data-table'
@@ -18,6 +18,8 @@ import { Input } from '@/components/ui/input'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { InquiryKanbanView } from './inquiry-kanban-view'
 
 const INQUIRY_SOURCE_LABELS: Record<string, string> = {
   email: '邮件', website: '官网', whatsapp: 'WhatsApp', exhibition: '展会',
@@ -27,9 +29,7 @@ const INQUIRY_SOURCE_LABELS: Record<string, string> = {
 
 export function InquiryListView() {
   const { searchQuery, filters, setFilters, openInquiryForm, selectInquiry } = useCRMStore()
-  
-
-  
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
 
   const { data, isLoading } = useQuery({
     queryKey: ['inquiries', searchQuery, filters],
@@ -162,6 +162,14 @@ export function InquiryListView() {
             <SelectItem value="referral">客户介绍</SelectItem>
           </SelectContent>
         </Select>
+        <ToggleGroup type="single" value={viewMode} onValueChange={(v) => { if (v) setViewMode(v as 'list' | 'kanban') }}>
+          <ToggleGroupItem value="list" aria-label="列表视图">
+            <List className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="kanban" aria-label="看板视图">
+            <LayoutGrid className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -210,15 +218,19 @@ export function InquiryListView() {
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={inquiries}
-        onRowClick={(item) => selectInquiry(item.id as string)}
-        isLoading={isLoading && inquiries.length === 0}
-        emptyMessage="暂无询盘数据"
-        searchValue=""
-        onSearchChange={() => {}}
-      />
+      {viewMode === 'kanban' ? (
+        <InquiryKanbanView />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={inquiries}
+          onRowClick={(item) => selectInquiry(item.id as string)}
+          isLoading={isLoading && inquiries.length === 0}
+          emptyMessage="暂无询盘数据"
+          searchValue=""
+          onSearchChange={() => {}}
+        />
+      )}
     </div>
   )
 }
