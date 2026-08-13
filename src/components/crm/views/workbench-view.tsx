@@ -22,6 +22,10 @@ import {
   CalendarDays,
   ArrowUpRight,
   Sparkles,
+  UserPlus,
+  Calculator,
+  CheckCircle2,
+  ChevronRight,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
@@ -70,12 +74,17 @@ const motivationalLines = [
   '客户至上，服务为先',
 ]
 
+const quickActions = [
+  { label: '新建客户', icon: UserPlus, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'customer' },
+  { label: '新建询盘', icon: FileText, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'inquiry' },
+  { label: '新建报价', icon: Calculator, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'quotation' },
+  { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+]
+
 export function WorkbenchView() {
-  const { currentUser, openInquiryForm, openCustomerForm, openQuotationForm } = useCRMStore()
-  
+  const { currentUser, openInquiryForm, openCustomerForm, openQuotationForm, selectInquiry, toggleAiDrawer } = useCRMStore()
 
   useEffect(() => {
-    
   }, [])
 
   const { data, isLoading } = useQuery({
@@ -83,6 +92,35 @@ export function WorkbenchView() {
     queryFn: () => fetch('/api/dashboard').then((r) => r.json()),
     refetchInterval: 30000,
   })
+
+  const { data: pendingInquiriesData } = useQuery({
+    queryKey: ['pending-inquiries'],
+    queryFn: () => fetch('/api/inquiries?status=new&pageSize=50').then((r) => r.json()),
+    refetchInterval: 30000,
+  })
+
+  const { data: followingInquiriesData } = useQuery({
+    queryKey: ['following-inquiries'],
+    queryFn: () => fetch('/api/inquiries?status=following&pageSize=50').then((r) => r.json()),
+    refetchInterval: 30000,
+  })
+
+  const pendingInquiries = [...(pendingInquiriesData?.data || []), ...(followingInquiriesData?.data || [])]
+    .sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+      const pa = a.priority as string
+      const pb = b.priority as string
+      const priorityOrder = { urgent: 0, high: 1, normal: 2, low: 3 }
+      return (priorityOrder[pa] || 2) - (priorityOrder[pb] || 2)
+    })
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'customer': openCustomerForm(); break
+      case 'inquiry': openInquiryForm(); break
+      case 'quotation': openQuotationForm(); break
+      case 'ai': toggleAiDrawer(); break
+    }
+  }
 
   if (isLoading || !data?.data) {
     return (
@@ -118,8 +156,6 @@ export function WorkbenchView() {
   const dayOfWeek = format(today, 'EEEE', { locale: zhCN })
   const dateStr = format(today, 'yyyy年M月d日', { locale: zhCN })
   const motivLine = motivationalLines[today.getDate() % motivationalLines.length]
-
-  const role = currentUser?.primaryRole || 'sales'
 
   return (
     <div className="space-y-6 workbench-bg rounded-lg p-1">
@@ -178,7 +214,7 @@ export function WorkbenchView() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.12 }}
       >
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
           <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
             <ArrowUpRight className="h-4 w-4" />
           </div>
@@ -187,7 +223,7 @@ export function WorkbenchView() {
             <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.todayInquiries || 0)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
           <div className="p-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
             <Clock className="h-4 w-4" />
           </div>
@@ -196,7 +232,7 @@ export function WorkbenchView() {
             <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.pendingFollow || 0)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
           <div className="p-1.5 rounded-md bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
             <FileText className="h-4 w-4" />
           </div>
@@ -207,28 +243,32 @@ export function WorkbenchView() {
         </div>
       </motion.div>
 
-      {/* Quick Stats Row */}
+      {/* 快速操作 Quick Actions */}
       <motion.div
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        className="grid grid-cols-4 gap-3"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.15 }}
+        transition={{ delay: 0.2 }}
       >
-        {[
-          { label: '今日询盘', val: kpis.totalInquiries, icon: ArrowUpRight, color: 'text-emerald-600 dark:text-emerald-400' },
-          { label: '今日报价', val: kpis.pendingQuotations, icon: FileText, color: 'text-amber-600 dark:text-amber-400' },
-          { label: '今日跟进', val: recentActivities?.length || 0, icon: MessageSquare, color: 'text-sky-600 dark:text-sky-400' },
-          { label: '待处理', val: kpis.totalInquiries - kpis.wonInquiries, icon: Clock, color: 'text-rose-600 dark:text-rose-400' },
-        ].map((stat, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-card border">
-            <div className={cn('p-1.5 rounded-md bg-muted', stat.color)}>
-              <stat.icon className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-              <p className="text-lg font-bold crm-number">{formatNumber(stat.val)}</p>
-            </div>
-          </div>
+        {quickActions.map((item, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <Card
+              className={cn(
+                'cursor-pointer p-4 flex flex-col items-center gap-2 border transition-all hover:shadow-md',
+                item.border
+              )}
+              onClick={() => handleQuickAction(item.action)}
+            >
+              <div className={cn('p-2.5 rounded-xl', item.bg)}>
+                <item.icon className={cn('h-5 w-5', item.color)} />
+              </div>
+              <span className="text-xs font-medium">{item.label}</span>
+            </Card>
+          </motion.div>
         ))}
       </motion.div>
 
@@ -282,24 +322,6 @@ export function WorkbenchView() {
             variant="violet"
           />
         </motion.div>
-      </motion.div>
-
-      {/* Quick Actions */}
-      <motion.div
-        className="flex flex-wrap gap-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Button size="sm" onClick={openInquiryForm}>
-          <Plus className="h-4 w-4 mr-1" /> 新建询盘
-        </Button>
-        <Button size="sm" variant="outline" onClick={openCustomerForm}>
-          <Plus className="h-4 w-4 mr-1" /> 新建客户
-        </Button>
-        <Button size="sm" variant="outline" onClick={openQuotationForm}>
-          <Plus className="h-4 w-4 mr-1" /> 新建报价
-        </Button>
       </motion.div>
 
       {/* Revenue & Charts Row */}
@@ -404,8 +426,8 @@ export function WorkbenchView() {
         </motion.div>
       </div>
 
-      {/* Bottom Row: Inquiries by Status + Recent Activities */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Bottom Row: Inquiry Distribution + 待办事项 & Recent Activities */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Inquiry Distribution */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
           <Card>
@@ -448,8 +470,45 @@ export function WorkbenchView() {
           </Card>
         </motion.div>
 
-        {/* Recent Activities */}
+        {/* 待办事项 */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-amber-600" />
+                待办事项
+                <Badge variant="secondary" className="ml-auto text-xs">{pendingInquiries.length} 项待办</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-64 overflow-y-auto crm-scrollbar">
+                {pendingInquiries.length > 0 ? pendingInquiries.slice(0, 10).map((inq: Record<string, unknown>) => (
+                  <div
+                    key={inq.id as string}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+                    onClick={() => selectInquiry(inq.id as string)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate group-hover:text-emerald-600 transition-colors">
+                        {inq.subject as string || inq.inquiryNo as string}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {(inq.customer as Record<string, unknown>)?.companyName as string || '未关联客户'}
+                      </p>
+                    </div>
+                    <StatusBadge status={inq.priority as string} type="priority" />
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                )) : (
+                  <p className="text-sm text-muted-foreground py-8 text-center">暂无待办事项 🎉</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Recent Activities */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -484,7 +543,7 @@ export function WorkbenchView() {
 
       {/* Top Customers with gradient bars */}
       {charts.topCustomers.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-medium flex items-center gap-2">

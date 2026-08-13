@@ -18,8 +18,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { CheckCircle2, Clock, FileText } from 'lucide-react'
+import { CheckCircle2, Clock, FileText, Phone, Mail, MessageCircle, MapPin, Send, Loader2 } from 'lucide-react'
 
 const STATUS_OPTIONS = [
   { value: 'new', label: '新询盘' },
@@ -32,9 +33,41 @@ const STATUS_OPTIONS = [
   { value: 'closed', label: '已关闭' },
 ]
 
+const FOLLOWUP_TYPE_OPTIONS = [
+  { value: '电话', label: '电话', icon: Phone },
+  { value: '邮件', label: '邮件', icon: Mail },
+  { value: 'WhatsApp', label: 'WhatsApp', icon: MessageCircle },
+  { value: '现场拜访', label: '现场拜访', icon: MapPin },
+  { value: '其他', label: '其他', icon: FileText },
+]
+
+const followUpTypeIcons: Record<string, React.ElementType> = {
+  '电话': Phone,
+  '邮件': Mail,
+  'WhatsApp': MessageCircle,
+  '现场拜访': MapPin,
+  '其他': FileText,
+  'follow_up': Clock,
+  'email': Mail,
+  'system': CheckCircle2,
+  'note': FileText,
+}
+
+const followUpTypeColors: Record<string, string> = {
+  '电话': 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30',
+  '邮件': 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30',
+  'WhatsApp': 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30',
+  '现场拜访': 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30',
+  '其他': 'text-muted-foreground bg-muted',
+}
+
 export function InquiryDetailDrawer() {
   const { selectedInquiryId, selectInquiry, currentUser } = useCRMStore()
   const queryClient = useQueryClient()
+
+  const [followUpNote, setFollowUpNote] = useState('')
+  const [followUpType, setFollowUpType] = useState('电话')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['inquiry', selectedInquiryId],
@@ -43,6 +76,12 @@ export function InquiryDetailDrawer() {
   })
 
   const inquiry = data?.data
+
+  // Reset form when inquiry changes
+  useEffect(() => {
+    setFollowUpNote('')
+    setFollowUpType('电话')
+  }, [selectedInquiryId])
 
   const handleAssign = async () => {
     if (!inquiry || !currentUser) return
@@ -80,6 +119,45 @@ export function InquiryDetailDrawer() {
         toast.error(result.error || '操作失败')
       }
     } catch { toast.error('操作失败') }
+  }
+
+  const handleSubmitFollowUp = async () => {
+    if (!inquiry || !currentUser || !followUpNote.trim()) return
+    setIsSubmitting(true)
+    try {
+      const res = await fetch('/api/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'follow_up',
+          subject: `${followUpType}跟进`,
+          content: followUpNote.trim(),
+          entityType: 'inquiry',
+          entityId: inquiry.id,
+          userId: currentUser.id,
+        }),
+      })
+      const result = await res.json()
+      if (result.success) {
+        toast.success('跟进记录已添加')
+        setFollowUpNote('')
+        setFollowUpType('电话')
+        // Update inquiry follow-up time
+        await fetch(`/api/inquiries/${inquiry.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lastFollowUpAt: new Date().toISOString() }),
+        })
+        queryClient.invalidateQueries({ queryKey: ['inquiry', selectedInquiryId] })
+        queryClient.invalidateQueries({ queryKey: ['inquiries'] })
+      } else {
+        toast.error(result.error || '添加失败')
+      }
+    } catch {
+      toast.error('添加失败')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -147,24 +225,116 @@ export function InquiryDetailDrawer() {
                 )}
               </TabsContent>
 
-              <TabsContent value="followups" className="mt-4 pb-6 space-y-3">
-                {inquiry.activities?.length > 0 ? inquiry.activities.map((act: Record<string, unknown>) => (
-                  <Card key={act.id as string} className="p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        {act.type === 'follow_up' && <Clock className="h-3.5 w-3.5 text-amber-500" />}
-                        {act.type === 'email' && <FileText className="h-3.5 w-3.5 text-emerald-500" />}
-                        {act.type === 'system' && <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />}
-                        <span className="text-sm font-medium">{act.subject as string || act.type as string}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(act.createdAt as string), 'MM-dd HH:mm', { locale: zhCN })}
-                      </span>
+              <TabsContent value="followups" className="mt-4 pb-6 space-y-4">
+                {/* Follow-up Timeline */}
+                {inquiry.activities && inquiry.activities.length > 0 && (
+                  <div className="space-y-0">
+                    {[...inquiry.activities]
+                      .sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
+                        new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime()
+                      )
+                      .map((act: Record<string, unknown>, idx: number) => {
+                        const actType = act.type as string
+                        const displayType = act.subject?.toString().startsWith('电话') ? '电话'
+                          : act.subject?.toString().startsWith('邮件') ? '邮件'
+                          : act.subject?.toString().startsWith('WhatsApp') ? 'WhatsApp'
+                          : act.subject?.toString().startsWith('现场') ? '现场拜访'
+                          : actType === 'follow_up' ? '其他'
+                          : actType === 'email' ? '邮件'
+                          : actType
+                        const IconComp = followUpTypeIcons[displayType] || Clock
+                        const colorClass = followUpTypeColors[displayType] || 'text-muted-foreground bg-muted'
+                        const isLast = idx === inquiry.activities.length - 1
+                        const creatorName = (act.user as Record<string, unknown>)?.name as string || '系统'
+
+                        return (
+                          <div key={act.id as string} className="flex gap-3">
+                            {/* Timeline line */}
+                            <div className="flex flex-col items-center">
+                              <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0', colorClass)}>
+                                <IconComp className="h-3.5 w-3.5" />
+                              </div>
+                              {!isLast && <div className="w-px flex-1 bg-border min-h-6" />}
+                            </div>
+
+                            {/* Content */}
+                            <div className={cn('flex-1 pb-4', isLast && 'pb-0')}>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <div className="flex items-center gap-2">
+                                  <div className={cn(
+                                    'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-muted text-muted-foreground'
+                                  )}>
+                                    {creatorName.charAt(0)}
+                                  </div>
+                                  <span className="text-xs font-medium">{creatorName}</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(act.createdAt as string), 'MM-dd HH:mm', { locale: zhCN })}
+                                </span>
+                              </div>
+                              {act.content && (
+                                <p className="text-sm text-muted-foreground mt-0.5 pl-7">{act.content as string}</p>
+                              )}
+                              {!act.content && act.subject && (
+                                <p className="text-sm text-muted-foreground mt-0.5 pl-7">{act.subject as string}</p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                )}
+
+                {!inquiry.activities || inquiry.activities.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-8 text-center">暂无跟进记录</p>
+                )}
+
+                {/* Add Follow-up Form */}
+                <Card className="p-4 border-dashed">
+                  <h4 className="text-xs font-medium text-muted-foreground mb-3">添加跟进记录</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground shrink-0">类型:</span>
+                      <Select value={followUpType} onValueChange={setFollowUpType}>
+                        <SelectTrigger className="h-8 text-xs flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FOLLOWUP_TYPE_OPTIONS.map((opt) => {
+                            const OptIcon = opt.icon
+                            return (
+                              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                <div className="flex items-center gap-2">
+                                  <OptIcon className="h-3.5 w-3.5" />
+                                  {opt.label}
+                                </div>
+                              </SelectItem>
+                            )
+                          })}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    {act.content && <p className="text-xs text-muted-foreground mt-1">{act.content as string}</p>}
-                    {act.user && <p className="text-xs text-muted-foreground mt-1">操作人: {(act.user as Record<string, unknown>).name as string}</p>}
-                  </Card>
-                )) : <p className="text-sm text-muted-foreground py-8 text-center">暂无跟进记录</p>}
+                    <Textarea
+                      placeholder="输入跟进内容..."
+                      value={followUpNote}
+                      onChange={(e) => setFollowUpNote(e.target.value)}
+                      rows={3}
+                      className="text-sm resize-none"
+                    />
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={handleSubmitFollowUp}
+                      disabled={isSubmitting || !followUpNote.trim()}
+                    >
+                      {isSubmitting ? (
+                        <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />提交中...</>
+                      ) : (
+                        <><Send className="h-3.5 w-3.5 mr-1" />提交跟进</>
+                      )}
+                    </Button>
+                  </div>
+                </Card>
               </TabsContent>
 
               <TabsContent value="quotations" className="mt-4 pb-6 space-y-3">

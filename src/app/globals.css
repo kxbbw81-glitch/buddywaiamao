@@ -397,15 +397,17 @@
 
 /* Workbench Dot Pattern Background */
 .workbench-bg {
-  background-image: radial-gradient(circle, oklch(0 0 0 / 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0);
   background-size: 24px 24px;
 }
 .dark .workbench-bg {
-  background-image: radial-gradient(circle, oklch(0 0 0 / 0.15) 1px, transparent 1px);
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
 }
 
-/* Table Row Hover with Left Border Highlight */
+/* Table Row Hover with Left Border Highlight & Click Ripple */
 .crm-table-row {
+  position: relative;
+  overflow: hidden;
   transition: all 0.15s ease;
   border-left: 3px solid transparent;
 }
@@ -416,6 +418,20 @@
 .dark .crm-table-row:hover {
   background-color: oklch(0.269 0.01 155);
   border-left-color: #10b981;
+}
+.crm-table-row::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(16,185,129,0.08) 10%, transparent 10.01%);
+  transform: scale(10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+.crm-table-row:active::after {
+  transform: scale(0);
+  opacity: 1;
+  transition: 0s;
 }
 
 /* Zebra Striping */
@@ -694,5 +710,23 @@ textarea:focus-visible {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ============ Enhanced Card Glow for Dark Mode ============ */
+.dark .crm-card-glow {
+  box-shadow: 0 0 0 1px rgba(16,185,129,0.1), 0 4px 12px rgba(0,0,0,0.3);
+}
+.dark .crm-card-glow:hover {
+  box-shadow: 0 0 0 1px rgba(16,185,129,0.3), 0 8px 24px rgba(0,0,0,0.4);
+}
+
+/* ============ Tooltip Styling ============ */
+.crm-tooltip {
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 

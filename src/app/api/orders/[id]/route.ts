@@ -39,6 +39,8 @@ export async function PUT(
     if (body.deliveryDate !== undefined) updateData.deliveryDate = body.deliveryDate ? new Date(body.deliveryDate) : null
     if (body.paidAmount !== undefined) updateData.paidAmount = body.paidAmount
     if (body.notes !== undefined) updateData.notes = body.notes
+    if (body.trackingNo !== undefined) updateData.trackingNo = body.trackingNo
+    if (body.shippingMethod !== undefined) updateData.shippingMethod = body.shippingMethod
 
     const order = await db.order.update({ where: { id }, data: updateData })
     return NextResponse.json({ success: true, data: order })

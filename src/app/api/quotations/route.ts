@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
     const tradeTerm = searchParams.get('tradeTerm') || ''
+    const customerId = searchParams.get('customerId') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     }
     if (status) where.status = status
     if (tradeTerm) where.tradeTerm = tradeTerm
+    if (customerId) where.customerId = customerId
 
     const [quotations, total] = await Promise.all([
       db.quotation.findMany({

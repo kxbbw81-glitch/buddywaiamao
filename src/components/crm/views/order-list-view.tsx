@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/utils'
+import { Plus } from 'lucide-react'
 
 const ORDER_STAGES = ['pending', 'confirmed', 'in_production', 'ready', 'shipped', 'completed'] as const
 const ORDER_STAGE_LABELS: Record<string, string> = {
@@ -54,7 +55,7 @@ function OrderStatusStepper({ status }: { status: string }) {
 }
 
 export function OrderListView() {
-  const { searchQuery, filters, setFilters, selectOrder } = useCRMStore()
+  const { searchQuery, filters, setFilters, selectOrder, openOrderForm } = useCRMStore()
   
 
   
@@ -151,6 +152,9 @@ export function OrderListView() {
             <SelectItem value="completed">已完成</SelectItem>
           </SelectContent>
         </Select>
+        <Button size="sm" className="ml-auto" onClick={() => openOrderForm()}>
+          <Plus className="h-4 w-4 mr-1" /> 新建订单
+        </Button>
       </div>
 
       <DataTable

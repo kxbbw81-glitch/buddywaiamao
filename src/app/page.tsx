@@ -30,6 +30,7 @@ import { QuotationDetailDrawer } from '@/components/crm/views/quotation-detail-d
 import { QuotationFormDialog } from '@/components/crm/views/quotation-form-dialog'
 import { OrderListView } from '@/components/crm/views/order-list-view'
 import { OrderDetailDrawer } from '@/components/crm/views/order-detail-drawer'
+import { OrderFormDialog } from '@/components/crm/views/order-form-dialog'
 import { SampleListView } from '@/components/crm/views/sample-list-view'
 import { PaymentListView } from '@/components/crm/views/payment-list-view'
 import { AnalyticsView } from '@/components/crm/views/analytics-view'
@@ -283,6 +284,7 @@ function CRMApp() {
       <InquiryFormDialog />
       <QuotationFormDialog />
       <ProductFormDialog />
+      <OrderFormDialog />
 
       {/* AI Assistant */}
       <AIAssistantDrawer />

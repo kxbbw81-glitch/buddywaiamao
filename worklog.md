@@ -300,3 +300,259 @@ Task: 10项功能增强 - 无障碍修复、筛选器、进度条、设置增强
 6. **P3**: 社媒运营模块
 7. **P3**: 权限中心（用户管理、角色配置）
 8. **P3**: 种子数据优化（确保中英文名更有区分度）
+
+---
+Task ID: 4
+Agent: Bug Fix & Feature Enhancement Agent
+Task: 2个Bug修复 + 3项功能增强（样品API、订单抽屉增强、收款列表优化、新建订单表单）
+
+## Bug修复
+
+### Bug 1: 客户名称去重逻辑不完善 ✅
+- **文件**: `src/components/crm/views/customer-list-view.tsx`
+- **问题**: 原逻辑仅在公司中英文名完全相同时隐藏英文名，但未处理前缀关系（如"Müller Industrie" vs "Müller Industrie GmbH"）
+- **修复**: 增加前缀检查条件：`!nameEn.startsWith(name + ' ') && !name.startsWith(nameEn + ' ')`
+- **效果**: "Müller Industrie" vs "Müller Industrie GmbH" 等前缀关系不再重复显示
+
+### Bug 2: 样品列表错误使用订单数据 ✅（关键Bug）
+- **问题**: `sample-list-view.tsx` 从 `/api/orders` 获取数据，将订单号替换ORD→SMP前缀，totalAmount/100作为数量，完全错误
+- **修复**:
+  1. 创建 `/api/samples/route.ts` - 真正的样品API，从Prisma Sample模型查询，include customer、inquiry
+  2. 完全重写 `sample-list-view.tsx`，使用正确API，显示：样品名称（带Package图标）、客户（国旗+公司名）、数量、状态(StatusBadge type="sample")、快递单号、寄出日期、创建时间
+  3. 添加搜索框连接 searchQuery store
+  4. 添加状态筛选器（8种状态）
+  5. 添加"新建样品"按钮，打开Dialog表单
+  6. Dialog包含：可搜索客户选择器、样品名称、数量、快递方式(7种)、快递单号、备注
+
+## 功能增强
+
+### Feature 1: 订单详情抽屉增强 ✅
+- **文件**: `src/components/crm/views/order-detail-drawer.tsx`
+- **Tab系统**: 3个Tab切换 - 订单信息、物流追踪、备注
+- **物流追踪Tab**:
+  - 纵向时间线：6个阶段，每个阶段有独立图标(Clock/ClipboardCheck/Factory/Package/Truck/Check)
+  - 已完成阶段：翡翠绿实心圆点 + 白色Check图标 + "已完成"标签
+  - 当前阶段：翡翠绿实心圆点 + 脉冲动画 + "当前阶段"标签
+  - 未来阶段：灰色空心圆点
+  - 每个阶段显示预计日期（基于订单创建日+估算天数）
+  - 快递单号编辑（点击编辑，保存按钮）
+  - 贸易条款下拉（FOB/CIF/EXW/DDP/DAP）
+- **备注Tab**:
+  - 订单备注（Textarea + 保存按钮）
+  - 内部备注（Textarea，虚线边框）
+  - 订单时间线信息（创建时间、最后更新、预计交货）
+- **状态变更**: 确认toast通知（如"订单状态已更新为「已确认」"）
+- **新增字段**: Order模型新增 trackingNo、shippingMethod 字段
+- **API更新**: `/api/orders/[id]` PUT 支持更新 trackingNo、shippingMethod
+
+### Feature 2: 收款列表增强 ✅
+- **新增API**: `/api/payments/route.ts`
+  - GET: 从Payment模型查询，include order.orderNo、order.customer.companyName，支持 ?status= 筛选
+  - POST: 创建Payment记录
+- **重写 payment-list-view.tsx**:
+  - 使用新的 `/api/payments` API 替代原来的逐个订单获取付款方式
+  - 保留原有4卡片汇总（总金额/已付款/待付款/逾期）
+  - 保留逾期高亮样式
+  - 添加"新建付款"按钮，打开Dialog
+  - Dialog包含：可搜索订单选择器（显示订单号+客户+金额）、金额输入、付款方式(T/T/L/C/D/P/Western Union/PayPal)、到期日、状态选择
+  - 添加行展开/折叠功能，展开后显示PI号、币种、创建时间、备注
+  - invalidateQueries 刷新
+
+### Feature 3: 新建订单表单 ✅
+- **新增文件**: `src/components/crm/views/order-form-dialog.tsx`
+- **触发方式**: 订单列表"新建订单"按钮
+- **表单字段**:
+  - 客户（可搜索，Command + Popover）
+  - 关联报价（可搜索，选择后自动填充金额和客户ID）
+  - 订单金额（手动输入，报价可自动填充）
+  - PI号（可选，留空自动生成）
+  - 付款条款（6种：100%预付/30%+70%发货前/30%+70%见提单/50%+50%/即期信用证/D/P30天）
+  - 交货日期
+  - 备注
+- **提交**: POST `/api/orders`，成功后刷新订单列表
+- **集成**: 在 `page.tsx` 中添加 OrderFormDialog 组件
+
+## 验证结果
+- ✅ Lint 通过，0 错误
+- ✅ Prisma schema 推送成功（新增 trackingNo、shippingMethod 字段）
+- ✅ Dev server 编译正常
+
+## 未解决问题或风险
+
+### 低优先级
+1. **DevTools Console Warning**: Sheet组件在开发环境中可能显示Console Warning（不影响功能）
+2. **报价API缺少customerId筛选**: 当前 `/api/quotations` 未支持 customerId 查询参数，订单表单中的报价筛选可能无法按客户过滤
+
+---
+Task ID: 5
+Agent: Enhancement Agent
+Task: 工作台增强、数据分析增强、询盘跟进记录、CSS增强、客户报价Tab
+
+## 修改内容
+
+### Task 1: 工作台增强 (workbench-view.tsx) ✅
+- **快速操作区域**: 在今日概览卡片后添加了4个快速操作按钮，每个按钮为独立Card组件：
+  - 新建客户 (UserPlus icon, emerald色)
+  - 新建询盘 (FileText icon, teal色)
+  - 新建报价 (Calculator icon, amber色)
+  - AI分析 (Sparkles icon, rose色)
+  - 每个按钮带hover缩放效果(Framer Motion whileHover scale)
+  - 点击触发对应的store action
+- **待办事项卡片**: 底部布局从2列改为3列，新增待办事项卡片：
+  - 通过 `/api/inquiries?status=new` 和 `?status=following` 获取待跟进询盘
+  - 按优先级排序（urgent > high > normal > low）
+  - 每项显示: 询盘主题（截断）、客户名称、优先级徽章
+  - 点击打开询盘详情(selectInquiry)
+  - 顶部Badge显示总待办数量
+- **3列布局**: 底部区域改为 grid-cols-3（询盘分布、待办事项、最近动态）
+- **Card Glow**: 今日概览卡片添加 crm-card-glow 暗色模式发光效果
+
+### Task 2: 数据分析增强 (analytics-view.tsx) ✅
+- **KPI概览行**: 4个带渐变左边框的KPI卡片：
+  - 客户总数 (+3 vs 上月, hardcoded)
+  - 询盘转化率 (+2.1%)
+  - 平均订单金额 (-5.2%)
+  - 回款率 (+1.8%)
+  - 每个卡片带 pattern overlay 和 kpi-border 渐变边框
+- **月度趋势切换**: 在趋势图上方添加切换按钮组(询盘/报价/订单)
+  - 3种模式各有独立数据数组和颜色配置
+  - 使用React state (trendMode) 切换数据源
+  - 按钮选中状态为emerald-600背景
+- **客户地区分布水平柱状图**: 
+  - 通过 `/api/customers` 获取客户列表，按国家映射到地区
+  - 7个地区分组（亚洲、欧洲、北美、南美、非洲、大洋洲、中东）
+  - 每个地区有独立颜色编码
+  - 图例显示客户数和百分比
+- **销售业绩排行表**: 
+  - 5行数据表格（排名、姓名、询盘数、成交额、转化率）
+  - 前3名有特殊样式：金/银/铜色圆头像 + Trophy/Medal图标
+  - 转化率颜色编码（≥40%绿/≥30%橙/<30%红）
+  - 按成交额降序排列
+
+### Task 3: 询盘跟进记录增强 (inquiry-detail-drawer.tsx) ✅
+- **跟进记录时间线**: 将原有简单卡片列表改为完整时间线：
+  - 按时间正序排列（oldest first）
+  - 每条记录有：类型图标（不同颜色）、头像圆圈（创建者首字母）、内容、时间
+  - 类型图标映射：电话=Phone(天蓝)、邮件=Mail(翡翠)、WhatsApp=MessageCircle(teal)、现场拜访=MapPin(琥珀)、其他=FileText
+  - 时间线连接线
+- **添加跟进表单**: 在跟进记录区域底部：
+  - Textarea 输入跟进内容
+  - Select 选择跟进类型（电话/邮件/WhatsApp/现场拜访/其他），带图标选项
+  - 提交按钮 POST `/api/activities`，创建 follow_up 类型活动记录
+  - 提交后自动更新询盘 lastFollowUpAt 时间
+  - 提交后 invalidateQueries 刷新数据和列表
+  - Loading 状态（Loader2 旋转动画）
+- **API**: 创建了 `/api/activities/route.ts` (GET + POST)
+
+### Task 4: CSS增强 (globals.css) ✅
+- **workbench-bg**: 更新为 `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)` 格式
+- **dark .workbench-bg**: 暗色模式版本
+- **crm-card-glow**: 暗色模式卡片发光效果
+  - 默认: `box-shadow: 0 0 0 1px rgba(16,185,129,0.1), 0 4px 12px rgba(0,0,0,0.3)`
+  - hover: `box-shadow: 0 0 0 1px rgba(16,185,129,0.3), 0 8px 24px rgba(0,0,0,0.4)`
+- **crm-table-row**: 添加 position: relative; overflow: hidden; 点击波纹效果
+  - `::after` 伪元素实现 ripple 动画
+  - active 状态下 scale(0) + opacity 1
+- **crm-tooltip**: 自定义提示框样式
+  - 使用 CSS 变量 popover/border
+  - 12px字体，6px圆角，微妙阴影
+
+### Task 5: 客户详情抽屉 报价 Tab (customer-detail-drawer.tsx) ✅
+- **Tab结构调整**: 在询盘和订单之间添加"报价"Tab
+- **数据获取**: 通过 `useQuery` 获取 `/api/quotations?customerId={id}`
+- **表格列**: 报价编号、总金额（右对齐等宽字体）、利润率（带进度条+颜色编码）、状态(StatusBadge)、有效期
+- **利润率颜色编码**: ≥20%翡翠绿/≥10%琥珀色/<10%红色，带h-1.5迷你进度条
+- **行点击**: crm-table-row 样式，点击调用 selectQuotation 打开报价详情抽屉
+- **TabsList**: flex-wrap 适配6个Tab
+
+## 新增文件
+- `src/app/api/activities/route.ts` - 活动/跟进记录 CRUD API
+
+## 验证结果
+- ✅ ESLint 通过，0 错误
+- ✅ 所有UI文本使用中文
+- ✅ 未使用蓝色/紫色（AI分析使用rose色）
+- ✅ 使用emerald/teal作为主色调
+- ✅ 使用shadcn/ui组件（Card, Badge, Button, Tabs, Select, Textarea, Table等）
+- ✅ 响应式设计
+
+
+---
+Task ID: QA-4
+Agent: Main Orchestrator
+Task: 第4轮自动化QA + Bug修复 + 大规模功能增强 + 样式细化
+
+## 项目当前状态描述/判断
+
+### 系统状态: 🟢 稳定运行
+- Dev server 编译正常，HTTP 200
+- ESLint 0 错误
+- 数据库 11 个模型正常运行
+- 15 个客户（含2个CRUD测试创建）、7个样品、9个付款记录
+
+### 浏览器QA验证结果
+- ✅ 角色选择页面: 5个角色卡片，动画正常
+- ✅ 登录流程: 点击角色→API认证→工作台加载，全过程<3秒
+- ✅ 工作台: 欢迎消息+今日概览+快速操作(4按钮)+待办事项+风险预警+销售漏斗+回款率+图表+Top客户
+- ✅ 客户列表: 17条记录(含CRUD测试创建)，国旗emoji+中文标签+级别筛选+搜索
+- ✅ 客户详情抽屉: 6个Tab(概览/联系人/询盘/报价/订单/备注)全部正常切换
+- ✅ 新建客户CRUD: 表单→提交→列表刷新→新数据出现在第2页 ✅
+- ✅ 询盘列表: 状态/优先级/来源3种筛选器+数据正常
+- ✅ 报价列表: 利润率+颜色编码+11条数据
+- ✅ 样品管理: 正确使用/api/samples API，7条真实样品数据
+- ✅ 收款管理: 独立API，汇总卡片(总/已付/待付/逾期)+"新建付款"按钮
+- ✅ 合同订单: "新建订单"按钮+状态进度点
+- ✅ 数据分析(管理层): KPI概览+趋势切换+地区分布+销售排行
+- ✅ AI助手: 抽屉正常打开，显示标题和消息输入框
+- ⚠️ AI聊天: 未完成实际LLM交互测试(需真实API Key)
+
+### 本轮完成内容
+
+## Bug修复 (2项)
+1. **客户名称去重前缀匹配** ✅ - customer-list-view.tsx 增加前缀检查
+2. **样品列表使用订单数据** ✅ - 全新 /api/samples API + 重写视图
+
+## 新增API (3个)
+1. `/api/samples` (GET+POST) - 样品CRUD
+2. `/api/payments` (GET+POST) - 独立付款管理
+3. `/api/activities` (GET+POST) - 活动/跟进记录
+
+## 新增功能 (10项)
+1. **工作台快速操作** - 4个图标按钮(新建客户/询盘/报价/AI分析)
+2. **待办事项卡片** - 按优先级排序的待跟进询盘列表
+3. **数据分析KPI行** - 4个KPI卡片(客户总数/转化率/平均订单/回款率)
+4. **月度趋势切换** - 询盘/报价/订单三种数据源切换
+5. **客户地区分布图** - 7区域水平柱状图
+6. **销售业绩排行** - 5人排行表+金银铜特殊样式
+7. **订单详情3Tab** - 订单信息/物流追踪(时间线)/备注
+8. **新建样品Dialog** - 客户搜索+名称+数量+快递方式+单号
+9. **新建付款Dialog** - 订单搜索+金额+付款方式+到期日
+10. **新建订单Dialog** - 客户+报价关联自动填充+PI号+付款条款
+
+## 增强功能 (5项)
+1. **询盘跟进时间线** - 类型图标+头像+连接线+添加跟进表单
+2. **客户详情报价Tab** - 利润率颜色编码+进度条+点击打开详情
+3. **收款行展开** - 展开显示PI号/币种/创建时间/备注
+4. **CSS增强** - workbench网格背景+暗色卡片发光+表格行波纹+tooltip样式
+5. **订单物流追踪** - 6阶段纵向时间线+快递单号编辑+贸易条款选择
+
+## 未解决问题或风险
+
+### 中优先级
+1. **报价API customerId筛选**: 客户详情报价Tab需要 `/api/quotations?customerId=xxx`，需确认API已支持
+2. **AI助手实际交互**: LLM API已对接但未完成真实对话测试
+3. **种子数据清理**: 测试创建的客户(含"--timeout"文字)需要清理
+
+### 低优先级
+1. **DevTools Badge遮挡**: Next.js DevTools徽章偶尔遮挡侧边栏按钮(仅开发环境)
+2. **角色工作台差异化**: 销售vs管理层vs财务的工作台内容需要更多差异化
+
+### 建议下一阶段优先事项
+1. **P1**: AI助手上下文感知增强(自动带入当前客户/询盘信息)
+2. **P1**: 数据导出功能(客户列表Excel导出)
+3. **P2**: 通知系统(WebSocket实时通知)
+4. **P2**: 角色工作台差异化内容
+5. **P2**: 种子数据优化(清理测试数据、丰富更多样化的客户)
+6. **P3**: 社媒运营模块
+7. **P3**: 权限中心(用户管理、角色配置)
+8. **P3**: 多语言支持(英语/中文切换)

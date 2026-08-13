@@ -44,7 +44,7 @@ export function CustomerListView() {
       render: (item: Record<string, unknown>) => {
         const name = item.companyName as string
         const nameEn = item.companyNameEn as string
-        const showEn = nameEn && nameEn !== name
+        const showEn = nameEn && nameEn !== name && !nameEn.startsWith(name + ' ') && !name.startsWith(nameEn + ' ')
         return (
           <div>
             <p className="font-medium">{showEn ? name : name}</p>

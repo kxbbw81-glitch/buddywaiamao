@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 const COUNTRY_FLAGS: Record<string, string> = {
   '美国': '🇺🇸', '德国': '🇩🇪', '阿联酋': '🇦🇪', '日本': '🇯🇵', '尼日利亚': '🇳🇬',
@@ -35,7 +36,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
 }
 
 export function CustomerDetailDrawer() {
-  const { selectedCustomerId, selectCustomer, openCustomerForm, openInquiryForm, openQuotationForm, currentUser } = useCRMStore()
+  const { selectedCustomerId, selectCustomer, selectQuotation, openCustomerForm, openInquiryForm, openQuotationForm, currentUser } = useCRMStore()
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -44,7 +45,14 @@ export function CustomerDetailDrawer() {
     enabled: !!selectedCustomerId,
   })
 
+  const { data: quotationsData } = useQuery({
+    queryKey: ['customer-quotations', selectedCustomerId],
+    queryFn: () => fetch(`/api/quotations?customerId=${selectedCustomerId}&pageSize=50`).then((r) => r.json()),
+    enabled: !!selectedCustomerId,
+  })
+
   const customer = data?.data
+  const quotations = quotationsData?.data || []
 
   const open = !!selectedCustomerId
   const flag = COUNTRY_FLAGS[customer?.country || ''] || '🌍'
@@ -62,6 +70,10 @@ export function CustomerDetailDrawer() {
 
   const handleCreateQuotation = () => {
     openQuotationForm()
+  }
+
+  const handleQuotationClick = (quotationId: string) => {
+    selectQuotation(quotationId)
   }
 
   return (
@@ -117,10 +129,11 @@ export function CustomerDetailDrawer() {
             <Separator />
 
             <Tabs defaultValue="overview" className="px-6">
-              <TabsList className="w-full justify-start">
+              <TabsList className="w-full justify-start flex-wrap">
                 <TabsTrigger value="overview" className="text-xs">概览</TabsTrigger>
                 <TabsTrigger value="contacts" className="text-xs">联系人</TabsTrigger>
                 <TabsTrigger value="inquiries" className="text-xs">询盘</TabsTrigger>
+                <TabsTrigger value="quotations" className="text-xs">报价</TabsTrigger>
                 <TabsTrigger value="orders" className="text-xs">订单</TabsTrigger>
                 <TabsTrigger value="notes" className="text-xs">备注</TabsTrigger>
               </TabsList>
@@ -218,6 +231,62 @@ export function CustomerDetailDrawer() {
                     </Table>
                   </div>
                 ) : <p className="text-sm text-muted-foreground py-8 text-center">暂无询盘</p>}
+              </TabsContent>
+
+              {/* 报价 Tab */}
+              <TabsContent value="quotations" className="mt-4 pb-6">
+                {quotations.length > 0 ? (
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">报价编号</TableHead>
+                          <TableHead className="text-xs text-right">总金额</TableHead>
+                          <TableHead className="text-xs text-right">利润率</TableHead>
+                          <TableHead className="text-xs">状态</TableHead>
+                          <TableHead className="text-xs">有效期</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {quotations.map((q: Record<string, unknown>) => {
+                          const profitRate = q.profitRate as number
+                          return (
+                            <TableRow
+                              key={q.id as string}
+                              className="cursor-pointer crm-table-row"
+                              onClick={() => handleQuotationClick(q.id as string)}
+                            >
+                              <TableCell className="text-xs font-mono font-medium">{q.quoteNo as string}</TableCell>
+                              <TableCell className="text-xs text-right crm-number font-medium">{formatCurrency(q.totalAmount as number)}</TableCell>
+                              <TableCell className="text-xs text-right crm-number">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <div className="h-1.5 w-8 rounded-full overflow-hidden bg-muted">
+                                    <div
+                                      className={cn(
+                                        'h-full rounded-full',
+                                        profitRate >= 20 ? 'bg-emerald-500' : profitRate >= 10 ? 'bg-amber-500' : 'bg-red-500'
+                                      )}
+                                      style={{ width: `${Math.min(Math.max(profitRate, 0), 50) * 2}%` }}
+                                    />
+                                  </div>
+                                  <span className={cn(
+                                    profitRate >= 20 ? 'text-emerald-600 font-medium' : profitRate >= 10 ? 'text-amber-600' : 'text-red-600 font-bold'
+                                  )}>
+                                    {profitRate.toFixed(1)}%
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell><StatusBadge status={q.status as string} type="quotation" /></TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {q.validUntil ? format(new Date(q.validUntil as string), 'yyyy-MM-dd', { locale: zhCN }) : '-'}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : <p className="text-sm text-muted-foreground py-8 text-center">暂无报价记录</p>}
               </TabsContent>
 
               <TabsContent value="orders" className="mt-4 pb-6">
