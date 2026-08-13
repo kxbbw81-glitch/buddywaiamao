@@ -13,14 +13,19 @@ export async function GET(
         customer: { select: { id: true, companyName: true, companyNameEn: true, country: true, customerLevel: true } },
         assignee: { select: { id: true, name: true, email: true } },
         quotations: { include: { items: true, creator: { select: { name: true } } }, orderBy: { createdAt: 'desc' } },
-        activities: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 },
         samples: { orderBy: { createdAt: 'desc' } },
       },
     })
     if (!inquiry) {
       return NextResponse.json({ success: false, error: '询盘不存在' }, { status: 404 })
     }
-    return NextResponse.json({ success: true, data: inquiry })
+    const activities = await db.activity.findMany({
+      where: { entityType: 'inquiry', entityId: id },
+      include: { user: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    })
+    return NextResponse.json({ success: true, data: { ...inquiry, activities } })
   } catch (error) {
     console.error('Inquiry GET error:', error)
     return NextResponse.json({ success: false, error: '获取询盘详情失败' }, { status: 500 })

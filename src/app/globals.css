@@ -550,3 +550,149 @@
  white-space: nowrap;
 }
 
+/* ============ Dark Mode Enhancements ============ */
+
+/* Card subtle border glow in dark mode */
+.dark .border {
+  border-color: oklch(1 0 0 / 8%);
+}
+
+.dark .rounded-lg.border,
+.dark [class*="rounded-lg"].border {
+  border-color: oklch(1 0 0 / 12%);
+}
+
+.dark .card,
+.dark [class*="Card"] {
+  border-color: oklch(1 0 0 / 10%);
+}
+
+/* Table row dark mode hover */
+.dark .crm-table-row:hover {
+  background-color: oklch(0.22 0.005 155);
+}
+
+.dark .crm-table-row-odd {
+  background-color: oklch(0.195 0 0);
+}
+
+/* Input/Select dark mode */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: oklch(0.22 0 0);
+  border-color: oklch(1 0 0 / 12%);
+  color: oklch(0.985 0 0);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: oklch(0.556 0 0);
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: oklch(0.696 0.17 162.48);
+  box-shadow: 0 0 0 2px oklch(0.696 0.17 162.48 / 15%);
+}
+
+/* Risk alerts dark mode */
+.dark .bg-rose-50,
+.dark .bg-red-50 {
+  background-color: oklch(0.269 0.015 25);
+}
+
+.dark .bg-amber-50,
+.dark .bg-yellow-50 {
+  background-color: oklch(0.269 0.015 85);
+}
+
+.dark .text-rose-700,
+.dark .text-red-700 {
+  color: oklch(0.704 0.191 22.216);
+}
+
+.dark .text-amber-700,
+.dark .text-yellow-700 {
+  color: oklch(0.769 0.188 70.08);
+}
+
+/* Muted backgrounds in dark mode cards */
+.dark .bg-muted {
+  background-color: oklch(0.22 0 0);
+}
+
+/* Sheet and Dialog dark mode */
+.dark [role="dialog"],
+.dark .sheet {
+  background-color: oklch(0.185 0 0);
+}
+
+/* Popover dark mode */
+.dark [data-radix-popper-content-wrapper] {
+  background-color: oklch(0.22 0 0);
+  border-color: oklch(1 0 0 / 12%);
+}
+
+/* ============ CRM Utility Classes ============ */
+
+/* A-level customer glow */
+.crm-glow-emerald {
+  box-shadow: 0 0 12px 2px oklch(0.696 0.17 162.48 / 0.25), 0 0 4px 0px oklch(0.696 0.17 162.48 / 0.15);
+}
+.dark .crm-glow-emerald {
+  box-shadow: 0 0 16px 4px oklch(0.696 0.17 162.48 / 0.2), 0 0 6px 0px oklch(0.696 0.17 162.48 / 0.1);
+}
+
+/* Emerald-tinted focus rings for inputs */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid oklch(0.696 0.17 162.48 / 0.5);
+  outline-offset: 1px;
+}
+
+/* Card hover lift effect */
+.crm-card-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.crm-card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -2px oklch(0 0 0 / 0.1), 0 2px 6px -2px oklch(0 0 0 / 0.06);
+}
+.dark .crm-card-lift:hover {
+  box-shadow: 0 4px 12px -2px oklch(0 0 0 / 0.3), 0 2px 6px -2px oklch(0 0 0 / 0.2);
+}
+
+/* Mini stat number */
+.crm-stat-mini {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+/* Activity timeline dot */
+.crm-timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+/* Smooth tab content transition */
+.crm-tab-content {
+  animation: tabFadeIn 0.2s ease-out;
+}
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

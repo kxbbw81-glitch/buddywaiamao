@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Check, ChevronsUpDown } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
+import { formatCurrency } from '@/lib/utils'
 import type { TradeTerm } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
@@ -15,6 +18,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface ItemRow {
   productName: string
@@ -25,27 +30,54 @@ interface ItemRow {
   cost: number
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value)
+const DEFAULT_FORM = {
+  customerId: '',
+  tradeTerm: 'FOB' as TradeTerm,
+  currency: 'USD',
+  exchangeRate: 7.24,
+  validUntil: '',
+  notes: '',
 }
 
+const DEFAULT_ITEM: ItemRow = { productName: '', productSpec: '', quantity: 1, unit: 'PCS', unitPrice: 0, cost: 0 }
+
 export function QuotationFormDialog() {
-  const { quotationFormOpen, closeQuotationForm } = useCRMStore()
+  const { quotationFormOpen, closeQuotationForm, currentUser, selectedCustomerId } = useCRMStore()
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({
-    customerId: '',
-    tradeTerm: 'FOB' as TradeTerm,
-    currency: 'USD',
-    exchangeRate: 7.24,
-    validUntil: '',
-    notes: '',
+  const [form, setForm] = useState(DEFAULT_FORM)
+  const [items, setItems] = useState<ItemRow[]>([{ ...DEFAULT_ITEM }])
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [customerOpen, setCustomerOpen] = useState(false)
+
+  const { data: customersData } = useQuery({
+    queryKey: ['customers-select-q', customerSearch],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (customerSearch) params.set('search', customerSearch)
+      params.set('page', '1')
+      params.set('pageSize', '20')
+      return fetch(`/api/customers?${params}`).then((r) => r.json())
+    },
+    enabled: quotationFormOpen,
   })
-  const [items, setItems] = useState<ItemRow[]>([
-    { productName: '', productSpec: '', quantity: 1, unit: 'PCS', unitPrice: 0, cost: 0 },
-  ])
+
+  const customers = customersData?.data || []
+  const selectedCustomer = customers.find((c: Record<string, unknown>) => c.id === form.customerId)
+
+  useEffect(() => {
+    if (!quotationFormOpen) {
+      setForm(DEFAULT_FORM)
+      setItems([{ ...DEFAULT_ITEM }])
+      return
+    }
+    if (selectedCustomerId) {
+      setForm((f) => ({ ...f, customerId: selectedCustomerId }))
+    }
+  }, [quotationFormOpen, selectedCustomerId])
 
   const addItem = () => {
-    setItems([...items, { productName: '', productSpec: '', quantity: 1, unit: 'PCS', unitPrice: 0, cost: 0 }])
+    setItems([...items, { ...DEFAULT_ITEM }])
   }
 
   const removeItem = (index: number) => {
@@ -76,12 +108,13 @@ export function QuotationFormDialog() {
       const res = await fetch('/api/quotations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, items, createdById: useCRMStore.getState().currentUser?.id }),
+        body: JSON.stringify({ ...form, items, createdById: currentUser?.id }),
       })
       const data = await res.json()
       if (data.success) {
         toast.success('报价已创建')
         closeQuotationForm()
+        queryClient.invalidateQueries({ queryKey: ['quotations'] })
       } else {
         toast.error(data.error || '创建失败')
       }
@@ -99,6 +132,54 @@ export function QuotationFormDialog() {
           <DialogTitle>新建报价</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">客户 *</Label>
+            <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={customerOpen}
+                  className="w-full justify-between h-9 text-sm"
+                >
+                  {selectedCustomer
+                    ? `${selectedCustomer.companyName as string}${selectedCustomer.country ? ` (${selectedCustomer.country as string})` : ''}`
+                    : '搜索并选择客户...'}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="搜索公司名称..." value={customerSearch} onValueChange={setCustomerSearch} />
+                  <CommandList className="max-h-64">
+                    <CommandEmpty>未找到客户</CommandEmpty>
+                    <CommandGroup>
+                      {customers.map((customer: Record<string, unknown>) => (
+                        <CommandItem
+                          key={customer.id as string}
+                          value={customer.companyName as string}
+                          onSelect={() => {
+                            setForm({ ...form, customerId: customer.id as string })
+                            setCustomerOpen(false)
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              form.customerId === customer.id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <span className="text-sm">{customer.companyName as string}</span>
+                          <span className="ml-1 text-xs text-muted-foreground">{customer.country as string}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">贸易条款</Label>

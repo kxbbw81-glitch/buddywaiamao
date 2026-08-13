@@ -15,13 +15,19 @@ export async function GET(
         inquiries: { include: { assignee: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 },
         quotations: { include: { creator: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 20 },
         orders: { orderBy: { createdAt: 'desc' }, take: 20 },
-        activities: { include: { user: { select: { name: true } } }, orderBy: { createdAt: 'desc' }, take: 30 },
+        samples: { orderBy: { createdAt: 'desc' }, take: 20 },
       },
     })
     if (!customer) {
       return NextResponse.json({ success: false, error: '客户不存在' }, { status: 404 })
     }
-    return NextResponse.json({ success: true, data: customer })
+    const activities = await db.activity.findMany({
+      where: { entityType: 'customer', entityId: id },
+      include: { user: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    })
+    return NextResponse.json({ success: true, data: { ...customer, activities } })
   } catch (error) {
     console.error('Customer GET error:', error)
     return NextResponse.json({ success: false, error: '获取客户详情失败' }, { status: 500 })

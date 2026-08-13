@@ -171,6 +171,42 @@ export function WorkbenchView() {
         </ScrollArea>
       )}
 
+      {/* 今日概览 */}
+      <motion.div
+        className="grid grid-cols-3 gap-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.12 }}
+      >
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
+          <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+            <ArrowUpRight className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">今日新增询盘</p>
+            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.todayInquiries || 0)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
+          <div className="p-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+            <Clock className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">待跟进</p>
+            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.pendingFollow || 0)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
+          <div className="p-1.5 rounded-md bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+            <FileText className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">即将到期报价</p>
+            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.expiringQuotesCount || 0)}</p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Quick Stats Row */}
       <motion.div
         className="grid grid-cols-2 sm:grid-cols-4 gap-3"

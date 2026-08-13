@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       include: {
         customer: { select: { id: true, companyName: true, country: true, customerLevel: true } },
         assignee: { select: { id: true, name: true } },
-        _count: { select: { quotations: true, activities: true, samples: true } },
+        _count: { select: { quotations: true, samples: true } },
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,

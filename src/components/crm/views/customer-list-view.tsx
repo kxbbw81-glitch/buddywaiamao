@@ -41,12 +41,17 @@ export function CustomerListView() {
       key: 'companyName',
       header: '公司名称',
       sortable: true,
-      render: (item: Record<string, unknown>) => (
-        <div>
-          <p className="font-medium">{item.companyName as string}</p>
-          {item.companyNameEn && <p className="text-xs text-muted-foreground">{item.companyNameEn as string}</p>}
-        </div>
-      ),
+      render: (item: Record<string, unknown>) => {
+        const name = item.companyName as string
+        const nameEn = item.companyNameEn as string
+        const showEn = nameEn && nameEn !== name
+        return (
+          <div>
+            <p className="font-medium">{showEn ? name : name}</p>
+            {showEn && <p className="text-xs text-muted-foreground">{nameEn}</p>}
+          </div>
+        )
+      },
     },
     {
       key: 'country',

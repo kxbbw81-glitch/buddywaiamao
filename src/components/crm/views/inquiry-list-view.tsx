@@ -141,6 +141,21 @@ export function InquiryListView() {
             <SelectItem value="low">低</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={filters.source || 'all'} onValueChange={(v) => setFilters({ source: v === 'all' ? undefined : v })}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="来源" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部来源</SelectItem>
+            <SelectItem value="email">邮件</SelectItem>
+            <SelectItem value="website">官网</SelectItem>
+            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+            <SelectItem value="exhibition">展会</SelectItem>
+            <SelectItem value="b2b_alibaba">B2B平台</SelectItem>
+            <SelectItem value="linkedin">LinkedIn</SelectItem>
+            <SelectItem value="social_media">社交媒体</SelectItem>
+            <SelectItem value="manual">手动录入</SelectItem>
+            <SelectItem value="referral">客户介绍</SelectItem>
+          </SelectContent>
+        </Select>
         <Button size="sm" onClick={() => openInquiryForm()} className="ml-auto">
           <Plus className="h-4 w-4 mr-1" /> 新建询盘
         </Button>

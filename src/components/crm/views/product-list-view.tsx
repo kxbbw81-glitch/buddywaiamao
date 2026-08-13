@@ -1,28 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Grid3X3, List } from 'lucide-react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Plus, Grid3X3, List, Package } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
 import { DataTable } from '@/components/crm/data-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value)
-}
+import { formatCurrency, cn } from '@/lib/utils'
 
 export function ProductListView() {
   const { searchQuery, filters, setFilters, openProductForm } = useCRMStore()
-  const queryClient = useQueryClient()
-  
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
 
-  
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
 
   const { data, isLoading } = useQuery({
     queryKey: ['products', searchQuery, filters],
@@ -42,7 +35,7 @@ export function ProductListView() {
 
   const tableColumns = [
     { key: 'productCode', header: '产品编号', sortable: true, render: (item: Record<string, unknown>) => <span className="font-mono text-xs">{item.productCode as string}</span> },
-    { key: 'name', header: '产品名称', render: (item: Record<string, unknown>) => <div><p className="text-sm font-medium">{item.name as string}</p>{item.nameEn && <p className="text-xs text-muted-foreground">{item.nameEn as string}</p>}</div> },
+    { key: 'name', header: '产品名称', render: (item: Record<string, unknown>) => <div><p className="text-sm font-medium">{item.name as string}</p>{item.nameEn && item.nameEn !== item.name ? <p className="text-xs text-muted-foreground">{item.nameEn as string}</p> : null}</div> },
     { key: 'category', header: '分类', render: (item: Record<string, unknown>) => <Badge variant="outline" className="text-xs">{item.category as string || '-'}</Badge> },
     { key: 'costPrice', header: '成本价', render: (item: Record<string, unknown>) => <span className="text-xs crm-number">{formatCurrency(item.costPrice as number)}</span> },
     { key: 'standardPrice', header: '标准价', render: (item: Record<string, unknown>) => <span className="text-sm font-medium crm-number">{formatCurrency(item.standardPrice as number)}</span> },
@@ -64,8 +57,24 @@ export function ProductListView() {
           </SelectContent>
         </Select>
         <div className="flex items-center border rounded-md">
-          <Button size="sm" variant={viewMode === 'table' ? 'secondary' : 'ghost'} className="h-8 px-2.5" onClick={() => setViewMode('table')}><List className="h-3.5 w-3.5" /></Button>
-          <Button size="sm" variant={viewMode === 'grid' ? 'secondary' : 'ghost'} className="h-8 px-2.5" onClick={() => setViewMode('grid')}><Grid3X3 className="h-3.5 w-3.5" /></Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+            className="h-8 px-2.5"
+            onClick={() => setViewMode('table')}
+            aria-label="列表视图"
+          >
+            <List className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            className="h-8 px-2.5"
+            onClick={() => setViewMode('grid')}
+            aria-label="网格视图"
+          >
+            <Grid3X3 className="h-3.5 w-3.5" />
+          </Button>
         </div>
         <Button size="sm" onClick={() => openProductForm()} className="ml-auto">
           <Plus className="h-4 w-4 mr-1" /> 新建产品
@@ -76,21 +85,46 @@ export function ProductListView() {
         <DataTable columns={tableColumns} data={products} isLoading={isLoading && products.length === 0} emptyMessage="暂无产品数据" searchValue="" onSearchChange={() => {}} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {products.map((product: Record<string, unknown>) => (
-            <Card key={product.id as string} className="crm-card-hover overflow-hidden">
-              <div className="h-32 bg-muted flex items-center justify-center">
-                <span className="text-4xl opacity-20">📦</span>
-              </div>
-              <CardContent className="p-4">
-                <h3 className="font-medium text-sm mb-1">{product.name as string}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{product.productCode as string} · {product.category as string}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-bold text-emerald-600 crm-number">{formatCurrency(product.standardPrice as number)}</span>
-                  <Badge variant="outline" className="text-[10px]">{product.unit as string}</Badge>
+          {products.map((product: Record<string, unknown>) => {
+            const cost = product.costPrice as number
+            const standard = product.standardPrice as number
+            const margin = standard > 0 ? ((standard - cost) / standard * 100) : 0
+            return (
+              <Card key={product.id as string} className="crm-card-lift overflow-hidden">
+                <div className="h-36 bg-muted flex items-center justify-center relative">
+                  <Package className="h-14 w-14 text-muted-foreground/15" />
+                  <Badge variant="outline" className="absolute top-2 right-2 text-[10px]">
+                    {product.category as string || '未分类'}
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <CardContent className="p-4 space-y-3">
+                  <div>
+                    <h3 className="font-bold text-sm leading-tight">{product.name as string}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5 font-mono">{product.productCode as string}</p>
+                  </div>
+                  <div className="flex items-end justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] text-muted-foreground">成本价</p>
+                      <p className="text-xs crm-number">{formatCurrency(cost)}</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] text-muted-foreground">标准价</p>
+                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 crm-number">{formatCurrency(standard)}</p>
+                    </div>
+                    <div className="space-y-0.5 text-right">
+                      <p className="text-[11px] text-muted-foreground">利润率</p>
+                      <p className={cn(
+                        'text-sm font-bold crm-number',
+                        margin >= 20 ? 'text-emerald-600 dark:text-emerald-400' : margin >= 10 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
+                      )}>
+                        {margin.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
           {!isLoading && products.length === 0 && (
             <div className="col-span-full text-center py-16 text-muted-foreground">暂无产品数据</div>
           )}

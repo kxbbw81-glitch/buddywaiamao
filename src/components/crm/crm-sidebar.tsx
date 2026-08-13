@@ -51,7 +51,7 @@ const navItems: Array<{ key: ModuleKey; label: string; icon: React.ElementType; 
   { key: 'customers', label: '客户档案', icon: Users },
   { key: 'products', label: '产品资料库', icon: Package },
   { key: 'quotations', label: '报价管理', icon: FileText, badgeQuery: 'quotations' },
-  { key: 'samples', label: '样品管理', icon: FlaskConical, roles: ['super_admin', 'management', 'sales_manager', 'sales'] },
+  { key: 'samples', label: '样品管理', icon: FlaskConical, roles: ['super_admin', 'management', 'sales_manager', 'sales'], badgeQuery: 'samples' },
   { key: 'orders', label: '合同订单', icon: ShoppingCart },
   { key: 'payments', label: '收款管理', icon: DollarSign },
   { key: 'analytics', label: '数据分析', icon: BarChart3, roles: ['super_admin', 'management', 'sales_manager'] },
@@ -194,9 +194,12 @@ export function CRMSidebar() {
 
 // Badge count component for sidebar items
 function SidebarBadgeCount({ query }: { query: string }) {
+  const isSpecial = query === 'samples'
   const { data } = useQuery({
     queryKey: ['sidebar-badge', query],
-    queryFn: () => fetch(`/api/${query}?pageSize=1`).then((r) => r.json()),
+    queryFn: isSpecial
+      ? () => fetch('/api/dashboard').then((r) => r.json()).then((d) => ({ total: d.data?.kpis?.pendingSamples || 0 }))
+      : () => fetch(`/api/${query}?pageSize=1`).then((r) => r.json()),
     staleTime: 60000,
   })
   const count = data?.total || 0

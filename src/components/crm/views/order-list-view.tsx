@@ -10,9 +10,47 @@ import { StatusBadge } from '@/components/crm/status-badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value)
+const ORDER_STAGES = ['pending', 'confirmed', 'in_production', 'ready', 'shipped', 'completed'] as const
+const ORDER_STAGE_LABELS: Record<string, string> = {
+  pending: '待确认', confirmed: '已确认', in_production: '生产中', ready: '待发货', shipped: '已发货', completed: '已完成',
+}
+
+function OrderStatusStepper({ status }: { status: string }) {
+  if (status === 'cancelled') {
+    return (
+      <div className="flex items-center gap-1.5" aria-label="已取消">
+        <div className="flex items-center justify-center w-4 h-4 rounded-full bg-red-100 dark:bg-red-900/50">
+          <span className="text-[10px] text-red-600 dark:text-red-400 font-bold leading-none">×</span>
+        </div>
+        <span className="text-xs text-red-600 dark:text-red-400 font-medium">已取消</span>
+      </div>
+    )
+  }
+  const currentIdx = ORDER_STAGES.indexOf(status as typeof ORDER_STAGES[number])
+  return (
+    <div className="flex items-center gap-0.5" aria-label={ORDER_STAGE_LABELS[status] || status}>
+      {ORDER_STAGES.map((stage, i) => {
+        const isPast = i < currentIdx
+        const isCurrent = i === currentIdx
+        const isFuture = i > currentIdx
+        return (
+          <div
+            key={stage}
+            className={cn(
+              'w-2 h-2 rounded-full transition-colors',
+              isCurrent && 'bg-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-800',
+              isPast && 'bg-gray-400 dark:bg-gray-500',
+              isFuture && 'bg-gray-200 dark:bg-gray-700',
+            )}
+            title={ORDER_STAGE_LABELS[stage]}
+          />
+        )
+      })}
+    </div>
+  )
 }
 
 export function OrderListView() {
@@ -78,7 +116,10 @@ export function OrderListView() {
       key: 'status',
       header: '状态',
       render: (item: Record<string, unknown>) => (
-        <StatusBadge status={item.status as string} type="order" />
+        <div className="flex flex-col gap-1">
+          <OrderStatusStepper status={item.status as string} />
+          <StatusBadge status={item.status as string} type="order" />
+        </div>
       ),
     },
     {

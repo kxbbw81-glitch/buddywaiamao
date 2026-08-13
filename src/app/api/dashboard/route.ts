@@ -92,6 +92,17 @@ export async function GET() {
     const sampleCount = await db.sample.count()
     const pendingSamples = await db.sample.count({ where: { status: { in: ['pending', 'approved', 'sent', 'in_transit', 'testing'] } } })
 
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayInquiries = await db.inquiry.count({ where: { createdAt: { gte: todayStart } } })
+    const pendingFollow = await db.inquiry.count({ where: { status: { in: ['assigned', 'following'] } } })
+    const expiringQuotesCount = await db.quotation.count({
+      where: {
+        status: 'sent',
+        validUntil: { lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), gt: new Date() },
+      },
+    })
+
     return NextResponse.json({
       success: true,
       data: {
@@ -108,6 +119,9 @@ export async function GET() {
           lostInquiries,
           sampleCount,
           pendingSamples,
+          todayInquiries,
+          pendingFollow,
+          expiringQuotesCount,
         },
         riskAlerts: [
           ...overduePayments.map((p) => {

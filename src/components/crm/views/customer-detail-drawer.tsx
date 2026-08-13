@@ -1,16 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import {
   Globe, MapPin, Building2, ExternalLink, Edit, ShoppingCart,
-  Phone, Mail, UserCircle, Star, ChevronRight,
+  Phone, Mail, UserCircle, Star, ChevronRight, FileText, Plus,
 } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
 import { StatusBadge } from '@/components/crm/status-badge'
 import { DetailSkeleton } from '@/components/crm/loading-skeleton'
+import { INQUIRY_SOURCE_LABELS } from '@/lib/types'
+import { formatCurrency } from '@/lib/utils'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet'
@@ -32,15 +34,9 @@ const COUNTRY_FLAGS: Record<string, string> = {
   '巴西': '🇧🇷', '澳大利亚': '🇦🇺', '韩国': '🇰🇷', '中国': '🇨🇳',
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value)
-}
-
 export function CustomerDetailDrawer() {
-  const { selectedCustomerId, selectCustomer } = useCRMStore()
-  
-
-  
+  const { selectedCustomerId, selectCustomer, openCustomerForm, openInquiryForm, openQuotationForm, currentUser } = useCRMStore()
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['customer', selectedCustomerId],
@@ -53,6 +49,21 @@ export function CustomerDetailDrawer() {
   const open = !!selectedCustomerId
   const flag = COUNTRY_FLAGS[customer?.country || ''] || '🌍'
 
+  const totalRevenue = (customer?.orders || []).reduce((sum: number, o: Record<string, unknown>) => sum + (o.totalAmount as number || 0), 0)
+
+  const handleEdit = () => {
+    if (!customer) return
+    openCustomerForm(customer.id)
+  }
+
+  const handleCreateInquiry = () => {
+    openInquiryForm()
+  }
+
+  const handleCreateQuotation = () => {
+    openQuotationForm()
+  }
+
   return (
     <Sheet open={open} onOpenChange={(v) => !v && selectCustomer(null)}>
       <SheetContent className="w-full sm:max-w-xl p-0">
@@ -63,15 +74,15 @@ export function CustomerDetailDrawer() {
             <SheetHeader className="p-6 pb-4">
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <SheetTitle className="text-lg flex items-center gap-2">
                       {flag} {customer.companyName}
                     </SheetTitle>
-                    {customer.companyNameEn && (
+                    {customer.companyNameEn && customer.companyNameEn !== customer.companyName && (
                       <p className="text-sm text-muted-foreground">{customer.companyNameEn}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
                     <StatusBadge status={customer.customerLevel} type="customer_level" />
                     <StatusBadge status={customer.status} type="customer" />
                   </div>
@@ -84,10 +95,21 @@ export function CustomerDetailDrawer() {
                     <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{customer.industry}</span>
                   )}
                   {customer.website && (
-                    <a href={customer.website.startsWith('http') ? customer.website : `https://${customer.website}`} target="_blank" rel="noopener" className="flex items-center gap-1 text-sky-600 hover:underline">
+                    <a href={customer.website.startsWith('http') ? customer.website : `https://${customer.website}`} target="_blank" rel="noopener" className="flex items-center gap-1 text-emerald-600 hover:underline">
                       <Globe className="h-3.5 w-3.5" />官网
                     </a>
                   )}
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleEdit}>
+                    <Edit className="h-3 w-3 mr-1" />编辑
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleCreateInquiry}>
+                    <Plus className="h-3 w-3 mr-1" />创建询盘
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleCreateQuotation}>
+                    <FileText className="h-3 w-3 mr-1" />创建报价
+                  </Button>
                 </div>
               </div>
             </SheetHeader>
@@ -104,17 +126,18 @@ export function CustomerDetailDrawer() {
               </TabsList>
 
               <TabsContent value="overview" className="mt-4 pb-6 space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   <Card className="p-3"><p className="text-xs text-muted-foreground">询盘总数</p><p className="text-lg font-bold crm-number">{customer.inquiries?.length || 0}</p></Card>
                   <Card className="p-3"><p className="text-xs text-muted-foreground">报价总数</p><p className="text-lg font-bold crm-number">{customer.quotations?.length || 0}</p></Card>
                   <Card className="p-3"><p className="text-xs text-muted-foreground">订单总数</p><p className="text-lg font-bold crm-number">{customer.orders?.length || 0}</p></Card>
                   <Card className="p-3"><p className="text-xs text-muted-foreground">联系人</p><p className="text-lg font-bold crm-number">{customer.contacts?.length || 0}</p></Card>
+                  <Card className="p-3"><p className="text-xs text-muted-foreground">订单总额</p><p className="text-lg font-bold crm-number text-emerald-600">{formatCurrency(totalRevenue)}</p></Card>
                 </div>
 
                 <Card className="p-4">
                   <h4 className="text-sm font-medium mb-2">公司信息</h4>
                   <div className="space-y-1.5 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">客户来源</span><span>{customer.source}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">客户来源</span><span>{INQUIRY_SOURCE_LABELS[customer.source as keyof typeof INQUIRY_SOURCE_LABELS] || customer.source}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">负责人</span><span>{customer.owner?.name || '未分配'}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">AI评分</span><span className="font-medium text-emerald-600">{customer.aiScore}/100</span></div>
                     {customer.lastContactAt && (
@@ -122,6 +145,21 @@ export function CustomerDetailDrawer() {
                     )}
                   </div>
                 </Card>
+
+                {(customer.activities && customer.activities.length > 0) && (
+                  <Card className="p-4">
+                    <h4 className="text-sm font-medium mb-2">最近动态</h4>
+                    <div className="space-y-2">
+                      {customer.activities.slice(0, 5).map((act: Record<string, unknown>) => (
+                        <div key={act.id as string} className="flex items-start gap-2 text-xs">
+                          <span className="text-muted-foreground shrink-0">{format(new Date(act.createdAt as string), 'MM-dd HH:mm')}</span>
+                          <span className="font-medium">{(act.user as Record<string, unknown>)?.name || '系统'}</span>
+                          <span className="text-muted-foreground">{act.subject as string || act.type as string}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
 
                 {customer.notes && (
                   <Card className="p-4">

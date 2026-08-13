@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useCRMStore } from '@/store/use-crm-store'
 import {
@@ -10,24 +11,34 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { formatCurrency } from '@/lib/utils'
+
+const DEFAULT_FORM = {
+  productCode: '',
+  name: '',
+  nameEn: '',
+  category: '',
+  specification: '',
+  unit: 'PCS',
+  costPrice: 0,
+  standardPrice: 0,
+  minPrice: 0,
+  description: '',
+  keywords: '',
+  imageUrl: '',
+}
 
 export function ProductFormDialog() {
   const { productFormOpen, closeProductForm } = useCRMStore()
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({
-    productCode: '',
-    name: '',
-    nameEn: '',
-    category: '',
-    specification: '',
-    unit: 'PCS',
-    costPrice: 0,
-    standardPrice: 0,
-    minPrice: 0,
-    description: '',
-    keywords: '',
-    imageUrl: '',
-  })
+  const [form, setForm] = useState(DEFAULT_FORM)
+
+  useEffect(() => {
+    if (!productFormOpen) {
+      setForm(DEFAULT_FORM)
+    }
+  }, [productFormOpen])
 
   const handleSubmit = async () => {
     if (!form.productCode.trim() || !form.name.trim()) {
@@ -36,15 +47,17 @@ export function ProductFormDialog() {
     }
     setLoading(true)
     try {
+      const keywordsJson = form.keywords ? JSON.stringify(form.keywords.split(/[,，]/).map((k) => k.trim()).filter(Boolean)) : '[]'
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, keywords: keywordsJson }),
       })
       const data = await res.json()
       if (data.success) {
         toast.success('产品已创建')
         closeProductForm()
+        queryClient.invalidateQueries({ queryKey: ['products'] })
       } else {
         toast.error(data.error || '创建失败')
       }

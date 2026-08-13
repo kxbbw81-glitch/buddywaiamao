@@ -12,10 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value)
-}
+import { cn } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 
 export function QuotationListView() {
   const { searchQuery, filters, setFilters, openQuotationForm, selectQuotation } = useCRMStore()
@@ -74,8 +72,27 @@ export function QuotationListView() {
       header: '利润率',
       render: (item: Record<string, unknown>) => {
         const rate = item.profitRate as number
-        const color = rate >= 20 ? 'text-emerald-600' : rate >= 10 ? 'text-amber-600' : 'text-rose-600'
-        return <span className={`text-sm font-medium crm-number ${color}`}>{rate.toFixed(1)}%</span>
+        const barWidth = Math.min(Math.max(rate, 0), 50) / 50 * 100
+        const colorClass = rate >= 20
+          ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+          : rate >= 10
+            ? 'text-amber-600 dark:text-amber-400'
+            : rate > 0
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-red-500 font-bold'
+        const barColor = rate >= 20
+          ? 'bg-emerald-500'
+          : rate >= 10
+            ? 'bg-amber-500'
+            : 'bg-red-500'
+        return (
+          <div className="flex items-center gap-2">
+            <span className={cn('text-sm crm-number', colorClass)}>{rate.toFixed(1)}%</span>
+            <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className={cn('h-full rounded-full', barColor)} style={{ width: `${barWidth}%` }} />
+            </div>
+          </div>
+        )
       },
     },
     {

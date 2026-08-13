@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Trash2 } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
@@ -26,24 +27,67 @@ interface ContactRow {
   isDecisionMaker: boolean
 }
 
+const DEFAULT_FORM = {
+  companyName: '',
+  companyNameEn: '',
+  country: '',
+  city: '',
+  website: '',
+  industry: '',
+  customerLevel: 'C' as CustomerLevel,
+  source: 'manual',
+  tags: '',
+  notes: '',
+}
+
 export function CustomerFormDialog() {
-  const { customerFormOpen, closeCustomerForm, customerEditId } = useCRMStore()
+  const { customerFormOpen, closeCustomerForm, customerEditId, currentUser } = useCRMStore()
+  const queryClient = useQueryClient()
   const isEdit = !!customerEditId
 
-  const [form, setForm] = useState({
-    companyName: '',
-    companyNameEn: '',
-    country: '',
-    city: '',
-    website: '',
-    industry: '',
-    customerLevel: 'C' as CustomerLevel,
-    source: 'manual',
-    tags: '',
-    notes: '',
-  })
+  const [form, setForm] = useState(DEFAULT_FORM)
   const [contacts, setContacts] = useState<ContactRow[]>([])
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!customerFormOpen) {
+      setForm(DEFAULT_FORM)
+      setContacts([])
+      return
+    }
+    if (customerEditId) {
+      fetch(`/api/customers/${customerEditId}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            const c = data.data
+            setForm({
+              companyName: c.companyName || '',
+              companyNameEn: c.companyNameEn || '',
+              country: c.country || '',
+              city: c.city || '',
+              website: c.website || '',
+              industry: c.industry || '',
+              customerLevel: c.customerLevel || 'C',
+              source: c.source || 'manual',
+              tags: Array.isArray(JSON.parse(c.tags || '[]')) ? (JSON.parse(c.tags || '[]') as string[]).join(', ') : c.tags || '',
+              notes: c.notes || '',
+            })
+            if (c.contacts?.length > 0) {
+              setContacts(c.contacts.map((ct: Record<string, unknown>) => ({
+                name: ct.name as string || '',
+                email: ct.email as string || '',
+                phone: ct.phone as string || '',
+                whatsapp: ct.whatsapp as string || '',
+                position: ct.position as string || '',
+                isDecisionMaker: ct.isDecisionMaker as boolean || false,
+              })))
+            }
+          }
+        })
+        .catch(() => toast.error('加载客户数据失败'))
+    }
+  }, [customerFormOpen, customerEditId])
 
   const handleSubmit = async () => {
     if (!form.companyName.trim()) {
@@ -54,17 +98,20 @@ export function CustomerFormDialog() {
     try {
       const url = customerEditId ? `/api/customers/${customerEditId}` : '/api/customers'
       const method = customerEditId ? 'PUT' : 'POST'
+      const tagsJson = form.tags ? JSON.stringify(form.tags.split(/[,，]/).map((t) => t.trim()).filter(Boolean)) : '[]'
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, contacts }),
+        body: JSON.stringify({ ...form, tags: tagsJson, contacts, ownerId: currentUser?.id }),
       })
       const data = await res.json()
       if (data.success) {
         toast.success(isEdit ? '客户已更新' : '客户已创建')
         closeCustomerForm()
-        setForm({ companyName: '', companyNameEn: '', country: '', city: '', website: '', industry: '', customerLevel: 'C', source: 'manual', tags: '', notes: '' })
-        setContacts([])
+        queryClient.invalidateQueries({ queryKey: ['customers'] })
+        if (customerEditId) {
+          queryClient.invalidateQueries({ queryKey: ['customer', customerEditId] })
+        }
       } else {
         toast.error(data.error || '操作失败')
       }
@@ -143,7 +190,7 @@ export function CustomerFormDialog() {
                   <SelectItem value="email">邮件</SelectItem>
                   <SelectItem value="social_media">社交媒体</SelectItem>
                   <SelectItem value="linkedin">LinkedIn</SelectItem>
-                  <SelectItem value="referral">转介绍</SelectItem>
+                  <SelectItem value="referral">客户介绍</SelectItem>
                   <SelectItem value="website">官网</SelectItem>
                   <SelectItem value="whatsapp">WhatsApp</SelectItem>
                   <SelectItem value="manual">手动录入</SelectItem>
