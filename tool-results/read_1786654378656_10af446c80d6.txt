@@ -1,0 +1,995 @@
+   100→   149→   149→- AI翻译内容展示
+   101→   150→   150→- 状态更新后自动刷新数据和列表
+   102→   151→   151→
+   103→   152→   152→### Enhancement 5: 新建产品表单完全可用 ✅
+   104→   153→   153→- 成功后刷新产品列表查询
+   105→   154→   154→- 关键词字段正确处理为 JSON 数组
+   106→   155→   155→- 表单关闭时自动重置
+   107→   156→   156→
+   108→   157→   157→### Enhancement 6: 暗色模式优化 ✅
+   109→   158→   158→- 卡片边框微弱发光效果
+   110→   159→   159→- 表格行暗色模式悬停背景色优化
+   111→   160→   160→- 输入框/选择框/文本域暗色模式样式
+   112→   161→   161→- 风险预警（rose/amber背景和文字）暗色模式适配
+   113→   162→   162→- Sheet和Dialog背景色优化
+   114→   163→   163→- Popover暗色模式边框优化
+   115→   164→   164→
+   116→   165→   165→### Enhancement 7: 客户详情抽屉添加操作按钮 ✅
+   117→   166→   166→- 顶部添加三个操作按钮: 编辑、创建询盘、创建报价
+   118→   167→   167→- 编辑按钮打开预填充的表单对话框
+   119→   168→   168→- 概览Tab增加第5个KPI卡片: 订单总额
+   120→   169→   169→- 新增「最近动态」卡片显示活动时间线
+   121→   170→   170→- 英文名也做去重处理
+   122→   171→   171→- 官网链接颜色改为 emerald（避免蓝色）
+   123→   172→   172→
+   124→   173→   173→### Enhancement 8: 产品网格/列表视图切换优化 ✅
+   125→   174→   174→- 网格视图增强: 显示分类Badge、利润率百分比和颜色编码
+   126→   175→   175→- 使用 Package 图标替代 emoji 占位
+   127→   176→   176→- 表格视图英文名也做去重处理
+   128→   177→   177→- 添加 aria-label 无障碍标签
+   129→   178→   178→
+   130→   179→   179→## 验证结果
+   131→   180→   180→- ✅ Lint 通过，0 错误
+   132→   181→   181→- ✅ `/api/customers/[id]` 返回 200，包含 activities 和 samples
+   133→   182→   182→- ✅ `/api/inquiries/[id]` 返回 200，包含 activities 和 quotations
+   134→   183→   183→- ✅ `/api/inquiries` 列表返回 200
+   135→   184→   184→
+   136→   185→   185→---
+   137→   186→   186→Task ID: 3
+   138→   187→   187→Agent: Enhancement Agent
+   139→   188→   188→Task: 10项功能增强 - 无障碍修复、筛选器、进度条、设置增强等
+   140→   189→   189→
+   141→   190→   190→## 修改内容
+   142→   191→   191→
+   143→   192→   192→### TASK 1: 客户名称无障碍修复 ✅
+   144→   193→   193→- **文件**: `src/components/crm/views/customer-list-view.tsx`
+   145→   194→   194→- **修改**: 当 `companyName === companyNameEn` 时，div 中只渲染一个段落，不出现重复文本
+   146→   195→   195→- **效果**: 屏幕阅读器不再读出重复的公司名称
+   147→   196→   196→
+   148→   197→   197→### TASK 2: 询盘列表添加来源筛选器 ✅
+   149→   198→   198→- **文件**: `src/components/crm/views/inquiry-list-view.tsx`
+   150→   199→   199→- **修改**: 在优先级筛选器和新建按钮之间添加了来源下拉筛选
+   151→   200→   200→- **选项**: 全部来源、邮件、官网、WhatsApp、展会、B2B平台、LinkedIn、社交媒体、手动录入、客户介绍
+   152→   201→   201→- **连接**: 使用 `filters.source` 连接 store，API 调用已包含 `source` 参数
+   153→   202→   202→
+   154→   203→   203→### TASK 3: 报价列表利润率颜色编码增强 ✅
+   155→   204→   204→- **文件**: `src/components/crm/views/quotation-list-view.tsx`
+   156→   205→   205→- **修改**: 
+   157→   206→   206→  - 利润率 >= 20%: `text-emerald-600 font-medium` + 绿色条
+   158→   207→   207→  - 10-20%: `text-amber-600` + 橙色条
+   159→   208→   208→  - 0-10%: `text-red-600` + 红色条
+   160→   209→   209→  - <= 0%: `text-red-500 font-bold` + 红色条
+   161→   210→   210→  - 每个利润率数字旁添加小进度条指示器
+   162→   211→   211→  - 使用 `formatCurrency` from `@/lib/utils`
+   163→   212→   212→
+   164→   213→   213→### TASK 4: 订单状态进度条 ✅
+   165→   214→   214→- **文件**: `src/components/crm/views/order-list-view.tsx`
+   166→   215→   215→- **修改**: 
+   167→   216→   216→  - 新增 `OrderStatusStepper` 组件，在状态列显示6阶段进度点
+   168→   217→   217→  - 阶段: 待确认→已确认→生产中→待发货→已发货→已完成
+   169→   218→   218→  - 当前阶段: 翡翠绿填充 + ring
+   170→   219→   219→  - 已过阶段: 灰色填充
+   171→   220→   220→  - 未来阶段: 空心灰色
+   172→   221→   221→  - 已取消: 红色 × 标记
+   173→   222→   222→  - 同时保留原有 StatusBadge
+   174→   223→   223→
+   175→   224→   224→### TASK 5: 设置页面增强 ✅
+   176→   225→   225→- **文件**: `src/components/crm/views/settings-view.tsx`
+   177→   226→   226→- **新增内容**:
+   178→   227→   227→  - 顶部渐变色横幅 + 圆形头像(首字母)的个人资料卡片
+   179→   228→   228→  - 角色Badge + 部门信息
+   180→   229→   229→  - 通知偏好设置: 询盘通知、报价审批、订单状态变更、付款提醒 (Switch 开关)
+   181→   230→   230→  - 显示设置: 默认每页条数(10/20/50 Select)、紧凑表格模式、深色模式、语言
+   182→   231→   231→  - 关于系统: NexFab AI CRM v1.0.0 + 技术栈信息
+   183→   232→   232→
+   184→   233→   233→### TASK 6: 工作台今日概览 ✅
+   185→   234→   234→- **文件**: `src/components/crm/views/workbench-view.tsx`, `src/app/api/dashboard/route.ts`
+   186→   235→   235→- **修改**:
+   187→   236→   236→  - Dashboard API 新增3个统计: `todayInquiries`(今日新增询盘), `pendingFollow`(待跟进), `expiringQuotesCount`(即将到期报价)
+   188→   237→   237→  - 工作台欢迎语和KPI卡片之间插入「今日概览」三卡片行
+   189→   238→   238→  - 使用 `crm-stat-mini` 样式类、`formatNumber` 格式化
+   190→   239→   239→
+   191→   240→   240→### TASK 7: 收款列表逾期高亮 ✅
+   192→   241→   241→- **文件**: `src/components/crm/views/payment-list-view.tsx`
+   193→   242→   242→- **新增内容**:
+   194→   243→   243→  - 顶部4卡片汇总行: 总金额、已付款(绿)、待付款(橙)、逾期(红，含笔数)
+   195→   244→   244→  - 逾期行: 红色左边框 + `bg-red-50/50 dark:bg-red-950/20` 背景
+   196→   245→   245→  - 到期日旁显示逾期天数
+   197→   246→   246→  - 使用 `differenceInDays` 计算逾期天数
+   198→   247→   247→  - 使用 `formatCurrency`, `formatNumber` from `@/lib/utils`
+   199→   248→   248→
+   200→   249→   249→### TASK 8: CSS 工具类增强 ✅
+   201→   250→   250→- **文件**: `src/app/globals.css`
+   202→   251→   251→- **新增类**:
+   203→   252→   252→  - `.crm-glow-emerald`: A级客户卡片翡翠绿发光效果
+   204→   253→   253→  - 翡翠色调输入框 focus ring
+   205→   254→   254→  - `.crm-card-lift`: 卡片悬停上浮+阴影效果
+   206→   255→   255→  - `.crm-stat-mini`: 小型统计数字样式
+   207→   256→   256→  - `.crm-timeline-dot`: 活动时间线圆点
+   208→   257→   257→  - `.crm-tab-content`: Tab 切换淡入动画
+   209→   258→   258→
+   210→   259→   259→### TASK 9: 侧边栏样品计数徽章 ✅
+   211→   260→   260→- **文件**: `src/components/crm/crm-sidebar.tsx`
+   212→   261→   261→- **修改**: 样品模块增加 `badgeQuery: 'samples'`
+   213→   262→   262→- `SidebarBadgeCount` 组件支持特殊路由，对 samples 从 dashboard API 获取 `pendingSamples` 计数
+   214→   263→   263→
+   215→   264→   264→### TASK 10: 产品网格视图增强 ✅
+   216→   265→   265→- **文件**: `src/components/crm/views/product-list-view.tsx`
+   217→   266→   266→- **修改**:
+   218→   267→   267→  - 更大的产品图片占位区(h-36) + 更大的 Package 图标
+   219→   268→   268→  - 产品名称加粗(font-bold)、产品编号等宽字体
+   220→   269→   269→  - 分类 Badge 右上角
+   221→   270→   270→  - 三栏价格信息: 成本价、标准价(翡翠绿)、利润率
+   222→   271→   271→  - 利润率计算改为 (standard-cost)/standard*100
+   223→   272→   272→  - 颜色编码: >=20%翡翠绿, >=10%琥珀色, <10%红色
+   224→   273→   273→  - 使用 `crm-card-lift` 悬停效果
+   225→   274→   274→  - 使用 `formatCurrency` from `@/lib/utils`
+   226→   275→   275→
+   227→   276→   276→## 验证结果
+   228→   277→   277→- ✅ Lint 通过，0 错误
+   229→   278→   278→- ✅ Dev server HTTP 200
+   230→   279→   279→- ✅ 客户详情抽屉: 完整显示(概览/联系人/询盘/订单/备注5个Tab)
+   231→   280→   280→- ✅ 联系人Tab: John Smith(采购总监/决策者), Emily Davis(采购经理)
+   232→   281→   281→- ✅ 订单Tab: ORD-2024-006 $89,000待发货, ORD-2024-001 $1,445,000已发货
+   233→   282→   282→- ✅ 侧边栏徽章: 目标线索21, 报价管理11, 样品管理5
+   234→   283→   283→- ✅ 设置页: 4个通知开关 + 显示设置(每页条数/紧凑模式/深色模式/语言)
+   235→   284→   284→- ✅ 报价列表: 利润率颜色编码 + 进度条指示器
+   236→   285→   285→
+   237→   286→   286→## 未解决问题或风险
+   238→   287→   287→
+   239→   288→   288→### 低优先级
+   240→   289→   289→1. **种子数据中英文名**: 部分客户中文名是英文名的前缀（如"Müller Industrie" vs "Müller Industrie GmbH"），导致列表仍显示近似重复。非代码bug，是种子数据问题
+   241→   290→   290→2. **DevTools Console Warning**: Sheet组件在Next.js DevTools中显示一个Console Error（仅在开发环境出现，不影响功能）
+   242→   291→   291→3. **AI助手端到端测试**: AI聊天API已创建，但实际LLM交互未在浏览器中完整测试
+   243→   292→   292→4. **表单提交端到端测试**: 新建客户/询盘/报价表单已实现，但未在浏览器中做完整的创建→列表刷新验证
+   244→   293→   293→
+   245→   294→   294→### 建议下一阶段优先事项
+   246→   295→   295→1. **P1**: 端到端测试所有CRUD表单（新建客户→验证列表刷新→查看详情）
+   247→   296→   296→2. **P1**: AI助手完整测试和上下文感知增强
+   248→   297→   297→3. **P2**: 角色工作台差异化（销售视角vs管理层视角）
+   249→   298→   298→4. **P2**: 数据导出功能（Excel/PDF）
+   250→   299→   299→5. **P2**: 通知系统
+   251→   300→   300→6. **P3**: 社媒运营模块
+   252→   301→   301→7. **P3**: 权限中心（用户管理、角色配置）
+   253→   302→   302→8. **P3**: 种子数据优化（确保中英文名更有区分度）
+   254→   303→   303→
+   255→   304→   304→---
+   256→   305→   305→Task ID: 4
+   257→   306→   306→Agent: Bug Fix & Feature Enhancement Agent
+   258→   307→   307→Task: 2个Bug修复 + 3项功能增强（样品API、订单抽屉增强、收款列表优化、新建订单表单）
+   259→   308→   308→
+   260→   309→   309→## Bug修复
+   261→   310→   310→
+   262→   311→   311→### Bug 1: 客户名称去重逻辑不完善 ✅
+   263→   312→   312→- **文件**: `src/components/crm/views/customer-list-view.tsx`
+   264→   313→   313→- **问题**: 原逻辑仅在公司中英文名完全相同时隐藏英文名，但未处理前缀关系（如"Müller Industrie" vs "Müller Industrie GmbH"）
+   265→   314→   314→- **修复**: 增加前缀检查条件：`!nameEn.startsWith(name + ' ') && !name.startsWith(nameEn + ' ')`
+   266→   315→   315→- **效果**: "Müller Industrie" vs "Müller Industrie GmbH" 等前缀关系不再重复显示
+   267→   316→   316→
+   268→   317→   317→### Bug 2: 样品列表错误使用订单数据 ✅（关键Bug）
+   269→   318→   318→- **问题**: `sample-list-view.tsx` 从 `/api/orders` 获取数据，将订单号替换ORD→SMP前缀，totalAmount/100作为数量，完全错误
+   270→   319→   319→- **修复**:
+   271→   320→   320→  1. 创建 `/api/samples/route.ts` - 真正的样品API，从Prisma Sample模型查询，include customer、inquiry
+   272→   321→   321→  2. 完全重写 `sample-list-view.tsx`，使用正确API，显示：样品名称（带Package图标）、客户（国旗+公司名）、数量、状态(StatusBadge type="sample")、快递单号、寄出日期、创建时间
+   273→   322→   322→  3. 添加搜索框连接 searchQuery store
+   274→   323→   323→  4. 添加状态筛选器（8种状态）
+   275→   324→   324→  5. 添加"新建样品"按钮，打开Dialog表单
+   276→   325→   325→  6. Dialog包含：可搜索客户选择器、样品名称、数量、快递方式(7种)、快递单号、备注
+   277→   326→   326→
+   278→   327→   327→## 功能增强
+   279→   328→   328→
+   280→   329→   329→### Feature 1: 订单详情抽屉增强 ✅
+   281→   330→   330→- **文件**: `src/components/crm/views/order-detail-drawer.tsx`
+   282→   331→   331→- **Tab系统**: 3个Tab切换 - 订单信息、物流追踪、备注
+   283→   332→   332→- **物流追踪Tab**:
+   284→   333→   333→  - 纵向时间线：6个阶段，每个阶段有独立图标(Clock/ClipboardCheck/Factory/Package/Truck/Check)
+   285→   334→   334→  - 已完成阶段：翡翠绿实心圆点 + 白色Check图标 + "已完成"标签
+   286→   335→   335→  - 当前阶段：翡翠绿实心圆点 + 脉冲动画 + "当前阶段"标签
+   287→   336→   336→  - 未来阶段：灰色空心圆点
+   288→   337→   337→  - 每个阶段显示预计日期（基于订单创建日+估算天数）
+   289→   338→   338→  - 快递单号编辑（点击编辑，保存按钮）
+   290→   339→   339→  - 贸易条款下拉（FOB/CIF/EXW/DDP/DAP）
+   291→   340→   340→- **备注Tab**:
+   292→   341→   341→  - 订单备注（Textarea + 保存按钮）
+   293→   342→   342→  - 内部备注（Textarea，虚线边框）
+   294→   343→   343→  - 订单时间线信息（创建时间、最后更新、预计交货）
+   295→   344→   344→- **状态变更**: 确认toast通知（如"订单状态已更新为「已确认」"）
+   296→   345→   345→- **新增字段**: Order模型新增 trackingNo、shippingMethod 字段
+   297→   346→   346→- **API更新**: `/api/orders/[id]` PUT 支持更新 trackingNo、shippingMethod
+   298→   347→   347→
+   299→   348→   348→### Feature 2: 收款列表增强 ✅
+   300→   349→   349→- **新增API**: `/api/payments/route.ts`
+   301→   350→   350→  - GET: 从Payment模型查询，include order.orderNo、order.customer.companyName，支持 ?status= 筛选
+   302→   351→   351→  - POST: 创建Payment记录
+   303→   352→   352→- **重写 payment-list-view.tsx**:
+   304→   353→   353→  - 使用新的 `/api/payments` API 替代原来的逐个订单获取付款方式
+   305→   354→   354→  - 保留原有4卡片汇总（总金额/已付款/待付款/逾期）
+   306→   355→   355→  - 保留逾期高亮样式
+   307→   356→   356→  - 添加"新建付款"按钮，打开Dialog
+   308→   357→   357→  - Dialog包含：可搜索订单选择器（显示订单号+客户+金额）、金额输入、付款方式(T/T/L/C/D/P/Western Union/PayPal)、到期日、状态选择
+   309→   358→   358→  - 添加行展开/折叠功能，展开后显示PI号、币种、创建时间、备注
+   310→   359→   359→  - invalidateQueries 刷新
+   311→   360→   360→
+   312→   361→   361→### Feature 3: 新建订单表单 ✅
+   313→   362→   362→- **新增文件**: `src/components/crm/views/order-form-dialog.tsx`
+   314→   363→   363→- **触发方式**: 订单列表"新建订单"按钮
+   315→   364→   364→- **表单字段**:
+   316→   365→   365→  - 客户（可搜索，Command + Popover）
+   317→   366→   366→  - 关联报价（可搜索，选择后自动填充金额和客户ID）
+   318→   367→   367→  - 订单金额（手动输入，报价可自动填充）
+   319→   368→   368→  - PI号（可选，留空自动生成）
+   320→   369→   369→  - 付款条款（6种：100%预付/30%+70%发货前/30%+70%见提单/50%+50%/即期信用证/D/P30天）
+   321→   370→   370→  - 交货日期
+   322→   371→   371→  - 备注
+   323→   372→   372→- **提交**: POST `/api/orders`，成功后刷新订单列表
+   324→   373→   373→- **集成**: 在 `page.tsx` 中添加 OrderFormDialog 组件
+   325→   374→   374→
+   326→   375→   375→## 验证结果
+   327→   376→   376→- ✅ Lint 通过，0 错误
+   328→   377→   377→- ✅ Prisma schema 推送成功（新增 trackingNo、shippingMethod 字段）
+   329→   378→   378→- ✅ Dev server 编译正常
+   330→   379→   379→
+   331→   380→   380→## 未解决问题或风险
+   332→   381→   381→
+   333→   382→   382→### 低优先级
+   334→   383→   383→1. **DevTools Console Warning**: Sheet组件在开发环境中可能显示Console Warning（不影响功能）
+   335→   384→   384→2. **报价API缺少customerId筛选**: 当前 `/api/quotations` 未支持 customerId 查询参数，订单表单中的报价筛选可能无法按客户过滤
+   336→   385→   385→
+   337→   386→   386→---
+   338→   387→   387→Task ID: 5
+   339→   388→   388→Agent: Enhancement Agent
+   340→   389→   389→Task: 工作台增强、数据分析增强、询盘跟进记录、CSS增强、客户报价Tab
+   341→   390→   390→
+   342→   391→   391→## 修改内容
+   343→   392→   392→
+   344→   393→   393→### Task 1: 工作台增强 (workbench-view.tsx) ✅
+   345→   394→   394→- **快速操作区域**: 在今日概览卡片后添加了4个快速操作按钮，每个按钮为独立Card组件：
+   346→   395→   395→  - 新建客户 (UserPlus icon, emerald色)
+   347→   396→   396→  - 新建询盘 (FileText icon, teal色)
+   348→   397→   397→  - 新建报价 (Calculator icon, amber色)
+   349→   398→   398→  - AI分析 (Sparkles icon, rose色)
+   350→   399→   399→  - 每个按钮带hover缩放效果(Framer Motion whileHover scale)
+   351→   400→   400→  - 点击触发对应的store action
+   352→   401→   401→- **待办事项卡片**: 底部布局从2列改为3列，新增待办事项卡片：
+   353→   402→   402→  - 通过 `/api/inquiries?status=new` 和 `?status=following` 获取待跟进询盘
+   354→   403→   403→  - 按优先级排序（urgent > high > normal > low）
+   355→   404→   404→  - 每项显示: 询盘主题（截断）、客户名称、优先级徽章
+   356→   405→   405→  - 点击打开询盘详情(selectInquiry)
+   357→   406→   406→  - 顶部Badge显示总待办数量
+   358→   407→   407→- **3列布局**: 底部区域改为 grid-cols-3（询盘分布、待办事项、最近动态）
+   359→   408→   408→- **Card Glow**: 今日概览卡片添加 crm-card-glow 暗色模式发光效果
+   360→   409→   409→
+   361→   410→   410→### Task 2: 数据分析增强 (analytics-view.tsx) ✅
+   362→   411→   411→- **KPI概览行**: 4个带渐变左边框的KPI卡片：
+   363→   412→   412→  - 客户总数 (+3 vs 上月, hardcoded)
+   364→   413→   413→  - 询盘转化率 (+2.1%)
+   365→   414→   414→  - 平均订单金额 (-5.2%)
+   366→   415→   415→  - 回款率 (+1.8%)
+   367→   416→   416→  - 每个卡片带 pattern overlay 和 kpi-border 渐变边框
+   368→   417→   417→- **月度趋势切换**: 在趋势图上方添加切换按钮组(询盘/报价/订单)
+   369→   418→   418→  - 3种模式各有独立数据数组和颜色配置
+   370→   419→   419→  - 使用React state (trendMode) 切换数据源
+   371→   420→   420→  - 按钮选中状态为emerald-600背景
+   372→   421→   421→- **客户地区分布水平柱状图**: 
+   373→   422→   422→  - 通过 `/api/customers` 获取客户列表，按国家映射到地区
+   374→   423→   423→  - 7个地区分组（亚洲、欧洲、北美、南美、非洲、大洋洲、中东）
+   375→   424→   424→  - 每个地区有独立颜色编码
+   376→   425→   425→  - 图例显示客户数和百分比
+   377→   426→   426→- **销售业绩排行表**: 
+   378→   427→   427→  - 5行数据表格（排名、姓名、询盘数、成交额、转化率）
+   379→   428→   428→  - 前3名有特殊样式：金/银/铜色圆头像 + Trophy/Medal图标
+   380→   429→   429→  - 转化率颜色编码（≥40%绿/≥30%橙/<30%红）
+   381→   430→   430→  - 按成交额降序排列
+   382→   431→   431→
+   383→   432→   432→### Task 3: 询盘跟进记录增强 (inquiry-detail-drawer.tsx) ✅
+   384→   433→   433→- **跟进记录时间线**: 将原有简单卡片列表改为完整时间线：
+   385→   434→   434→  - 按时间正序排列（oldest first）
+   386→   435→   435→  - 每条记录有：类型图标（不同颜色）、头像圆圈（创建者首字母）、内容、时间
+   387→   436→   436→  - 类型图标映射：电话=Phone(天蓝)、邮件=Mail(翡翠)、WhatsApp=MessageCircle(teal)、现场拜访=MapPin(琥珀)、其他=FileText
+   388→   437→   437→  - 时间线连接线
+   389→   438→   438→- **添加跟进表单**: 在跟进记录区域底部：
+   390→   439→   439→  - Textarea 输入跟进内容
+   391→   440→   440→  - Select 选择跟进类型（电话/邮件/WhatsApp/现场拜访/其他），带图标选项
+   392→   441→   441→  - 提交按钮 POST `/api/activities`，创建 follow_up 类型活动记录
+   393→   442→   442→  - 提交后自动更新询盘 lastFollowUpAt 时间
+   394→   443→   443→  - 提交后 invalidateQueries 刷新数据和列表
+   395→   444→   444→  - Loading 状态（Loader2 旋转动画）
+   396→   445→   445→- **API**: 创建了 `/api/activities/route.ts` (GET + POST)
+   397→   446→   446→
+   398→   447→   447→### Task 4: CSS增强 (globals.css) ✅
+   399→   448→   448→- **workbench-bg**: 更新为 `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)` 格式
+   400→   449→   449→- **dark .workbench-bg**: 暗色模式版本
+   401→   450→   450→- **crm-card-glow**: 暗色模式卡片发光效果
+   402→   451→   451→  - 默认: `box-shadow: 0 0 0 1px rgba(16,185,129,0.1), 0 4px 12px rgba(0,0,0,0.3)`
+   403→   452→   452→  - hover: `box-shadow: 0 0 0 1px rgba(16,185,129,0.3), 0 8px 24px rgba(0,0,0,0.4)`
+   404→   453→   453→- **crm-table-row**: 添加 position: relative; overflow: hidden; 点击波纹效果
+   405→   454→   454→  - `::after` 伪元素实现 ripple 动画
+   406→   455→   455→  - active 状态下 scale(0) + opacity 1
+   407→   456→   456→- **crm-tooltip**: 自定义提示框样式
+   408→   457→   457→  - 使用 CSS 变量 popover/border
+   409→   458→   458→  - 12px字体，6px圆角，微妙阴影
+   410→   459→   459→
+   411→   460→   460→### Task 5: 客户详情抽屉 报价 Tab (customer-detail-drawer.tsx) ✅
+   412→   461→   461→- **Tab结构调整**: 在询盘和订单之间添加"报价"Tab
+   413→   462→   462→- **数据获取**: 通过 `useQuery` 获取 `/api/quotations?customerId={id}`
+   414→   463→   463→- **表格列**: 报价编号、总金额（右对齐等宽字体）、利润率（带进度条+颜色编码）、状态(StatusBadge)、有效期
+   415→   464→   464→- **利润率颜色编码**: ≥20%翡翠绿/≥10%琥珀色/<10%红色，带h-1.5迷你进度条
+   416→   465→   465→- **行点击**: crm-table-row 样式，点击调用 selectQuotation 打开报价详情抽屉
+   417→   466→   466→- **TabsList**: flex-wrap 适配6个Tab
+   418→   467→   467→
+   419→   468→   468→## 新增文件
+   420→   469→   469→- `src/app/api/activities/route.ts` - 活动/跟进记录 CRUD API
+   421→   470→   470→
+   422→   471→   471→## 验证结果
+   423→   472→   472→- ✅ ESLint 通过，0 错误
+   424→   473→   473→- ✅ 所有UI文本使用中文
+   425→   474→   474→- ✅ 未使用蓝色/紫色（AI分析使用rose色）
+   426→   475→   475→- ✅ 使用emerald/teal作为主色调
+   427→   476→   476→- ✅ 使用shadcn/ui组件（Card, Badge, Button, Tabs, Select, Textarea, Table等）
+   428→   477→   477→- ✅ 响应式设计
+   429→   478→   478→
+   430→   479→   479→
+   431→   480→   480→---
+   432→   481→   481→Task ID: QA-4
+   433→   482→   482→Agent: Main Orchestrator
+   434→   483→   483→Task: 第4轮自动化QA + Bug修复 + 大规模功能增强 + 样式细化
+   435→   484→   484→
+   436→   485→   485→## 项目当前状态描述/判断
+   437→   486→   486→
+   438→   487→   487→### 系统状态: 🟢 稳定运行
+   439→   488→   488→- Dev server 编译正常，HTTP 200
+   440→   489→   489→- ESLint 0 错误
+   441→   490→   490→- 数据库 11 个模型正常运行
+   442→   491→   491→- 15 个客户（含2个CRUD测试创建）、7个样品、9个付款记录
+   443→   492→   492→
+   444→   493→   493→### 浏览器QA验证结果
+   445→   494→   494→- ✅ 角色选择页面: 5个角色卡片，动画正常
+   446→   495→   495→- ✅ 登录流程: 点击角色→API认证→工作台加载，全过程<3秒
+   447→   496→   496→- ✅ 工作台: 欢迎消息+今日概览+快速操作(4按钮)+待办事项+风险预警+销售漏斗+回款率+图表+Top客户
+   448→   497→   497→- ✅ 客户列表: 17条记录(含CRUD测试创建)，国旗emoji+中文标签+级别筛选+搜索
+   449→   498→   498→- ✅ 客户详情抽屉: 6个Tab(概览/联系人/询盘/报价/订单/备注)全部正常切换
+   450→   499→   499→- ✅ 新建客户CRUD: 表单→提交→列表刷新→新数据出现在第2页 ✅
+   451→   500→   500→- ✅ 询盘列表: 状态/优先级/来源3种筛选器+数据正常
+   452→   501→   501→- ✅ 报价列表: 利润率+颜色编码+11条数据
+   453→   502→   502→- ✅ 样品管理: 正确使用/api/samples API，7条真实样品数据
+   454→   503→   503→- ✅ 收款管理: 独立API，汇总卡片(总/已付/待付/逾期)+"新建付款"按钮
+   455→   504→   504→- ✅ 合同订单: "新建订单"按钮+状态进度点
+   456→   505→   505→- ✅ 数据分析(管理层): KPI概览+趋势切换+地区分布+销售排行
+   457→   506→   506→- ✅ AI助手: 抽屉正常打开，显示标题和消息输入框
+   458→   507→   507→- ⚠️ AI聊天: 未完成实际LLM交互测试(需真实API Key)
+   459→   508→   508→
+   460→   509→   509→### 本轮完成内容
+   461→   510→   510→
+   462→   511→   511→## Bug修复 (2项)
+   463→   512→   512→1. **客户名称去重前缀匹配** ✅ - customer-list-view.tsx 增加前缀检查
+   464→   513→   513→2. **样品列表使用订单数据** ✅ - 全新 /api/samples API + 重写视图
+   465→   514→   514→
+   466→   515→   515→## 新增API (3个)
+   467→   516→   516→1. `/api/samples` (GET+POST) - 样品CRUD
+   468→   517→   517→2. `/api/payments` (GET+POST) - 独立付款管理
+   469→   518→   518→3. `/api/activities` (GET+POST) - 活动/跟进记录
+   470→   519→   519→
+   471→   520→   520→## 新增功能 (10项)
+   472→   521→   521→1. **工作台快速操作** - 4个图标按钮(新建客户/询盘/报价/AI分析)
+   473→   522→   522→2. **待办事项卡片** - 按优先级排序的待跟进询盘列表
+   474→   523→   523→3. **数据分析KPI行** - 4个KPI卡片(客户总数/转化率/平均订单/回款率)
+   475→   524→   524→4. **月度趋势切换** - 询盘/报价/订单三种数据源切换
+   476→   525→   525→5. **客户地区分布图** - 7区域水平柱状图
+   477→   526→   526→6. **销售业绩排行** - 5人排行表+金银铜特殊样式
+   478→   527→   527→7. **订单详情3Tab** - 订单信息/物流追踪(时间线)/备注
+   479→   528→   528→8. **新建样品Dialog** - 客户搜索+名称+数量+快递方式+单号
+   480→   529→   529→9. **新建付款Dialog** - 订单搜索+金额+付款方式+到期日
+   481→   530→   530→10. **新建订单Dialog** - 客户+报价关联自动填充+PI号+付款条款
+   482→   531→   531→
+   483→   532→   532→## 增强功能 (5项)
+   484→   533→   533→1. **询盘跟进时间线** - 类型图标+头像+连接线+添加跟进表单
+   485→   534→   534→2. **客户详情报价Tab** - 利润率颜色编码+进度条+点击打开详情
+   486→   535→   535→3. **收款行展开** - 展开显示PI号/币种/创建时间/备注
+   487→   536→   536→4. **CSS增强** - workbench网格背景+暗色卡片发光+表格行波纹+tooltip样式
+   488→   537→   537→5. **订单物流追踪** - 6阶段纵向时间线+快递单号编辑+贸易条款选择
+   489→   538→   538→
+   490→   539→   539→## 未解决问题或风险
+   491→   540→   540→
+   492→   541→   541→### 中优先级
+   493→   542→   542→1. **报价API customerId筛选**: 客户详情报价Tab需要 `/api/quotations?customerId=xxx`，需确认API已支持
+   494→   543→   543→2. **AI助手实际交互**: LLM API已对接但未完成真实对话测试
+   495→   544→   544→3. **种子数据清理**: 测试创建的客户(含"--timeout"文字)需要清理
+   496→   545→   545→
+   497→   546→   546→### 低优先级
+   498→   547→   547→1. **DevTools Badge遮挡**: Next.js DevTools徽章偶尔遮挡侧边栏按钮(仅开发环境)
+   499→   548→   548→2. **角色工作台差异化**: 销售vs管理层vs财务的工作台内容需要更多差异化
+   500→   549→   549→
+   501→   550→   550→### 建议下一阶段优先事项
+   502→   551→   551→1. **P1**: AI助手上下文感知增强(自动带入当前客户/询盘信息)
+   503→   552→   552→2. **P1**: 数据导出功能(客户列表Excel导出)
+   504→   553→   553→3. **P2**: 通知系统(WebSocket实时通知)
+   505→   554→   554→4. **P2**: 角色工作台差异化内容
+   506→   555→   555→5. **P2**: 种子数据优化(清理测试数据、丰富更多样化的客户)
+   507→   556→   556→6. **P3**: 社媒运营模块
+   508→   557→   557→7. **P3**: 权限中心(用户管理、角色配置)
+   509→   558→   558→8. **P3**: 多语言支持(英语/中文切换)
+   510→   559→   559→
+   511→   560→   560→---
+   512→   561→   561→Task ID: 5-a
+   513→   562→   562→Agent: Notification Center Developer
+   514→   563→   563→Task: Notification center dropdown
+   515→   564→   564→
+   516→   565→   565→Work Log:
+   517→   566→   566→- Added `readAt DateTime?` field to Activity model in prisma/schema.prisma
+   518→   567→   567→- Ran `bun run db:push` to sync schema changes to SQLite database
+   519→   568→   568→- Created `/api/notifications/route.ts` with GET and PUT endpoints:
+   520→   569→   569→  - GET: fetches recent activities (limit=10), enriches with entity info (customer name, inquiry subject, quotation/order numbers), returns unread count
+   521→   570→   570→  - PUT: supports `markAll: true` to mark all unread as read, or single `id` to mark specific notification as read
+   522→   571→   571→- Created `notification-dropdown.tsx` as a 'use client' component:
+   523→   572→   572→  - Uses shadcn/ui Popover triggered by Bell button
+   524→   573→   573→  - Header with '通知中心' title and '全部已读' button (CheckCheck icon)
+   525→   574→   574→  - Fetches notifications from `/api/notifications?limit=10` on open
+   526→   575→   575→  - Shows notification items with type-specific icons (Phone/Mail/Info/FileText/ShoppingCart), content text, relative time formatting (刚刚/X分钟前/X小时前/昨天/X天前/X周前/X个月前/X年前), unread dot indicator (left border emerald-500 + green dot)
+   527→   576→   576→  - Empty state with Inbox icon and '暂无通知' text
+   528→   577→   577→  - Loading state with spinner
+   529→   578→   578→  - '查看全部' link at bottom
+   530→   579→   579→  - Dynamic unread count badge on Bell icon (supports 99+ overflow)
+   531→   580→   580→- Updated `crm-header.tsx`: replaced static Bell button with NotificationDropdown component, removed unused Bell import
+   532→   581→   581→
+   533→   582→   582→Stage Summary:
+   534→   583→   583→- ✅ Prisma schema updated with `readAt DateTime?` on Activity model
+   535→   584→   584→- ✅ `/api/notifications` API (GET + PUT) created
+   536→   585→   585→- ✅ NotificationDropdown component fully functional with Popover, type icons, relative time, unread indicators
+   537→   586→   586→- ✅ Integrated into CRM header, replacing static Bell button
+   538→   587→   587→- ✅ ESLint passes with 0 errors
+   539→   588→   588→- ✅ All text in Chinese, uses emerald/teal color scheme
+   540→   589→   589→- ✅ Uses shadcn/ui components: Popover, PopoverTrigger, PopoverContent, Button, ScrollArea, Badge, Separator
+   541→   590→   590→
+   542→   591→   591→---
+   543→   592→   592→Task ID: 5-b
+   544→   593→   593→Agent: Data Export Developer
+   545→   594→   594→Task: 添加CSV数据导出功能到CRM列表视图
+   546→   595→   595→
+   547→   596→   596→## 修改内容
+   548→   597→   597→
+   549→   598→   598→### 1. 创建CSV导出工具函数 ✅
+   550→   599→   599→- **文件**: `src/lib/export-csv.ts`
+   551→   600→   600→- **函数**: `exportToCSV(data, filename, columns)`
+   552→   601→   601→- **功能**:
+   553→   602→   602→  - BOM头 (\uFEFF) 确保Excel正确识别中文编码
+   554→   603→   603→  - RFC 4180标准的CSV字段转义（逗号、双引号、换行符）
+   555→   604→   604→  - 支持嵌套对象取值（点号路径如 `owner.name`）
+   556→   605→   605→  - 智能值格式化（嵌套对象自动提取name/companyName，布尔值转是/否）
+   557→   606→   606→  - 通过 Blob + URL.createObjectURL 触发浏览器下载
+   558→   607→   607→  - 下载后自动清理 URL 对象和临时 DOM 元素
+   559→   608→   608→
+   560→   609→   609→### 2. 客户列表导出 ✅
+   561→   610→   610→- **文件**: `src/components/crm/views/customer-list-view.tsx`
+   562→   611→   611→- **导出列**: 公司名称, 国家, 级别(中文标签), 来源(中文标签), 负责人, 最后联系日期, 询盘数, 状态(活跃/不活跃/流失)
+   563→   612→   612→- **数据转换**: 使用 CUSTOMER_LEVEL_LABELS、INQUIRY_SOURCE_LABELS 映射为中文
+   564→   613→   613→
+   565→   614→   614→### 3. 询盘列表导出 ✅
+   566→   615→   615→- **文件**: `src/components/crm/views/inquiry-list-view.tsx`
+   567→   616→   616→- **导出列**: 询盘编号, 主题, 客户, 来源(中文), 状态(中文), 优先级(中文), 负责人, 创建时间
+   568→   617→   617→- **数据转换**: 使用 INQUIRY_STATUS_LABELS、PRIORITY_LABELS 映射为中文
+   569→   618→   618→
+   570→   619→   619→### 4. 报价列表导出 ✅
+   571→   620→   620→- **文件**: `src/components/crm/views/quotation-list-view.tsx`
+   572→   621→   621→- **导出列**: 报价编号, 客户, 贸易条款, 金额, 利润率(百分比字符串), 状态(中文), 创建日期
+   573→   622→   622→- **数据转换**: 使用 QUOTATION_STATUS_LABELS 映射为中文
+   574→   623→   623→
+   575→   624→   624→### 5. 订单列表导出 ✅
+   576→   625→   625→- **文件**: `src/components/crm/views/order-list-view.tsx`
+   577→   626→   626→- **导出列**: 订单编号, 客户, 金额, 付款条款, 状态(中文), 创建日期
+   578→   627→   627→- **数据转换**: 使用 ORDER_STATUS_LABELS 映射为中文
+   579→   628→   628→
+   580→   629→   629→### 6. 收款列表导出 ✅
+   581→   630→   630→- **文件**: `src/components/crm/views/payment-list-view.tsx`
+   582→   631→   631→- **导出列**: 付款编号, 订单, 客户, 金额, 付款方式, 状态(中文), 到期日
+   583→   632→   632→- **数据转换**: 使用 PAYMENT_STATUS_LABELS 映射为中文，付款编号由ID末4位生成
+   584→   633→   633→
+   585→   634→   634→### UI组件
+   586→   635→   635→- 所有列表视图的导出按钮使用 shadcn/ui DropdownMenu 组件
+   587→   636→   636→- 触发按钮: `Button variant='outline' size='sm'` + Download 图标 + '导出' 文字
+   588→   637→   637→- 菜单项: Download 图标(emerald-600色) + '导出CSV' 文字
+   589→   638→   638→- 导出后使用 sonner toast 显示 '导出成功，共 N 条数据'
+   590→   639→   639→- 空数据时显示 toast.info('暂无数据可导出')
+   591→   640→   640→- 导出按钮位于筛选器和新建按钮之间（ml-auto布局）
+   592→   641→   641→
+   593→   642→   642→## 新增文件
+   594→   643→   643→- `src/lib/export-csv.ts` - CSV导出工具函数
+   595→   644→   644→
+   596→   645→   645→## 验证结果
+   597→   646→   646→- ✅ ESLint 通过，0 错误
+   598→   647→   647→- ✅ 所有文本使用中文
+   599→   648→   648→- ✅ 未使用蓝色/紫色，Download图标使用 emerald-600 色
+   600→   649→   649→- ✅ 使用 shadcn/ui 组件: DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, Button
+   601→   650→   650→- ✅ 使用 sonner toast 通知
+   602→   651→   651→- ✅ 5个列表视图均已添加导出功能
+   603→   652→   652→
+   604→   653→   653→---
+   605→   654→   654→Task ID: 5-c
+   606→   655→   655→Agent: Kanban View Developer
+   607→   656→   656→Task: 客户看板视图 + 视图切换 + 批量更新API
+   608→   657→   657→
+   609→   658→   658→## 新增文件
+   610→   659→   659→
+   611→   660→   660→### 1. `src/components/crm/views/customer-kanban-view.tsx` ✅
+   612→   661→   661→- **'use client'** 组件，导出 `CustomerKanbanView`
+   613→   662→   662→- **4列看板**: A级客户(emerald)、B级客户(amber)、C级客户(sky)、D级客户(rose)
+   614→   663→   663→- **列头设计**: 彩色背景 + 图标(Star/Award/UserCircle/Users) + 级别名称 + 客户数量Badge
+   615→   664→   664→- **客户卡片内容**:
+   616→   665→   665→  - 公司名称(加粗，单行截断)
+   617→   666→   666→  - 国旗emoji + 国家名 (使用 `getCountryFlag`)
+   618→   667→   667→  - 来源中文标签 (使用 `INQUIRY_SOURCE_LABELS`)
+   619→   668→   668→  - 负责人姓名
+   620→   669→   669→  - 询盘数量Badge (Inbox图标)
+   621→   670→   670→  - 最后联系时间(相对时间格式：刚刚/X分钟前/X小时前/X天前/X个月前/X年前)
+   622→   671→   671→  - 点击卡片打开客户详情抽屉 (使用 `selectCustomer`)
+   623→   672→   672→- **数据获取**: `useQuery` 从 `/api/customers` 获取，客户端按 `customerLevel` 分组
+   624→   673→   673→- **响应式**: 桌面端水平滚动4列看板，移动端垂直堆叠(每列内卡片水平滚动)
+   625→   674→   674→- **空状态**: 每列无客户时显示 LayoutGrid 图标 + "暂无X级客户" 文字
+   626→   675→   675→- **动画**: Framer Motion `layoutId` + `AnimatePresence mode="popLayout"` 实现卡片进入/退出/重排动画
+   627→   676→   676→- **无障碍**: `role="button"`, `tabIndex={0}`, `aria-label`, 键盘 Enter/Space 支持
+   628→   677→   677→- **Loading**: 翡翠绿旋转 Spinner
+   629→   678→   678→- **暗色模式**: 卡片hover边框颜色适配 dark 模式
+   630→   679→   679→
+   631→   680→   680→### 2. `src/app/api/customers/bulk-update/route.ts` ✅
+   632→   681→   681→- **PUT** 端点
+   633→   682→   682→- 接受 `{ updates: [{ id: string, customerLevel: string }] }`
+   634→   683→   683→- 校验: updates必须是非空数组，customerLevel必须是A/B/C/D之一
+   635→   684→   684→- 逐条更新(跳过失败的单条)，返回 `{ success: true, data: { successCount } }`
+   636→   685→   685→- 错误处理: 400参数错误, 500服务器错误
+   637→   686→   686→
+   638→   687→   687→## 修改文件
+   639→   688→   688→
+   640→   689→   689→### `src/components/crm/views/customer-list-view.tsx` ✅
+   641→   690→   690→- **新增导入**: `useState`, `LayoutGrid`, `List` (lucide-react), `ToggleGroup/ToggleGroupItem`, `CustomerKanbanView`
+   642→   691→   691→- **移除导入**: `useEffect`, `useQueryClient` (不再需要)
+   643→   692→   692→- **视图切换状态**: `const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')`
+   644→   693→   693→- **ToggleGroup**: 在状态筛选器和导出按钮之间插入，包含两个ToggleGroupItem:
+   645→   694→   694→  - List图标 (列表视图)
+   646→   695→   695→  - LayoutGrid图标 (看板视图)
+   647→   696→   696→  - 选中状态自动高亮
+   648→   697→   697→- **条件渲染**: `viewMode === 'kanban'` 时显示 `CustomerKanbanView`，否则显示原有 `DataTable`
+   649→   698→   698→- **未修改 page.tsx**: 所有切换逻辑在 CustomerListView 内部完成
+   650→   699→   699→
+   651→   700→   700→## 验证结果
+   652→   701→   701→- ✅ ESLint 通过，0 错误
+   653→   702→   702→- ✅ 所有UI文本使用中文
+   654→   703→   703→- ✅ 未使用蓝色/紫色（使用emerald/amber/sky/rose四色体系）
+   655→   704→   704→- ✅ 使用emerald/teal作为主色调
+   656→   705→   705→- ✅ 使用shadcn/ui组件: Badge, ScrollArea, ToggleGroup, ToggleGroupItem, Button, Select
+   657→   706→   706→- ✅ 响应式设计 (桌面水平看板 / 移动端垂直堆叠)
+   658→   707→   707→- ✅ Framer Motion 动画 (layoutId + AnimatePresence)
+   659→   708→   708→- ✅ 相对时间格式化 (date-fns differenceIn*)
+   660→   709→   709→- ✅ 客户卡片点击打开详情抽屉 (selectCustomer)
+   661→   710→   710→
+   662→   711→   711→---
+   663→   712→   712→Task ID: 5-d
+   664→   713→   713→Agent: Search Enhancement Developer
+   665→   714→   714→Task: 全局搜索增强 - 跨模块搜索 + Command对话框
+   666→   715→   715→
+   667→   716→   716→## 新增文件
+   668→   717→   717→
+   669→   718→   718→### 1. `src/app/api/search/route.ts` ✅
+   670→   719→   719→- **GET** 端点，接受 `?q=` 查询参数
+   671→   720→   720→- **跨模块搜索**（每类最多5条结果）：
+   672→   721→   721→  - **客户**: companyName、companyNameEn、country 字段模糊匹配
+   673→   722→   722→  - **询盘**: inquiryNo、subject 字段模糊匹配
+   674→   723→   723→  - **报价**: quoteNo 字段模糊匹配
+   675→   724→   724→  - **订单**: orderNo 字段模糊匹配
+   676→   725→   725→- **返回结构化结果**: `{ customers: [...], inquiries: [...], quotations: [...], orders: [...] }`
+   677→   726→   726→- **每条结果包含**: id, type, text(主文本), subtitle(副文本，如国家·级别、金额·客户名)
+   678→   727→   727→- **错误处理**: 500 错误返回中文提示"搜索失败，请稍后重试"
+   679→   728→   728→- 空查询返回空结果而非错误
+   680→   729→   729→
+   681→   730→   730→### 2. `src/components/crm/global-search-dialog.tsx` ✅
+   682→   731→   731→- **'use client'** 组件，导出 `GlobalSearchDialog`
+   683→   732→   732→- **触发方式**:
+   684→   733→   733→  - 点击Header中的搜索区域（带Search图标 + placeholder + ⌘K快捷键提示）
+   685→   734→   734→  - 键盘快捷键: **Cmd+K**（macOS）/ **Ctrl+K**（Windows）
+   686→   735→   735→- **搜索逻辑**: 输入后 300ms 防抖，fetch `/api/search?q=xxx`
+   687→   736→   736→- **结果分组**（Command Group + Heading）：
+   688→   737→   737→  - 客户（Building2 icon，翡翠绿背景）
+   689→   738→   738→  - 询盘（FileText icon，青色背景）
+   690→   739→   739→  - 报价（Calculator icon，琥珀色背景）
+   691→   740→   740→  - 订单（ShoppingCart icon，玫红色背景）
+   692→   741→   741→- **每个结果项**: 彩色图标容器 + 主文本(font-medium, truncate) + 副文本(text-muted-foreground, truncate)
+   693→   742→   742→- **点击行为**: 调用 useCRMStore 的 setCurrentModule + selectCustomer/selectInquiry/selectQuotation/selectOrder 导航到对应模块并打开详情
+   694→   743→   743→- **空状态**:
+   695→   744→   744→  - 有查询无结果: Search图标 + "没有找到结果" + "请尝试其他关键词"
+   696→   745→   745→  - 无查询: Search图标 + "输入关键词搜索客户、询盘..."
+   697→   746→   746→- **Loading状态**: Loader2旋转动画(emerald-600色) + "搜索中..."
+   698→   747→   747→- **响应式**: 桌面端显示完整搜索区域(w-64)，移动端显示Search图标按钮
+   699→   748→   748→- **暗色模式**: 图标容器暗色模式使用 dark:bg-{color}-950/50 配色
+   700→   749→   749→- **CommandDialog**: max-h-[400px] 结果列表
+   701→   750→   750→
+   702→   751→   751→## 修改文件
+   703→   752→   752→
+   704→   753→   753→### `src/components/crm/crm-header.tsx` ✅
+   705→   754→   754→- **移除**: 原有的 `Search`、`Input` 导入，`searchQuery`、`setSearchQuery` store引用
+   706→   755→   755→- **新增**: `GlobalSearchDialog` 组件导入
+   707→   756→   756→- **替换**: 原 `<div><Search/><Input/></div>` 搜索区域替换为 `<GlobalSearchDialog />`
+   708→   757→   757→- **效果**: 搜索区域从简单输入框升级为Command Palette触发器，保持相似的视觉样式
+   709→   758→   758→
+   710→   759→   759→## 验证结果
+   711→   760→   760→- ✅ ESLint 通过，0 错误
+   712→   761→   761→- ✅ 所有UI文本使用中文
+   713→   762→   762→- ✅ 未使用蓝色/紫色（使用emerald/teal/amber/rose四色体系）
+   714→   763→   763→- ✅ 使用shadcn/ui组件: CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem
+   715→   764→   764→- ✅ 使用emerald/teal作为主色调
+   716→   765→   765→- ✅ 响应式设计（桌面完整搜索栏 + 移动端图标按钮）
+   717→   766→   766→- ✅ 键盘快捷键 Cmd+K / Ctrl+K 支持
+   718→   767→   767→- ✅ 防抖搜索（300ms）
+   719→   768→   768→- ✅ 每类最多5条结果限制
+   720→   769→   769→- ✅ 跨模块导航 + 详情抽屉打开
+   721→   770→   770→
+   722→   771→   771→---
+   723→   772→   772→Task ID: 5-e
+   724→   773→   773→Agent: Main Orchestrator
+   725→   774→   774→Task: AI助手上下文感知增强 + 角色工作台差异化 + CSS样式细化
+   726→   775→   775→
+   727→   776→   776→## 项目当前状态描述/判断
+   728→   777→   777→
+   729→   778→   778→### 系统状态: 🟢 稳定运行
+   730→   779→   779→- Dev server HTTP 200，ESLint 0 错误
+   731→   780→   780→- 数据库12个字段（Activity新增readAt）
+   732→   781→   781→- 所有核心功能正常运行
+   733→   782→   782→
+   734→   783→   783→### 浏览器QA验证结果
+   735→   784→   784→- ✅ 角色选择页面: 5个角色卡片，动画正常
+   736→   785→   785→- ✅ 工作台: 财务快览面板(超级管理员/管理层/财务可见)、角色差异化快速操作
+   737→   786→   786→- ✅ 全局搜索: Command Palette打开正常，输入"Tech"返回3个客户结果（TechVista Solutions/Andes Tech/AfroTech Industries），显示级别·国家
+   738→   787→   787→- ✅ 客户看板: 4列（A/B/C/D）看板视图，客户卡片含国旗/来源/负责人/询盘数/相对时间
+   739→   788→   788→- ✅ 视图切换: ToggleGroup在"列表视图"和"看板视图"间切换
+   740→   789→   789→- ✅ 导出按钮: 所有列表视图显示"导出"DropdownMenu
+   741→   790→   790→- ✅ 通知铃铛: 替换为动态NotificationDropdown，支持展开/全部已读
+   742→   791→   791→- ✅ AI助手: 上下文感知（查看客户/询盘时显示上下文标签）、清空对话按钮、思考动画(三点弹跳)
+   743→   792→   792→- ✅ 暗色模式: 所有新组件适配
+   744→   793→   793→
+   745→   794→   794→## 本轮完成内容
+   746→   795→   795→
+   747→   796→   796→### 新功能 (7项)
+   748→   797→   797→1. **通知中心下拉面板** (Task 5-a) - Popover通知列表、类型图标、相对时间、未读标记、全部已读
+   749→   798→   798→2. **CSV数据导出** (Task 5-b) - 5个列表视图的CSV导出（客户/询盘/报价/订单/收款），中文标签映射
+   750→   799→   799→3. **客户看板视图** (Task 5-c) - 4列看板（A/B/C/D级别）、Framer Motion动画、视图切换Toggle
+   751→   800→   800→4. **全局搜索 Command Palette** (Task 5-d) - Cmd+K快捷键、跨模块搜索（客户/询盘/报价/订单）、分组结果
+   752→   801→   801→5. **AI助手上下文感知增强** - 查看客户/询盘时自动带入上下文、快捷操作按钮根据上下文高亮、清空对话、思考动画
+   753→   802→   802→6. **角色工作台差异化** - 财务角色/管理层角色快速操作不同、财务快览面板(应收总额/逾期金额/待审批报价/回款率)
+   754→   803→   803→7. **客户批量更新API** - /api/customers/bulk-update PUT端点
+   755→   804→   804→
+   756→   805→   805→### 增强功能 (5项)
+   757→   806→   806→1. **AI助手UI重设计** - 圆角气泡消息、渐变头像、时间戳显示、上下文Badge、"已关联上下文"提示
+   758→   807→   807→2. **快速操作按钮扩展** - handleQuickAction支持payments/orders/quotations/analytics模块跳转
+   759→   808→   808→3. **CSS动画增强** - 看板卡片样式、Command Palette样式、通知项样式、AI消息进入动画、思考弹跳点、Shimmer加载效果、导出成功动画、通知脉冲、打印样式、选中颜色
+   760→   809→   809→4. **暗色模式优化** - 看板列头渐变暗色适配、Command Item悬停暗色适配、通知项暗色适配
+   761→   810→   810→
+   762→   811→   811→### 新增/修改文件清单
+   763→   812→   812→- **新增**: `src/components/crm/notification-dropdown.tsx`, `src/components/crm/global-search-dialog.tsx`, `src/components/crm/views/customer-kanban-view.tsx`, `src/lib/export-csv.ts`, `src/app/api/notifications/route.ts`, `src/app/api/search/route.ts`, `src/app/api/customers/bulk-update/route.ts`
+   764→   813→   813→- **修改**: `src/components/crm/crm-header.tsx`, `src/components/crm/views/ai-assistant-drawer.tsx`, `src/components/crm/views/workbench-view.tsx`, `src/components/crm/views/customer-list-view.tsx`, `src/components/crm/views/inquiry-list-view.tsx`, `src/components/crm/views/quotation-list-view.tsx`, `src/components/crm/views/order-list-view.tsx`, `src/components/crm/views/payment-list-view.tsx`, `src/app/globals.css`, `prisma/schema.prisma`
+   765→   814→   814→
+   766→   815→   815→## 未解决问题或风险
+   767→   816→   816→
+   768→   817→   817→### 低优先级
+   769→   818→   818→1. **AI聊天端到端测试**: LLM API已对接但实际对话未在浏览器中完整测试（需真实API交互验证）
+   770→   819→   819→2. **种子数据清理**: 之前测试创建的含"--timeout"文字的客户需要清理
+   771→   820→   820→3. **通知中心"查看全部"**: 当前仅显示按钮，点击后无实际导航目标
+   772→   821→   821→4. **看板视图拖拽**: 当前看板为静态分组展示，无拖拽排序功能
+   773→   822→   822→
+   774→   823→   823→### 建议下一阶段优先事项
+   775→   824→   824→1. **P1**: 通知中心"查看全部"导航到活动记录列表页面
+   776→   825→   825→2. **P1**: 看板视图拖拽排序（客户在级别列之间移动）
+   777→   826→   826→3. **P1**: AI聊天端到端测试 + 流式响应(SSE)
+   778→   827→   827→4. **P2**: 种子数据优化（清理测试数据、增加更多样化客户）
+   779→   828→   828→5. **P2**: 权限中心（用户管理、角色配置）
+   780→   829→   829→6. **P2**: 社媒运营模块
+   781→   830→   830→7. **P3**: 多语言支持（英语/中文切换）
+   782→   831→   831→8. **P3**: 数据看板大屏展示（管理层）
+   783→   832→   832→9. **P3**: 客户地图视图（基于国家的客户分布地图）
+   784→   833→   833→
+   785→   834→   834→---
+   786→   835→   835→Task ID: 6-b
+   787→   836→   836→Agent: User Menu Developer
+   788→   837→   837→Task: 为CRM Header添加用户下拉菜单
+   789→   838→   838→
+   790→   839→   839→## 当前状态描述/判断
+   791→   840→   840→
+   792→   841→   841→CRM Header右侧已有通知下拉、AI助手按钮、主题切换按钮，但缺少用户信息交互区域。需要添加一个完整的用户下拉菜单，替代原来显示用户名和角色徽章的简单按钮（实际上当前header中并无该按钮，需要新增）。
+   793→   842→   842→
+   794→   843→   843→## 已完成的修改
+   795→   844→   844→
+   796→   845→   845→### 1. 新建文件: `src/components/crm/user-menu.tsx`
+   797→   846→   846→- **'use client' 组件**，使用 shadcn/ui DropdownMenu 构建
+   798→   847→   847→- **Trigger 区域**:
+   799→   848→   848→  - 32px 圆形 Avatar，显示用户名首字符作为 fallback（emerald 配色）
+   800→   849→   849→  - 用户名文本（`hidden md:block`，移动端隐藏）
+   801→   850→   850→  - 角色徽章 Badge（variant=secondary，emerald 配色，移动端隐藏）
+   802→   851→   851→  - ChevronDown 箭头图标（移动端隐藏）
+   803→   852→   852→  - 整体使用 `<button>` 而非 Button 组件，以获得更灵活的布局控制
+   804→   853→   853→- **DropdownMenuContent** (w-64):
+   805→   854→   854→  - 用户信息区（DropdownMenuLabel，p-0 自定义布局）:
+   806→   855→   855→    - 40px Avatar（首字符 fallback）
+   807→   856→   856→    - 用户名（font-semibold）
+   808→   857→   857→    - 邮箱（text-muted-foreground）
+   809→   858→   858→    - 角色徽章 + 部门文字
+   810→   859→   859→  - Separator
+   811→   860→   860→  - 「个人设置」菜单项（Settings 图标，emerald focus 样式）→ `setCurrentModule('settings')`
+   812→   861→   861→  - Separator
+   813→   862→   862→  - 「退出登录」菜单项（LogOut 图标，red focus 样式）→ `logout()`
+   814→   863→   863→- 从 `@/lib/types` 导入 `ROLE_LABELS` 和 `UserRole` 类型
+   815→   864→   864→- 从 `@/store/use-crm-store` 导入 `useCRMStore`
+   816→   865→   865→- 所有文本为中文，颜色使用 emerald/teal，无 blue/purple
+   817→   866→   866→- 早期返回 `null` 当 `currentUser` 为空时
+   818→   867→   867→
+   819→   868→   868→### 2. 修改文件: `src/components/crm/crm-header.tsx`
+   820→   869→   869→- 新增 `import { UserMenu } from '@/components/crm/user-menu'`
+   821→   870→   870→- 在 NotificationDropdown 之后添加垂直分隔线 `Separator`
+   822→   871→   871→- 添加 `<UserMenu />` 组件
+   823→   872→   872→- 保留所有原有元素（SidebarTrigger、Breadcrumb、GlobalSearchDialog、AI按钮、主题切换、NotificationDropdown）
+   824→   873→   873→
+   825→   874→   874→## 验证结果
+   826→   875→   875→- ✅ ESLint 通过，无错误无警告
+   827→   876→   876→- ✅ 组件使用 shadcn/ui 标准组件（DropdownMenu, Avatar, Badge, Separator）
+   828→   877→   877→- ✅ 响应式设计：移动端仅显示 Avatar，桌面端显示完整信息
+   829→   878→   878→- ✅ emerald/teal 配色方案一致
+   830→   879→   879→
+   831→   880→   880→---
+   832→   881→   881→Task ID: 6-c
+   833→   882→   882→Agent: Activity List Developer
+   834→   883→   883→Task: 创建活动记录列表页面并连接通知下拉"查看全部"按钮
+   835→   884→   884→
+   836→   885→   885→## 当前状态描述/判断
+   837→   886→   886→
+   838→   887→   887→通知下拉组件中的"查看全部"按钮无功能。需要创建完整的活动记录列表视图，并接入模块系统。
+   839→   888→   888→
+   840→   889→   889→## 已完成的修改
+   841→   890→   890→
+   842→   891→   891→### 1. 创建活动记录列表视图
+   843→   892→   892→- **文件**: `src/components/crm/views/activity-list-view.tsx`
+   844→   893→   893→- 标题: "活动记录"，副标题: "查看所有操作记录和系统动态"
+   845→   894→   894→- 返回按钮导航至工作台
+   846→   895→   895→- 筛选行: 搜索输入框、类型筛选(全部类型/跟进/电话/邮件/会议/备注/系统)、时间范围(全部时间/今天/本周/本月)
+   847→   896→   896→- 数据表格: 类型(icon+label)、内容、关联对象(Badge显示客户/询盘/报价/订单)、操作人、相对时间
+   848→   897→   897→- 类型图标映射: follow_up=Clock, call=Phone, email=Mail, meeting=Users, note=FileText, system=Info
+   849→   898→   898→- 使用 emerald/teal 配色
+   850→   899→   899→- 相对时间格式化辅助函数
+   851→   900→   900→- 使用 useQuery 从 @tanstack/react-query 获取数据
+   852→   901→   901→- 分页: 共 N 条，页码导航
+   853→   902→   902→- 空状态: Clock 图标 + "暂无活动记录"
+   854→   903→   903→- 加载状态: 3行骨架屏(animate-pulse)
+   855→   904→   904→
+   856→   905→   905→### 2. 更新 API 路由
+   857→   906→   906→- **文件**: `src/app/api/activities/route.ts`
+   858→   907→   907→- 新增查询参数支持: search(搜索subject/content)、type(类型过滤)、dateRange(today/week/month)、page、pageSize
+   859→   908→   908→- 返回分页结构: { success, data, total, page, pageSize }
+   860→   909→   909→- 保留原有 POST 和 entityType/entityId 参数兼容
+   861→   910→   910→
+   862→   911→   911→### 3. 连接通知下拉"查看全部"按钮
+   863→   912→   912→- **文件**: `src/components/crm/notification-dropdown.tsx`
+   864→   913→   913→- 导入 useCRMStore，点击"查看全部"时关闭下拉并调用 setCurrentModule('activities')
+   865→   914→   914→
+   866→   915→   915→### 4. 模块系统更新
+   867→   916→   916→- **文件**: `src/lib/types.ts`
+   868→   917→   917→- ModuleKey 类型新增 'activities'
+   869→   918→   918→- MODULE_LABELS 新增 activities: '活动记录'
+   870→   919→   919→- **文件**: `src/app/page.tsx`
+   871→   920→   920→- 导入 ActivityListView，ModuleView switch 新增 case 'activities'
+   872→   921→   921→- 未添加到侧边栏(通过通知下拉访问)
+   873→   922→   922→
+   874→   923→   923→## 验证结果
+   875→   924→   924→- `bun run lint` 通过，零错误
+   876→   925→   925→- 所有文件使用中文文本，emerald/teal 配色方案
+   877→   926→   926→
+   878→   927→   927→---
+   879→   928→   928→Task ID: 6-d
+   880→   929→   929→Agent: Inquiry Kanban Developer
+   881→   930→   930→Task: 创建询盘看板视图并集成到询盘列表视图
+   882→   931→   931→
+   883→   932→   932→## 项目当前状态描述/判断
+   884→   933→   933→
+   885→   934→   934→### 已完成
+   886→   935→   935→- ✅ 询盘看板视图组件已创建完成 (inquiry-kanban-view.tsx)
+   887→   936→   936→- ✅ 询盘列表视图已集成看板/列表切换功能
+   888→   937→   937→- ✅ ESLint lint 检查通过，零错误
+   889→   938→   938→- ✅ TypeScript 编译检查通过（新文件无错误）
+   890→   939→   939→
+   891→   940→   940→### 新增文件
+   892→   941→   941→- `src/components/crm/views/inquiry-kanban-view.tsx` — 询盘看板视图组件
+   893→   942→   942→
+   894→   943→   943→### 修改文件
+   895→   944→   944→- `src/components/crm/views/inquiry-list-view.tsx` — 添加列表/看板视图切换
+   896→   945→   945→
+   897→   946→   946→## 当前目标/已完成的修改/验证结果
+   898→   947→   947→
+   899→   948→   948→### 询盘看板视图 (inquiry-kanban-view.tsx)
+   900→   949→   949→1. **4列看板布局**：
+   901→   950→   950→   - 新询盘 (new + assigned) — emerald 翠绿色，Inbox 图标
+   902→   951→   951→   - 跟进中 (following) — amber 琥珀色，Phone 图标
+   903→   952→   952→   - 已报价 (quoted) — sky 天蓝色，FileText 图标
+   904→   953→   953→   - 已成交/流失 (won + lost) — rose 玫红色，CheckCircle 图标
+   905→   954→   954→
+   906→   955→   955→2. **卡片信息展示**：
+   907→   956→   956→   - 询盘编号 (inquiryNo，等宽字体)
+   908→   957→   957→   - 优先级徽章 (StatusBadge type='priority')
+   909→   958→   958→   - 主题 (subject，单行截断)
+   910→   959→   959→   - 客户公司名称
+   911→   960→   960→   - 来源标签 (中文)
+   912→   961→   961→   - 成交/流失图标指示 (CheckCircle/XCircle)
+   913→   962→   962→   - 负责人名称
+   914→   963→   963→   - 相对创建时间（刚刚/N分钟前/N小时前/N天前）
+   915→   964→   964→
+   916→   965→   965→3. **交互功能**：
+   917→   966→   966→   - 点击卡片调用 selectInquiry 打开详情抽屉
+   918→   967→   967→   - 键盘可访问 (Enter/Space)
+   919→   968→   968→   - 流失卡片降低透明度显示
+   920→   969→   969→
+   921→   970→   970→4. **数据获取**：
+   922→   971→   971→   - 通过 useQuery 获取 /api/inquiries
+   923→   972→   972→   - 应用搜索、优先级、来源筛选
+   924→   973→   973→   - 客户端按状态类别分组
+   925→   974→   974→
+   926→   975→   975→5. **响应式设计**：
+   927→   976→   976→   - 桌面端：水平滚动看板，每列固定宽度 288px
+   928→   977→   977→   - 移动端：垂直堆叠列，卡片水平滚动
+   929→   978→   978→   - 列内卡片区域 ScrollArea 支持滚动
+   930→   979→   979→
+   931→   980→   980→6. **动画效果**：
+   932→   981→   981→   - Framer Motion AnimatePresence + layoutId
+   933→   982→   982→   - 卡片 spring 弹性入场/退出动画
+   934→   983→   983→   - 空列状态展示
+   935→   984→   984→
+   936→   985→   985→7. **技术细节**：
+   937→   986→   986→   - 使用 cn() 工具函数替代模板字符串（避免 TSX 解析兼容性问题）
+   938→   987→   987→   - 类型安全：ColumnConfig 接口定义
+   939→   988→   988→   - 无障碍：ARIA 标签、role、tabIndex
+   940→   989→   989→
+   941→   990→   990→### 询盘列表视图更新 (inquiry-list-view.tsx)
+   942→   991→   991→1. **视图切换**：
+   943→   992→   992→   - 新增 ToggleGroup 组件（List/Kanban 切换按钮）
+   944→   993→   993→   - 本地 state viewMode: 'list' | 'kanban'
+   945→   994→   994→   - 看板模式渲染 InquiryKanbanView
+   946→   995→   995→   - 列表模式保持原有 DataTable
+   947→   996→   996→
+   948→   997→   997→2. **筛选保持**：
+   949→   998→   998→   - 搜索、状态、优先级、来源筛选对两种视图均有效
+   950→   999→   999→   - 看板视图通过共享 store 的 filters 获取筛选条件
+   951→  1000→  1000→
+   952→  1001→  1001→### 验证结果
+   953→  1002→  1002→- ✅ `bun run lint` 零错误通过
+   954→  1003→  1003→- ✅ TypeScript 编译新文件无错误
+   955→  1004→  1004→- ✅ 遵循与 customer-kanban-view 一致的设计模式
+   956→  1005→  1005→
+   957→  1006→  1006→---
+   958→  1007→  1007→Task ID: 6-e
+   959→  1008→  1008→Agent: Main Orchestrator
+   960→  1009→  1009→Task: 客户联系人新建功能 + 综合QA + worklog更新
+   961→  1010→  1010→
+   962→  1011→  1011→## 项目当前状态描述/判断
+   963→  1012→  1012→
+   964→  1013→  1013→### 系统状态: 🟢 稳定运行
+   965→  1014→  1014→- Dev server HTTP 200，ESLint 0 错误
+   966→  1015→  1015→- 新增4个功能模块，所有核心功能正常运行
+   967→  1016→  1016→- 数据库12个字段，新增 contacts API 端点
+   968→  1017→  1017→
+   969→  1018→  1018→### 浏览器QA验证结果 (Agent Browser)
+   970→  1019→  1019→- ✅ 角色选择→登录→工作台: 全流程正常
+   971→  1020→  1020→- ✅ 用户菜单下拉: 点击显示"个人设置"+"退出登录" (DropdownMenu)
+   972→  1021→  1021→- ✅ 订单详情抽屉: 3Tab(订单信息/物流追踪/备注) + 收款子表 + 操作按钮
+   973→  1022→  1022→- ✅ 系统设置: 个人资料卡片 + 通知偏好(4开关) + 显示设置
+   974→  1023→  1023→- ✅ 询盘看板: 4列(新询盘7/跟进中6/已报价6/成交流失3)，卡片含编号+优先级+来源+客户
+   975→  1024→  1024→- ✅ 活动记录页: "查看全部"从通知下拉正确导航，显示搜索+类型筛选+时间筛选
+   976→  1025→  1025→- ✅ 通知中心: "通知中心"标题 + "暂无通知" + "查看全部"按钮
+   977→  1026→  1026→
+   978→  1027→  1027→## 本轮完成内容
+   979→  1028→  1028→
+   980→  1029→  1029→### 新功能 (5项)
+   981→  1030→  1030→1. **用户菜单下拉** (Task 6-b) - DropdownMenu含头像+姓名+角色Badge+邮箱+部门，"个人设置"和"退出登录"
+   982→  1031→  1031→2. **活动记录列表页** (Task 6-c) - 完整列表页(搜索+类型+时间筛选+分页)，通知"查看全部"导航到此处
+   983→  1032→  1032→3. **询盘看板视图** (Task 6-d) - 4列状态看板(新询盘/跟进中/已报价/成交流失)，Framer Motion动画
+   984→  1033→  1033→4. **客户联系人内联新建** - 联系人Tab顶部"添加联系人"按钮，展开表单(姓名/职位/邮箱/电话/WhatsApp/决策者)
+   985→  1034→  1034→5. **联系人API** - /api/contacts POST端点，支持创建新联系人
+   986→  1035→  1035→
+   987→  1036→  1036→### 增强功能 (3项)
+   988→  1037→  1037→1. **联系人卡片重设计** - 圆形首字母头像(翡翠色)，WhatsApp显示，悬停阴影，决策者Badge样式优化
+   989→  1038→  1038→2. **联系人空状态增强** - 图标+文字+提示语
+   990→  1039→  1039→3. **ModuleKey扩展** - types.ts新增'activities'模块类型
+   991→  1040→  1040→
+   992→  1041→  1041→### 新增/修改文件清单
+   993→  1042→  1042→- **新增**: `src/components/crm/user-menu.tsx`, `src/components/crm/views/activity-list-view.tsx`, `src/components/crm/views/inquiry-kanban-view.tsx`, `src/app/api/contacts/route.ts`
+   994→  1043→  1043→- **修改**: `src/components/crm/crm-header.tsx`, `src/components/crm/notification-dropdown.tsx`, `src/components/crm/views/customer-detail-drawer.tsx`, `src/components/crm/views/inquiry-list-view.tsx`, `src/lib/types.ts`, `src/app/page.tsx`, `src/app/api/activities/route.ts`
+   995→  1044→  1044→
+   996→  1045→  1045→## 未解决问题或风险
+   997→  1046→  1046→
+   998→  1047→  1047→### 低优先级
+   999→  1048→  1048→1. **AI聊天端到端测试**: LLM API已对接但实际对话未在浏览器中完整测试
+  1000→  1049→  1049→2. **种子数据清理**: 测试创建的含"--timeout"文字的客户需要清理
+  1001→  1050→  1050→3. **通知为空**: 当前所有活动记录可能已标记已读，导致通知下拉显示"暂无通知"
+  1002→  1051→  1051→4. **看板视图拖拽**: 客户/询盘看板均为静态分组，无拖拽排序功能
+  1003→  1052→  1052→5. **设置页开关不持久**: 通知偏好和显示设置的Switch状态不保存到数据库/本地存储
+  1004→  1053→  1053→
+  1005→  1054→  1054→### 建议下一阶段优先事项
+  1006→  1055→  1055→1. **P1**: AI聊天端到端测试 + 流式响应(SSE)
+  1007→  1056→  1056→2. **P1**: 设置页偏好持久化(localStorage)
+  1008→  1057→  1057→3. **P2**: 种子数据优化（清理测试数据、增加更多样化客户）
+  1009→  1058→  1058→4. **P2**: 看板拖拽排序（客户在级别列之间移动）
+  1010→  1059→  1059→5. **P2**: 权限中心（用户管理、角色配置）
+  1011→  1060→  1060→6. **P2**: 社媒运营模块
+  1012→  1061→  1061→7. **P3**: 多语言支持（英语/中文切换）
+  1013→  1062→  1062→8. **P3**: 数据看板大屏展示（管理层）
+  1014→  1063→  1063→9. **P3**: 客户地图视图（基于国家的客户分布地图）
+  1015→  1064→  1064→10. **P3**: WebSocket实时通知推送
+  1016→  1065→  1065→
+  1017→  1066→  1066→---
+  1018→  1067→  1067→Task ID: 7-f
+  1019→  1068→  1068→Agent: Product List Developer
+  1020→  1069→  1069→Task: 增强产品列表视图 - 分类筛选、搜索、视图切换、表格/网格视图完善
+  1021→  1070→  1070→
+  1022→  1071→  1071→## 项目当前状态描述/判断
+  1023→  1072→  1072→
+  1024→  1073→  1073→### 已有功能
+  1025→  1074→  1074→- ✅ 产品列表视图基础框架（表格/网格视图切换、搜索输入框、分类下拉、新建按钮）
+  1026→  1075→  1075→- ✅ 后端API `/api/products` 支持search（productCode/name/nameEn）和category参数
+  1027→  1076→  1076→- ✅ 数据库Product模型含isActive布尔字段
+  1028→  1077→  1077→
+  1029→  1078→  1078→### 存在问题
+  1030→  1079→  1079→1. **分类筛选失效**: 原实现从已过滤的产品列表中提取分类，当选择了某个分类后下拉仅显示该分类，无法切换
+  1031→  1080→  1080→2. **网格卡片缺少nameEn**: 只显示中文名和编号，未显示英文名
+  1032→  1081→  1081→3. **表格列不完整**: 缺少状态列，列顺序不符合要求（标准价应在成本价之前）
+  1033→  1082→  1082→
+  1034→  1083→  1083→## 当前目标/已完成的修改/验证结果
+  1035→  1084→  1084→
+  1036→  1085→  1085→### 1. 分类筛选修复
+  1037→  1086→  1086→- 新增独立的 `products-all-categories` useQuery，无筛选条件获取全部产品
+  1038→  1087→  1087→- 从全部产品中提取唯一分类填充下拉选项，确保分类筛选器始终显示所有可用分类
+  1039→  1088→  1088→- staleTime设为60秒避免频繁请求
+  1040→  1089→  1089→
+  1041→  1090→  1090→### 2. 搜索功能
+  1042→  1091→  1091→- 搜索输入框已存在且功能正常，通过API搜索productCode/name/nameEn
+  1043→  1092→  1092→- 新增Search图标增加视觉引导
+  1044→  1093→  1093→
+  1045→  1094→  1094→### 3. 视图切换（ToggleGroup）
+  1046→  1095→  1095→- 列表/网格视图切换按钮已存在且功能正常
+  1047→  1096→  1096→- 使用List和Grid3X3图标，选中态为secondary变体
+  1048→  1097→  1097→
+  1049→  1098→  1098→### 4. 网格视图卡片增强
+  1050→  1099→  1099→- 显示: Package图标占位、产品名称(name)、英文名称(nameEn)、产品编号(code)、分类徽章、成本价、标准价、利润率
+  1051→  1100→  1100→- 利润率颜色编码: ≥20%绿色, ≥10%橙色, <10%红色
+  1052→  1101→  1101→- 停售产品左上角显示"停售"徽章
+  1053→  1102→  1102→- 空状态显示Package图标和提示文字
+  1054→  1103→  1103→
+  1055→  1104→  1104→### 5. 表格视图列调整
+  1056→  1105→  1105→- 产品编号(productCode) - 等宽字体
+  1057→  1106→  1106→- 产品名称(name) - 含nameEn副标题
+  1058→  1107→  1107→- 分类(category) - outline徽章
+  1059→  1108→  1108→- 标准价(standardPrice) - 加粗
+  1060→  1109→  1109→- 成本价(costPrice) - 常规
+  1061→  1110→  1110→- 库存单位(unit)
+  1062→  1111→  1111→- 状态(isActive) - 在售(绿色)/停售(灰色)徽章
+  1063→  1112→  1112→
+  1064→  1113→  1113→### 验证结果
+  1065→  1114→  1114→- ✅ ESLint检查通过，无错误
+  1066→  1115→  1115→- ✅ TypeScript类型安全（Product类型显式定义）
+  1067→  1116→  1116→- ✅ 所有文本为中文
+  1068→  1117→  1117→- ✅ 使用formatCurrency格式化价格
+  1069→  1118→  1118→- ✅ 响应式网格布局 (1/2/3/4列)
+  1070→  1119→  1119→
+  1071→  1120→  1120→### 修改文件清单
+  1072→  1121→  1121→- **修改**: `src/components/crm/views/product-list-view.tsx`
+  1073→  1122→  1122→
+  1074→  1123→  1123→## 未解决问题或风险
+  1075→  1124→  1124→
+  1076→  1125→  1125→### 无
+  1077→  1126→  1126→- 所有要求的功能已实现并通过lint检查---
+  1078→  1127→  1127→Task ID: 7-g
+  1079→  1128→  1128→Agent: Main Orchestrator
+  1080→  1129→  1129→Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强
+  1081→  1130→  1130→---
+  1082→  1131→  1131→Task ID: 7-g
+  1083→  1132→  1132→Agent: Main Orchestrator
+  1084→  1133→  1133→Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强
+  1085→  1134→  1134→---
+  1086→  1135→  1135→Task ID: 7-g
+  1087→  1136→  1136→Agent: Main Orchestrator
+  1088→  1137→  1137→Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强
+  1089→  1138→  1138→WORKLOG_EOF
+  1090→  1139→  1139→---
+  1091→  1140→  1140→Task ID: 7-g
+  1092→  1141→  1141→Agent: Main Orchestrator
+  1093→  1142→  1142→Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强
+  1094→  1143→  1143→

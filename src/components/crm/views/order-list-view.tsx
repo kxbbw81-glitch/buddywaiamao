@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -14,10 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { cn, formatCurrency } from '@/lib/utils'
 import { exportToCSV } from '@/lib/export-csv'
-import { Plus, Download } from 'lucide-react'
+import { Plus, Download, LayoutGrid, List } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { OrderKanbanView } from './order-kanban-view'
 
 const ORDER_STAGES = ['pending', 'confirmed', 'in_production', 'ready', 'shipped', 'completed'] as const
 const ORDER_STAGE_LABELS: Record<string, string> = {
@@ -61,9 +63,7 @@ function OrderStatusStepper({ status }: { status: string }) {
 
 export function OrderListView() {
   const { searchQuery, filters, setFilters, selectOrder, openOrderForm } = useCRMStore()
-  
-
-  
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
 
   const { data, isLoading } = useQuery({
     queryKey: ['orders', searchQuery, filters],
@@ -155,8 +155,17 @@ export function OrderListView() {
             <SelectItem value="ready">待发货</SelectItem>
             <SelectItem value="shipped">已发货</SelectItem>
             <SelectItem value="completed">已完成</SelectItem>
+            <SelectItem value="cancelled">已取消</SelectItem>
           </SelectContent>
         </Select>
+        <ToggleGroup type="single" value={viewMode} onValueChange={(v) => { if (v) setViewMode(v as 'list' | 'kanban') }}>
+          <ToggleGroupItem value="list" aria-label="列表视图">
+            <List className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="kanban" aria-label="看板视图">
+            <LayoutGrid className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -200,15 +209,19 @@ export function OrderListView() {
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={orders}
-        onRowClick={(item) => selectOrder(item.id as string)}
-        isLoading={isLoading && orders.length === 0}
-        emptyMessage="暂无订单数据"
-        searchValue=""
-        onSearchChange={() => {}}
-      />
+      {viewMode === 'kanban' ? (
+        <OrderKanbanView />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={orders}
+          onRowClick={(item) => selectOrder(item.id as string)}
+          isLoading={isLoading && orders.length === 0}
+          emptyMessage="暂无订单数据"
+          searchValue=""
+          onSearchChange={() => {}}
+        />
+      )}
     </div>
   )
 }

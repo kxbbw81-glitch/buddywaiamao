@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useCRMStore } from '@/store/use-crm-store'
+import { useSettingsStore } from '@/store/use-settings-store'
+import type { NotificationSettings } from '@/store/use-settings-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
@@ -17,125 +19,94 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 
-const STORAGE_KEY = 'nexfab_settings'
+// ─── 通知选项配置 ────────────────────────────────────────────────────────────
 
-interface SettingsData {
-  notifications: {
-    inquiry: boolean
-    approval: boolean
-    orderStatus: boolean
-    payment: boolean
-  }
-  compactTable: boolean
-  pageSize: string
-  language: string
-}
+const NOTIFICATION_OPTIONS: {
+  key: keyof NotificationSettings
+  title: string
+  description: string
+}[] = [
+  { key: 'inquiry', title: '新询盘到达', description: '收到新询盘时推送通知' },
+  { key: 'approval', title: '报价审批', description: '报价提交审批时推送通知' },
+  { key: 'orderStatus', title: '订单状态变更', description: '订单状态更新时推送通知' },
+  { key: 'payment', title: '付款提醒', description: '逾期付款自动推送提醒' },
+]
 
-const defaultSettings: SettingsData = {
-  notifications: {
-    inquiry: true,
-    approval: true,
-    orderStatus: true,
-    payment: true,
-  },
-  compactTable: false,
-  pageSize: '20',
-  language: 'zh-CN',
-}
-
-function loadSettings(): SettingsData {
-  if (typeof window === 'undefined') return defaultSettings
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<SettingsData>
-      return {
-        ...defaultSettings,
-        ...parsed,
-        notifications: { ...defaultSettings.notifications, ...parsed.notifications },
-      }
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return defaultSettings
-}
-
-function saveSettings(data: SettingsData) {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-  } catch {
-    // ignore quota errors
-  }
-}
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export function SettingsView() {
   const { currentUser } = useCRMStore()
   const { theme, setTheme } = useTheme()
 
-  const [settings, setSettings] = useState<SettingsData>(() => loadSettings())
-  const initialized = useRef(false)
-  // Mark initialized after mount to prevent saving defaults on first render
+  // Zustand settings store (hydrated once on mount)
+  const {
+    notifications,
+    display,
+    hydrated,
+    hydrate,
+    toggleNotification,
+    setPageSize,
+    setCompactTable,
+    setDarkMode,
+    setLanguage,
+  } = useSettingsStore()
+
+  // Hydrate from localStorage on first client mount
+  const hydratedRef = useRef(false)
   useEffect(() => {
-    initialized.current = true
-  }, [])
-
-  // Debounced save + toast
-  const debouncedSave = useCallback((data: SettingsData) => {
-    saveSettings(data)
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current)
+    if (!hydratedRef.current) {
+      hydratedRef.current = true
+      hydrate()
     }
-    toastTimerRef.current = setTimeout(() => {
-      toast.success('已保存')
-    }, 300)
-  }, [])
+  }, [hydrate])
 
-  // Cleanup timer on unmount
+  // Debounced toast
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showToast = () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => toast.success('已保存'), 300)
+  }
   useEffect(() => {
     return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current)
-      }
+      if (toastTimer.current) clearTimeout(toastTimer.current)
     }
   }, [])
 
-  const toggleNotif = (key: keyof SettingsData['notifications']) => {
-    setSettings((prev) => {
-      const next = {
-        ...prev,
-        notifications: { ...prev.notifications, [key]: !prev.notifications[key] },
+  // Dark mode sync: next-themes → store on hydration
+  useEffect(() => {
+    if (hydrated && theme) {
+      const isDark = theme === 'dark'
+      if (display.darkMode !== isDark) {
+        setDarkMode(isDark)
       }
-      if (initialized.current) {
-        debouncedSave(next)
-      }
-      return next
-    })
-  }
-
-  const handleCompactChange = (checked: boolean) => {
-    const next = { ...settings, compactTable: checked }
-    setSettings(next)
-    if (initialized.current) {
-      debouncedSave(next)
     }
+  }, [hydrated, display.darkMode, setDarkMode, theme])
+
+  // Handlers
+  const handleToggleNotification = (key: keyof NotificationSettings) => {
+    toggleNotification(key)
+    showToast()
   }
 
   const handlePageSizeChange = (value: string) => {
-    const next = { ...settings, pageSize: value }
-    setSettings(next)
-    if (initialized.current) {
-      debouncedSave(next)
-    }
+    setPageSize(value as '10' | '20' | '50')
+    showToast()
+  }
+
+  const handleCompactTableChange = (checked: boolean) => {
+    setCompactTable(checked)
+    showToast()
+  }
+
+  const handleDarkModeChange = (checked: boolean) => {
+    setDarkMode(checked)
+    setTheme(checked ? 'dark' : 'light')
+    showToast()
   }
 
   const handleLanguageChange = (value: string) => {
-    const next = { ...settings, language: value }
-    setSettings(next)
-    if (initialized.current) {
-      debouncedSave(next)
-    }
+    setLanguage(value as 'zh-CN' | 'en')
+    showToast()
   }
 
   if (!currentUser) return null
@@ -150,7 +121,7 @@ export function SettingsView() {
         <p className="text-sm text-muted-foreground">管理您的账户信息和偏好设置</p>
       </div>
 
-      {/* Profile Card */}
+      {/* ── 个人信息卡片 ── */}
       <Card className="overflow-hidden">
         <div className="h-20 bg-gradient-to-r from-emerald-500 to-teal-600" />
         <CardContent className="pt-0 relative">
@@ -209,7 +180,7 @@ export function SettingsView() {
         </CardContent>
       </Card>
 
-      {/* Notification Preferences */}
+      {/* ── 通知偏好 ── */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -218,53 +189,27 @@ export function SettingsView() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">询盘通知</p>
-              <p className="text-xs text-muted-foreground">新询盘到达时通知</p>
+          {NOTIFICATION_OPTIONS.map((opt, idx) => (
+            <div key={opt.key}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{opt.title}</p>
+                  <p className="text-xs text-muted-foreground">{opt.description}</p>
+                </div>
+                <Switch
+                  checked={notifications[opt.key]}
+                  onCheckedChange={() => handleToggleNotification(opt.key)}
+                />
+              </div>
+              {idx < NOTIFICATION_OPTIONS.length - 1 && (
+                <Separator className="mt-4" />
+              )}
             </div>
-            <Switch
-              checked={settings.notifications.inquiry}
-              onCheckedChange={() => toggleNotif('inquiry')}
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">报价审批</p>
-              <p className="text-xs text-muted-foreground">报价提交审批时通知</p>
-            </div>
-            <Switch
-              checked={settings.notifications.approval}
-              onCheckedChange={() => toggleNotif('approval')}
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">订单状态变更</p>
-              <p className="text-xs text-muted-foreground">订单状态更新时通知</p>
-            </div>
-            <Switch
-              checked={settings.notifications.orderStatus}
-              onCheckedChange={() => toggleNotif('orderStatus')}
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">付款提醒</p>
-              <p className="text-xs text-muted-foreground">逾期付款自动提醒</p>
-            </div>
-            <Switch
-              checked={settings.notifications.payment}
-              onCheckedChange={() => toggleNotif('payment')}
-            />
-          </div>
+          ))}
         </CardContent>
       </Card>
 
-      {/* Display Settings */}
+      {/* ── 显示设置 ── */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -273,12 +218,13 @@ export function SettingsView() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* 默认每页条数 */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">默认每页条数</p>
               <p className="text-xs text-muted-foreground">列表默认显示的数据条数</p>
             </div>
-            <Select value={settings.pageSize} onValueChange={handlePageSizeChange}>
+            <Select value={display.pageSize} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="w-20 h-8">
                 <SelectValue />
               </SelectTrigger>
@@ -289,41 +235,49 @@ export function SettingsView() {
               </SelectContent>
             </Select>
           </div>
+
           <Separator />
+
+          {/* 紧凑表格模式 */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">紧凑表格模式</p>
               <p className="text-xs text-muted-foreground">减少表格行间距以显示更多数据</p>
             </div>
             <Switch
-              checked={settings.compactTable}
-              onCheckedChange={handleCompactChange}
+              checked={display.compactTable}
+              onCheckedChange={handleCompactTableChange}
             />
           </div>
+
           <Separator />
+
+          {/* 深色模式 */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">深色模式</p>
               <p className="text-xs text-muted-foreground">切换深色/浅色主题</p>
             </div>
             <Switch
-              checked={theme === 'dark'}
-              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+              checked={display.darkMode}
+              onCheckedChange={handleDarkModeChange}
             />
           </div>
+
           <Separator />
+
+          {/* 界面语言 */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">界面语言</p>
               <p className="text-xs text-muted-foreground">选择系统显示语言</p>
             </div>
-            <Select value={settings.language} onValueChange={handleLanguageChange}>
+            <Select value={display.language} onValueChange={handleLanguageChange}>
               <SelectTrigger className="w-32 h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="zh-CN">中文（简体）</SelectItem>
-                <SelectItem value="zh-TW">中文（繁體）</SelectItem>
                 <SelectItem value="en">English</SelectItem>
               </SelectContent>
             </Select>
@@ -331,7 +285,7 @@ export function SettingsView() {
         </CardContent>
       </Card>
 
-      {/* About System */}
+      {/* ── 关于系统 ── */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">

@@ -31,6 +31,8 @@ import {
   CreditCard,
   TrendingDown,
   Eye,
+  Calendar,
+  AlertTriangle as AlertTriangleIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
@@ -79,25 +81,81 @@ const motivationalLines = [
   '客户至上，服务为先',
 ]
 
+// Mini sparkline SVG component - 80x32px
+function MiniSparkline({ data, width = 80, height = 32 }: { data: number[]; width?: number; height?: number }) {
+  if (data.length < 2) return null
+
+  const maxVal = Math.max(...data, 1)
+  const minVal = Math.min(...data, 0)
+  const range = maxVal - minVal || 1
+  const padding = 2
+
+  const points = data.map((val, i) => {
+    const x = padding + (i / (data.length - 1)) * (width - padding * 2)
+    const y = padding + (1 - (val - minVal) / range) * (height - padding * 2)
+    return `${x},${y}`
+  })
+
+  const polylinePoints = points.join(' ')
+  // Build area path: line points + close to bottom-right + bottom-left
+  const areaPath = `M${points[0]} ${points.map((p) => `L${p}`).join(' ')} L${padding + (width - padding * 2)},${height} L${padding},${height} Z`
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <defs>
+        <linearGradient id="sparkGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#10b981" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#sparkGradient)" />
+      <polyline
+        points={polylinePoints}
+        fill="none"
+        stroke="#10b981"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx={padding + (width - padding * 2)}
+        cy={padding + (1 - (data[data.length - 1] - minVal) / range) * (height - padding * 2)}
+        r={2.5}
+        fill="#10b981"
+      />
+    </svg>
+  )
+}
+
 const quickActions = [
-  { label: '新建客户', icon: UserPlus, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'customer' },
-  { label: '新建询盘', icon: FileText, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'inquiry' },
-  { label: '新建报价', icon: Calculator, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'quotation' },
-  { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+  { label: '新建客户', subtitle: '创建和管理客户档案', icon: UserPlus, color: 'text-emerald-600 dark:text-emerald-400', gradient: 'from-emerald-500/20 to-teal-500/10', border: 'border-emerald-200 dark:border-emerald-800', action: 'customer' },
+  { label: '新建询盘', subtitle: '创建和跟进新询盘', icon: FileText, color: 'text-teal-600 dark:text-teal-400', gradient: 'from-teal-500/20 to-cyan-500/10', border: 'border-teal-200 dark:border-teal-800', action: 'inquiry' },
+  { label: '新建报价', subtitle: '快速生成专业报价单', icon: Calculator, color: 'text-amber-600 dark:text-amber-400', gradient: 'from-amber-500/20 to-orange-500/10', border: 'border-amber-200 dark:border-amber-800', action: 'quotation' },
+  { label: 'AI分析', subtitle: '智能分析辅助决策', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', gradient: 'from-rose-500/20 to-pink-500/10', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
 ]
 
-const roleQuickActions: Record<string, typeof quickActions> = {
+interface QuickActionItem {
+  label: string
+  subtitle?: string
+  icon: React.ElementType
+  color: string
+  gradient: string
+  border: string
+  action: string
+}
+
+const roleQuickActions: Record<string, QuickActionItem[]> = {
   finance: [
-    { label: '收款管理', icon: Wallet, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'payments' },
-    { label: '查看订单', icon: ShoppingCart, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'orders' },
-    { label: '报价审核', icon: FileText, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'quotations' },
-    { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+    { label: '收款管理', subtitle: '管理和跟踪收款进度', icon: Wallet, color: 'text-emerald-600 dark:text-emerald-400', gradient: 'from-emerald-500/20 to-teal-500/10', border: 'border-emerald-200 dark:border-emerald-800', action: 'payments' },
+    { label: '查看订单', subtitle: '查看订单状态和进度', icon: ShoppingCart, color: 'text-teal-600 dark:text-teal-400', gradient: 'from-teal-500/20 to-cyan-500/10', border: 'border-teal-200 dark:border-teal-800', action: 'orders' },
+    { label: '报价审核', subtitle: '审核待确认的报价', icon: FileText, color: 'text-amber-600 dark:text-amber-400', gradient: 'from-amber-500/20 to-orange-500/10', border: 'border-amber-200 dark:border-amber-800', action: 'quotations' },
+    { label: 'AI分析', subtitle: '智能分析辅助决策', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', gradient: 'from-rose-500/20 to-pink-500/10', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
   ],
   management: [
-    { label: '新建客户', icon: UserPlus, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'customer' },
-    { label: '数据分析', icon: BarChart3, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'analytics' },
-    { label: '查看订单', icon: ShoppingCart, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'orders' },
-    { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+    { label: '新建客户', subtitle: '创建和管理客户档案', icon: UserPlus, color: 'text-emerald-600 dark:text-emerald-400', gradient: 'from-emerald-500/20 to-teal-500/10', border: 'border-emerald-200 dark:border-emerald-800', action: 'customer' },
+    { label: '数据分析', subtitle: '销售数据和趋势分析', icon: BarChart3, color: 'text-teal-600 dark:text-teal-400', gradient: 'from-teal-500/20 to-cyan-500/10', border: 'border-teal-200 dark:border-teal-800', action: 'analytics' },
+    { label: '查看订单', subtitle: '查看订单状态和进度', icon: ShoppingCart, color: 'text-amber-600 dark:text-amber-400', gradient: 'from-amber-500/20 to-orange-500/10', border: 'border-amber-200 dark:border-amber-800', action: 'orders' },
+    { label: 'AI分析', subtitle: '智能分析辅助决策', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', gradient: 'from-rose-500/20 to-pink-500/10', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
   ],
 }
 
@@ -123,6 +181,12 @@ export function WorkbenchView() {
     queryKey: ['following-inquiries'],
     queryFn: () => fetch('/api/inquiries?status=following&pageSize=50').then((r) => r.json()),
     refetchInterval: 30000,
+  })
+
+  const { data: customerTrendData } = useQuery({
+    queryKey: ['customer-trend'],
+    queryFn: () => fetch('/api/dashboard/customer-trend').then((r) => r.json()),
+    refetchInterval: 60000,
   })
 
   const pendingInquiries = [...(pendingInquiriesData?.data || []), ...(followingInquiriesData?.data || [])]
@@ -152,8 +216,8 @@ export function WorkbenchView() {
   if (isLoading || !data?.data) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
             <Card key={i} className="p-6 animate-pulse">
               <div className="h-4 bg-muted rounded w-20 mb-3" />
               <div className="h-8 bg-muted rounded w-16 mb-2" />
@@ -234,40 +298,62 @@ export function WorkbenchView() {
         </ScrollArea>
       )}
 
-      {/* 今日概览 */}
+      {/* 今日概要 */}
       <motion.div
-        className="grid grid-cols-3 gap-3"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.12 }}
       >
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
-          <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-            <ArrowUpRight className="h-4 w-4" />
+        <Card className="overflow-hidden">
+          <div className="flex items-center">
+            {/* Today's date */}
+            <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0">
+              <div className="p-2 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{dateStr}</p>
+                <p className="text-xs text-muted-foreground">{dayOfWeek}</p>
+              </div>
+            </div>
+            {/* Divider */}
+            <div className="w-px h-10 bg-border flex-shrink-0" />
+            {/* Today's new inquiries */}
+            <div className="flex items-center gap-3 px-5 py-4 flex-1">
+              <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                <ArrowUpRight className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">今日新增询盘</p>
+                <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.todayInquiries || 0)}</p>
+              </div>
+            </div>
+            {/* Divider */}
+            <div className="w-px h-10 bg-border flex-shrink-0" />
+            {/* Pending follow-ups */}
+            <div className="flex items-center gap-3 px-5 py-4 flex-1">
+              <div className="p-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">待跟进</p>
+                <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.pendingFollow || 0)}</p>
+              </div>
+            </div>
+            {/* Divider */}
+            <div className="w-px h-10 bg-border flex-shrink-0" />
+            {/* Overdue payments */}
+            <div className="flex items-center gap-3 px-5 py-4 flex-1">
+              <div className="p-1.5 rounded-md bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+                <AlertTriangleIcon className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">逾期款项</p>
+                <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.overduePaymentsCount || 0)}</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">今日新增询盘</p>
-            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.todayInquiries || 0)}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
-          <div className="p-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-            <Clock className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">待跟进</p>
-            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.pendingFollow || 0)}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
-          <div className="p-1.5 rounded-md bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
-            <FileText className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">即将到期报价</p>
-            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.expiringQuotesCount || 0)}</p>
-          </div>
-        </div>
+        </Card>
       </motion.div>
 
       {/* 快速操作 Quick Actions */}
@@ -280,20 +366,23 @@ export function WorkbenchView() {
         {activeQuickActions.map((item, i) => (
           <motion.div
             key={i}
-            whileHover={{ scale: 1.04 }}
+            whileHover={{ y: -2, scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
           >
             <Card
               className={cn(
-                'cursor-pointer p-4 flex flex-col items-center gap-2 border transition-all hover:shadow-md',
+                'cursor-pointer p-4 flex flex-col items-center gap-2 border transition-all duration-200 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20',
                 item.border
               )}
               onClick={() => handleQuickAction(item.action)}
             >
-              <div className={cn('p-2.5 rounded-xl', item.bg)}>
+              <div className={cn('p-2.5 rounded-full bg-gradient-to-br', item.gradient)}>
                 <item.icon className={cn('h-5 w-5', item.color)} />
               </div>
               <span className="text-xs font-medium">{item.label}</span>
+              {item.subtitle && (
+                <span className="text-[10px] text-muted-foreground text-center leading-tight">{item.subtitle}</span>
+              )}
             </Card>
           </motion.div>
         ))}
@@ -301,7 +390,7 @@ export function WorkbenchView() {
 
       {/* KPI Cards */}
       <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
         initial="hidden"
         animate="visible"
         variants={{
@@ -348,6 +437,29 @@ export function WorkbenchView() {
             icon={<ShoppingCart className="h-5 w-5" />}
             variant="violet"
           />
+        </motion.div>
+        {/* 本月新增客户 - with sparkline */}
+        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+          <Card className="p-4 lg:p-6 relative overflow-hidden kpi-card-hover animate-fade-in-up kpi-emerald kpi-border-emerald">
+            <div className="kpi-pattern-overlay pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-xs font-medium text-muted-foreground">本月新增客户</p>
+                <div className="p-2 rounded-lg bg-white/50 dark:bg-black/20 text-emerald-600 dark:text-emerald-400">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+              </div>
+              <p className="text-2xl lg:text-3xl font-bold tabular-nums crm-number tracking-tight">
+                {customerTrendData?.data?.currentMonthCount ?? 0}
+              </p>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-muted-foreground">近6个月趋势</span>
+                {customerTrendData?.data?.trend && (
+                  <MiniSparkline data={customerTrendData.data.trend.map((t: { count: number }) => t.count)} />
+                )}
+              </div>
+            </div>
+          </Card>
         </motion.div>
       </motion.div>
 

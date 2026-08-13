@@ -1,0 +1,914 @@
+     1→@import "tailwindcss";
+     2→@import "tw-animate-css";
+     3→
+     4→@custom-variant dark (&:is(.dark *));
+     5→
+     6→@theme inline {
+     7→  --color-background: var(--background);
+     8→  --color-foreground: var(--foreground);
+     9→  --font-sans: var(--font-geist-sans);
+    10→  --font-mono: var(--font-geist-mono);
+    11→  --color-sidebar-ring: var(--sidebar-ring);
+    12→  --color-sidebar-border: var(--sidebar-border);
+    13→  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    14→  --color-sidebar-accent: var(--sidebar-accent);
+    15→  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    16→  --color-sidebar-primary: var(--sidebar-primary);
+    17→  --color-sidebar-foreground: var(--sidebar-foreground);
+    18→  --color-sidebar: var(--sidebar);
+    19→  --color-chart-5: var(--chart-5);
+    20→  --color-chart-4: var(--chart-4);
+    21→  --color-chart-3: var(--chart-3);
+    22→  --color-chart-2: var(--chart-2);
+    23→  --color-chart-1: var(--chart-1);
+    24→  --color-ring: var(--ring);
+    25→  --color-input: var(--input);
+    26→  --color-border: var(--border);
+    27→  --color-destructive: var(--destructive);
+    28→  --color-accent-foreground: var(--accent-foreground);
+    29→  --color-accent: var(--accent);
+    30→  --color-muted-foreground: var(--muted-foreground);
+    31→  --color-muted: var(--muted);
+    32→  --color-secondary-foreground: var(--secondary-foreground);
+    33→  --color-secondary: var(--secondary);
+    34→  --color-primary-foreground: var(--primary-foreground);
+    35→  --color-primary: var(--primary);
+    36→  --color-popover-foreground: var(--popover-foreground);
+    37→  --color-popover: var(--popover);
+    38→  --color-card-foreground: var(--card-foreground);
+    39→  --color-card: var(--card);
+    40→  --radius-sm: calc(var(--radius) - 4px);
+    41→  --radius-md: calc(var(--radius) - 2px);
+    42→  --radius-lg: var(--radius);
+    43→  --radius-xl: calc(var(--radius) + 4px);
+    44→}
+    45→
+    46→:root {
+    47→  --radius: 0.625rem;
+    48→  --background: oklch(1 0 0);
+    49→  --foreground: oklch(0.145 0 0);
+    50→  --card: oklch(1 0 0);
+    51→  --card-foreground: oklch(0.145 0 0);
+    52→  --popover: oklch(1 0 0);
+    53→  --popover-foreground: oklch(0.145 0 0);
+    54→  --primary: oklch(0.205 0 0);
+    55→  --primary-foreground: oklch(0.985 0 0);
+    56→  --secondary: oklch(0.97 0 0);
+    57→  --secondary-foreground: oklch(0.205 0 0);
+    58→  --muted: oklch(0.97 0 0);
+    59→  --muted-foreground: oklch(0.556 0 0);
+    60→  --accent: oklch(0.97 0 0);
+    61→  --accent-foreground: oklch(0.205 0 0);
+    62→  --destructive: oklch(0.577 0.245 27.325);
+    63→  --border: oklch(0.922 0 0);
+    64→  --input: oklch(0.922 0 0);
+    65→  --ring: oklch(0.708 0 0);
+    66→  --chart-1: oklch(0.646 0.222 41.116);
+    67→  --chart-2: oklch(0.6 0.118 184.704);
+    68→  --chart-3: oklch(0.398 0.07 227.392);
+    69→  --chart-4: oklch(0.828 0.189 84.429);
+    70→  --chart-5: oklch(0.769 0.188 70.08);
+    71→  --sidebar: oklch(0.985 0 0);
+    72→  --sidebar-foreground: oklch(0.145 0 0);
+    73→  --sidebar-primary: oklch(0.205 0 0);
+    74→  --sidebar-primary-foreground: oklch(0.985 0 0);
+    75→  --sidebar-accent: oklch(0.97 0 0);
+    76→  --sidebar-accent-foreground: oklch(0.205 0 0);
+    77→  --sidebar-border: oklch(0.922 0 0);
+    78→  --sidebar-ring: oklch(0.708 0 0);
+    79→}
+    80→
+    81→.dark {
+    82→  --background: oklch(0.145 0 0);
+    83→  --foreground: oklch(0.985 0 0);
+    84→  --card: oklch(0.205 0 0);
+    85→  --card-foreground: oklch(0.985 0 0);
+    86→  --popover: oklch(0.205 0 0);
+    87→  --popover-foreground: oklch(0.985 0 0);
+    88→  --primary: oklch(0.922 0 0);
+    89→  --primary-foreground: oklch(0.205 0 0);
+    90→  --secondary: oklch(0.269 0 0);
+    91→  --secondary-foreground: oklch(0.985 0 0);
+    92→  --muted: oklch(0.269 0 0);
+    93→  --muted-foreground: oklch(0.708 0 0);
+    94→  --accent: oklch(0.269 0 0);
+    95→  --accent-foreground: oklch(0.985 0 0);
+    96→  --destructive: oklch(0.704 0.191 22.216);
+    97→  --border: oklch(1 0 0 / 10%);
+    98→  --input: oklch(1 0 0 / 15%);
+    99→  --ring: oklch(0.556 0 0);
+   100→  --chart-1: oklch(0.488 0.243 264.376);
+   101→  --chart-2: oklch(0.696 0.17 162.48);
+   102→  --chart-3: oklch(0.769 0.188 70.08);
+   103→  --chart-4: oklch(0.627 0.265 303.9);
+   104→  --chart-5: oklch(0.645 0.246 16.439);
+   105→  --sidebar: oklch(0.205 0 0);
+   106→  --sidebar-foreground: oklch(0.985 0 0);
+   107→  --sidebar-primary: oklch(0.488 0.243 264.376);
+   108→  --sidebar-primary-foreground: oklch(0.985 0 0);
+   109→  --sidebar-accent: oklch(0.269 0 0);
+   110→  --sidebar-accent-foreground: oklch(0.985 0 0);
+   111→  --sidebar-border: oklch(1 0 0 / 10%);
+   112→  --sidebar-ring: oklch(0.556 0 0);
+   113→}
+   114→
+   115→@layer base {
+   116→  * {
+   117→    @apply border-border outline-ring/50;
+   118→  }
+   119→  body {
+   120→    @apply bg-background text-foreground;
+   121→  }
+   122→}
+   123→
+   124→/* ============ CRM Custom Styles ============ */
+   125→
+   126→/* Custom Scrollbar */
+   127→.crm-scrollbar::-webkit-scrollbar {
+   128→  width: 6px;
+   129→  height: 6px;
+   130→}
+   131→
+   132→.crm-scrollbar::-webkit-scrollbar-track {
+   133→  background: transparent;
+   134→}
+   135→
+   136→.crm-scrollbar::-webkit-scrollbar-thumb {
+   137→  background: oklch(0.696 0.17 162.48 / 40%);
+   138→  border-radius: 3px;
+   139→}
+   140→
+   141→.crm-scrollbar::-webkit-scrollbar-thumb:hover {
+   142→  background: oklch(0.696 0.17 162.48 / 60%);
+   143→}
+   144→
+   145→.dark .crm-scrollbar::-webkit-scrollbar-thumb {
+   146→  background: oklch(0.696 0.17 162.48 / 30%);
+   147→}
+   148→
+   149→.dark .crm-scrollbar::-webkit-scrollbar-thumb:hover {
+   150→  background: oklch(0.696 0.17 162.48 / 50%);
+   151→}
+   152→
+   153→
+   154→
+   155→/* KPI Card Gradients */
+   156→.kpi-emerald {
+   157→  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
+   158→}
+   159→
+   160→.kpi-amber {
+   161→  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+   162→}
+   163→
+   164→.kpi-rose {
+   165→  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fecdd3 100%);
+   166→}
+   167→
+   168→.kpi-sky {
+   169→  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+   170→}
+   171→
+   172→.kpi-violet {
+   173→  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%);
+   174→}
+   175→
+   176→.dark .kpi-emerald {
+   177→  background: linear-gradient(135deg, #052e16 0%, #064e3b 50%, #065f46 100%);
+   178→}
+   179→
+   180→.dark .kpi-amber {
+   181→  background: linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%);
+   182→}
+   183→
+   184→.dark .kpi-rose {
+   185→  background: linear-gradient(135deg, #4c0519 0%, #881337 50%, #9f1239 100%);
+   186→}
+   187→
+   188→.dark .kpi-sky {
+   189→  background: linear-gradient(135deg, #082f49 0%, #0c4a6e 50%, #075985 100%);
+   190→}
+   191→
+   192→.dark .kpi-violet {
+   193→  background: linear-gradient(135deg, #2e1065 0%, #4c1d95 50%, #5b21b6 100%);
+   194→}
+   195→
+   196→/* Status Badge Colors */
+   197→.badge-new { background-color: #dbeafe; color: #1e40af; }
+   198→.badge-assigned { background-color: #e0e7ff; color: #3730a3; }
+   199→.badge-following { background-color: #fef3c7; color: #92400e; }
+   200→.badge-quoted { background-color: #d1fae5; color: #065f46; }
+   201→.badge-won { background-color: #bbf7d0; color: #166534; }
+   202→.badge-lost { background-color: #fecaca; color: #991b1b; }
+   203→.badge-pooled { background-color: #f3f4f6; color: #4b5563; }
+   204→.badge-closed { background-color: #e5e7eb; color: #374151; }
+   205→
+   206→.badge-draft { background-color: #f3f4f6; color: #4b5563; }
+   207→.badge-pending-approval { background-color: #fef3c7; color: #92400e; }
+   208→.badge-sent { background-color: #dbeafe; color: #1e40af; }
+   209→.badge-accepted { background-color: #bbf7d0; color: #166534; }
+   210→.badge-rejected { background-color: #fecaca; color: #991b1b; }
+   211→.badge-expired { background-color: #fed7aa; color: #9a3412; }
+   212→.badge-cancelled { background-color: #f3f4f6; color: #4b5563; }
+   213→
+   214→.badge-order-pending { background-color: #fef3c7; color: #92400e; }
+   215→.badge-confirmed { background-color: #dbeafe; color: #1e40af; }
+   216→.badge-in_production { background-color: #e0e7ff; color: #3730a3; }
+   217→.badge-ready { background-color: #d1fae5; color: #065f46; }
+   218→.badge-shipped { background-color: #cffafe; color: #155e75; }
+   219→.badge-completed { background-color: #bbf7d0; color: #166534; }
+   220→.badge-order-cancelled { background-color: #fecaca; color: #991b1b; }
+   221→
+   222→.badge-payment-pending { background-color: #fef3c7; color: #92400e; }
+   223→.badge-partial { background-color: #e0e7ff; color: #3730a3; }
+   224→.badge-payment-completed { background-color: #bbf7d0; color: #166534; }
+   225→.badge-overdue { background-color: #fecaca; color: #991b1b; }
+   226→
+   227→/* Customer Level Colors */
+   228→.badge-level-A { background-color: #d1fae5; color: #065f46; font-weight: 600; }
+   229→.badge-level-B { background-color: #dbeafe; color: #1e40af; font-weight: 600; }
+   230→.badge-level-C { background-color: #fef3c7; color: #92400e; font-weight: 600; }
+   231→.badge-level-D { background-color: #fecaca; color: #991b1b; font-weight: 600; }
+   232→
+   233→/* Priority Colors */
+   234→.badge-priority-low { background-color: #f3f4f6; color: #4b5563; }
+   235→.badge-priority-normal { background-color: #dbeafe; color: #1e40af; }
+   236→.badge-priority-high { background-color: #fef3c7; color: #92400e; }
+   237→.badge-priority-urgent { background-color: #fecaca; color: #991b1b; }
+   238→
+   239→/* Dark mode badge overrides */
+   240→.dark .badge-new { background-color: #1e3a5f; color: #93c5fd; }
+   241→.dark .badge-assigned { background-color: #312e81; color: #a5b4fc; }
+   242→.dark .badge-following { background-color: #78350f; color: #fcd34d; }
+   243→.dark .badge-quoted { background-color: #064e3b; color: #6ee7b7; }
+   244→.dark .badge-won { background-color: #14532d; color: #4ade80; }
+   245→.dark .badge-lost { background-color: #7f1d1d; color: #fca5a5; }
+   246→.dark .badge-pooled { background-color: #374151; color: #9ca3af; }
+   247→.dark .badge-closed { background-color: #1f2937; color: #6b7280; }
+   248→.dark .badge-draft { background-color: #374151; color: #9ca3af; }
+   249→.dark .badge-pending-approval { background-color: #78350f; color: #fcd34d; }
+   250→.dark .badge-sent { background-color: #1e3a5f; color: #93c5fd; }
+   251→.dark .badge-accepted { background-color: #14532d; color: #4ade80; }
+   252→.dark .badge-rejected { background-color: #7f1d1d; color: #fca5a5; }
+   253→.dark .badge-expired { background-color: #9a3412; color: #fdba74; }
+   254→.dark .badge-cancelled { background-color: #374151; color: #9ca3af; }
+   255→.dark .badge-order-pending { background-color: #78350f; color: #fcd34d; }
+   256→.dark .badge-confirmed { background-color: #1e3a5f; color: #93c5fd; }
+   257→.dark .badge-in_production { background-color: #312e81; color: #a5b4fc; }
+   258→.dark .badge-ready { background-color: #064e3b; color: #6ee7b7; }
+   259→.dark .badge-shipped { background-color: #164e63; color: #67e8f9; }
+   260→.dark .badge-completed { background-color: #14532d; color: #4ade80; }
+   261→.dark .badge-order-cancelled { background-color: #7f1d1d; color: #fca5a5; }
+   262→.dark .badge-payment-pending { background-color: #78350f; color: #fcd34d; }
+   263→.dark .badge-partial { background-color: #312e81; color: #a5b4fc; }
+   264→.dark .badge-payment-completed { background-color: #14532d; color: #4ade80; }
+   265→.dark .badge-overdue { background-color: #7f1d1d; color: #fca5a5; }
+   266→.dark .badge-level-A { background-color: #064e3b; color: #6ee7b7; }
+   267→.dark .badge-level-B { background-color: #1e3a5f; color: #93c5fd; }
+   268→.dark .badge-level-C { background-color: #78350f; color: #fcd34d; }
+   269→.dark .badge-level-D { background-color: #7f1d1d; color: #fca5a5; }
+   270→.dark .badge-priority-low { background-color: #374151; color: #9ca3af; }
+   271→.dark .badge-priority-normal { background-color: #1e3a5f; color: #93c5fd; }
+   272→.dark .badge-priority-high { background-color: #78350f; color: #fcd34d; }
+   273→.dark .badge-priority-urgent { background-color: #7f1d1d; color: #fca5a5; }
+   274→
+   275→/* Animation Keyframes */
+   276→@keyframes fadeInUp {
+   277→  from {
+   278→    opacity: 0;
+   279→    transform: translateY(12px);
+   280→  }
+   281→  to {
+   282→    opacity: 1;
+   283→    transform: translateY(0);
+   284→  }
+   285→}
+   286→
+   287→@keyframes slideInRight {
+   288→  from {
+   289→    opacity: 0;
+   290→    transform: translateX(20px);
+   291→  }
+   292→  to {
+   293→    opacity: 1;
+   294→    transform: translateX(0);
+   295→  }
+   296→}
+   297→
+   298→@keyframes pulse-soft {
+   299→  0%, 100% {
+   300→    opacity: 1;
+   301→  }
+   302→  50% {
+   303→    opacity: 0.7;
+   304→  }
+   305→}
+   306→
+   307→.animate-fade-in-up {
+   308→  animation: fadeInUp 0.35s ease-out forwards;
+   309→}
+   310→
+   311→.animate-slide-in-right {
+   312→  animation: slideInRight 0.3s ease-out forwards;
+   313→}
+   314→
+   315→.animate-pulse-soft {
+   316→  animation: pulse-soft 2s ease-in-out infinite;
+   317→}
+   318→
+   319→/* Staggered animation delays */
+   320→.stagger-1 { animation-delay: 0.05s; }
+   321→.stagger-2 { animation-delay: 0.1s; }
+   322→.stagger-3 { animation-delay: 0.15s; }
+   323→.stagger-4 { animation-delay: 0.2s; }
+   324→.stagger-5 { animation-delay: 0.25s; }
+   325→
+   326→
+   327→
+   328→/* Smooth transitions */
+   329→.crm-transition {
+   330→  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+   331→}
+   332→
+   333→/* Alert bar scrollable */
+   334→.alert-bar-scroll {
+   335→  scrollbar-width: none;
+   336→  -ms-overflow-style: none;
+   337→}
+   338→
+   339→.alert-bar-scroll::-webkit-scrollbar {
+   340→  display: none;
+   341→}
+   342→
+   343→/* Number formatting */
+   344→.crm-number {
+   345→  font-variant-numeric: tabular-nums;
+   346→  font-feature-settings: "tnum";
+   347→}
+   348→
+   349→/* ============ Enhanced CRM Styles ============ */
+   350→
+   351→/* KPI Card Gradient Left Border */
+   352→.kpi-border-emerald {
+   353→  border-left: 4px solid;
+   354→  border-image: linear-gradient(180deg, #10b981, #059669, #047857) 1;
+   355→}
+   356→.kpi-border-amber {
+   357→  border-left: 4px solid;
+   358→  border-image: linear-gradient(180deg, #f59e0b, #d97706, #b45309) 1;
+   359→}
+   360→.kpi-border-rose {
+   361→  border-left: 4px solid;
+   362→  border-image: linear-gradient(180deg, #f43f5e, #e11d48, #be123c) 1;
+   363→}
+   364→.kpi-border-sky {
+   365→  border-left: 4px solid;
+   366→  border-image: linear-gradient(180deg, #0ea5e9, #0284c7, #0369a1) 1;
+   367→}
+   368→.kpi-border-violet {
+   369→  border-left: 4px solid;
+   370→  border-image: linear-gradient(180deg, #8b5cf6, #7c3aed, #6d28d9) 1;
+   371→}
+   372→
+   373→/* KPI Card Enhanced Hover */
+   374→.kpi-card-hover {
+   375→  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+   376→}
+   377→.kpi-card-hover:hover {
+   378→  transform: scale(1.02);
+   379→  box-shadow: 0 12px 32px -8px oklch(0 0 0 / 12%), 0 4px 12px -4px oklch(0 0 0 / 8%);
+   380→}
+   381→.dark .kpi-card-hover:hover {
+   382→  box-shadow: 0 12px 32px -8px oklch(0 0 0 / 35%), 0 4px 12px -4px oklch(0 0 0 / 25%);
+   383→}
+   384→
+   385→/* KPI Pattern Overlay */
+   386→.kpi-pattern-overlay {
+   387→  position: absolute;
+   388→  inset: 0;
+   389→  opacity: 0.03;
+   390→  background-image: radial-gradient(circle, oklch(0 0 0) 1px, transparent 1px);
+   391→  background-size: 16px 16px;
+   392→  pointer-events: none;
+   393→}
+   394→.dark .kpi-pattern-overlay {
+   395→  opacity: 0.05;
+   396→}
+   397→
+   398→/* Workbench Dot Pattern Background */
+   399→.workbench-bg {
+   400→  background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0);
+   401→  background-size: 24px 24px;
+   402→}
+   403→.dark .workbench-bg {
+   404→  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+   405→}
+   406→
+   407→/* Table Row Hover with Left Border Highlight & Click Ripple */
+   408→.crm-table-row {
+   409→  position: relative;
+   410→  overflow: hidden;
+   411→  transition: all 0.15s ease;
+   412→  border-left: 3px solid transparent;
+   413→}
+   414→.crm-table-row:hover {
+   415→  background-color: oklch(0.97 0.005 155);
+   416→  border-left-color: #10b981;
+   417→}
+   418→.dark .crm-table-row:hover {
+   419→  background-color: oklch(0.269 0.01 155);
+   420→  border-left-color: #10b981;
+   421→}
+   422→.crm-table-row::after {
+   423→  content: '';
+   424→  position: absolute;
+   425→  inset: 0;
+   426→  background: radial-gradient(circle, rgba(16,185,129,0.08) 10%, transparent 10.01%);
+   427→  transform: scale(10);
+   428→  opacity: 0;
+   429→  transition: transform 0.5s, opacity 0.5s;
+   430→}
+   431→.crm-table-row:active::after {
+   432→  transform: scale(0);
+   433→  opacity: 1;
+   434→  transition: 0s;
+   435→}
+   436→
+   437→/* Zebra Striping */
+   438→.crm-table-row-odd {
+   439→  background-color: oklch(0.985 0 0);
+   440→}
+   441→.dark .crm-table-row-odd {
+   442→  background-color: oklch(0.225 0 0);
+   443→}
+   444→
+   445→/* Card Hover Shadow Transition */
+   446→.crm-card-hover {
+   447→  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+   448→}
+   449→.crm-card-hover:hover {
+   450→  transform: translateY(-2px);
+   451→  box-shadow: 0 8px 25px -5px oklch(0 0 0 / 10%), 0 4px 10px -6px oklch(0 0 0 / 5%);
+   452→}
+   453→.dark .crm-card-hover:hover {
+   454→  box-shadow: 0 8px 25px -5px oklch(0 0 0 / 30%), 0 4px 10px -6px oklch(0 0 0 / 20%);
+   455→}
+   456→
+   457→/* Status Badge Glow Effects */
+   458→.badge-glow-emerald {
+   459→  box-shadow: 0 0 8px 2px oklch(0.696 0.17 162.48 / 0.35);
+   460→  animation: glow-pulse-emerald 2s ease-in-out infinite;
+   461→}
+   462→@keyframes glow-pulse-emerald {
+   463→  0%, 100% { box-shadow: 0 0 8px 2px oklch(0.696 0.17 162.48 / 0.3); }
+   464→  50% { box-shadow: 0 0 14px 4px oklch(0.696 0.17 162.48 / 0.5); }
+   465→}
+   466→
+   467→/* Quotation badge style - slightly different from inquiry */
+   468→.badge-quotation {
+   469→  border-radius: 2px;
+   470→  letter-spacing: 0.02em;
+   471→}
+   472→
+   473→/* Order badge - more subtle */
+   474→.badge-order {
+   475→  font-size: 11px;
+   476→  opacity: 0.88;
+   477→}
+   478→
+   479→/* Risk Alert Pulse for Danger Level */
+   480→.risk-alert-danger {
+   481→  animation: risk-pulse 2s ease-in-out infinite;
+   482→}
+   483→@keyframes risk-pulse {
+   484→  0%, 100% { opacity: 1; }
+   485→  50% { opacity: 0.75; }
+   486→}
+   487→
+   488→/* Smooth Page Transitions */
+   489→.page-transition-enter {
+   490→  opacity: 0;
+   491→  transform: translateX(12px);
+   492→}
+   493→.page-transition-enter-active {
+   494→  opacity: 1;
+   495→  transform: translateX(0);
+   496→  transition: all 0.25s ease-out;
+   497→}
+   498→.page-transition-exit {
+   499→  opacity: 1;
+   500→}
+   501→.page-transition-exit-active {
+   502→  opacity: 0;
+   503→  transform: translateX(-12px);
+   504→  transition: all 0.2s ease-in;
+   505→}
+   506→
+   507→/* Role Card Gradient Borders */
+   508→.role-card-border-emerald { --role-color: #10b981; }
+   509→.role-card-border-amber { --role-color: #f59e0b; }
+   510→.role-card-border-sky { --role-color: #0ea5e9; }
+   511→.role-card-border-teal { --role-color: #14b8a6; }
+   512→.role-card-border-rose { --role-color: #f43f5e; }
+   513→
+   514→.role-card-gradient-border {
+   515→  position: relative;
+   516→  border: 2px solid transparent;
+   517→  background-clip: padding-box;
+   518→}
+   519→.role-card-gradient-border::before {
+   520→  content: '';
+   521→  position: absolute;
+   522→  inset: -2px;
+   523→  border-radius: inherit;
+   524→  padding: 2px;
+   525→  background: linear-gradient(135deg, var(--role-color, #10b981), transparent 60%);
+   526→  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+   527→  -webkit-mask-composite: xor;
+   528→  mask-composite: exclude;
+   529→  opacity: 0;
+   530→  transition: opacity 0.3s ease;
+   531→  pointer-events: none;
+   532→}
+   533→.role-card-gradient-border:hover::before {
+   534→  opacity: 1;
+   535→}
+   536→
+   537→/* Sidebar gradient header */
+   538→.sidebar-gradient-header {
+   539→  background: linear-gradient(135deg, oklch(0.97 0.02 155), oklch(0.98 0.01 180));
+   540→}
+   541→.dark .sidebar-gradient-header {
+   542→  background: linear-gradient(135deg, oklch(0.22 0.02 155), oklch(0.20 0.01 180));
+   543→}
+   544→
+   545→/* Sidebar active menu item accent */
+   546→.sidebar-active-accent {
+   547→  position: relative;
+   548→}
+   549→.sidebar-active-accent::before {
+   550→  content: '';
+   551→  position: absolute;
+   552→  left: 0;
+   553→  top: 50%;
+   554→  transform: translateY(-50%);
+   555→  width: 3px;
+   556→  height: 60%;
+   557→  background: #10b981;
+   558→  border-radius: 0 3px 3px 0;
+   559→}
+   560→
+   561→/* Text truncation utility */
+   562→.truncate-cell {
+   563→ max-width: 200px;
+   564→ overflow: hidden;
+   565→ text-overflow: ellipsis;
+   566→ white-space: nowrap;
+   567→}
+   568→
+   569→/* ============ Dark Mode Enhancements ============ */
+   570→
+   571→/* Card subtle border glow in dark mode */
+   572→.dark .border {
+   573→  border-color: oklch(1 0 0 / 8%);
+   574→}
+   575→
+   576→.dark .rounded-lg.border,
+   577→.dark [class*="rounded-lg"].border {
+   578→  border-color: oklch(1 0 0 / 12%);
+   579→}
+   580→
+   581→.dark .card,
+   582→.dark [class*="Card"] {
+   583→  border-color: oklch(1 0 0 / 10%);
+   584→}
+   585→
+   586→/* Table row dark mode hover */
+   587→.dark .crm-table-row:hover {
+   588→  background-color: oklch(0.22 0.005 155);
+   589→}
+   590→
+   591→.dark .crm-table-row-odd {
+   592→  background-color: oklch(0.195 0 0);
+   593→}
+   594→
+   595→/* Input/Select dark mode */
+   596→.dark input,
+   597→.dark select,
+   598→.dark textarea {
+   599→  background-color: oklch(0.22 0 0);
+   600→  border-color: oklch(1 0 0 / 12%);
+   601→  color: oklch(0.985 0 0);
+   602→}
+   603→
+   604→.dark input::placeholder,
+   605→.dark textarea::placeholder {
+   606→  color: oklch(0.556 0 0);
+   607→}
+   608→
+   609→.dark input:focus,
+   610→.dark select:focus,
+   611→.dark textarea:focus {
+   612→  border-color: oklch(0.696 0.17 162.48);
+   613→  box-shadow: 0 0 0 2px oklch(0.696 0.17 162.48 / 15%);
+   614→}
+   615→
+   616→/* Risk alerts dark mode */
+   617→.dark .bg-rose-50,
+   618→.dark .bg-red-50 {
+   619→  background-color: oklch(0.269 0.015 25);
+   620→}
+   621→
+   622→.dark .bg-amber-50,
+   623→.dark .bg-yellow-50 {
+   624→  background-color: oklch(0.269 0.015 85);
+   625→}
+   626→
+   627→.dark .text-rose-700,
+   628→.dark .text-red-700 {
+   629→  color: oklch(0.704 0.191 22.216);
+   630→}
+   631→
+   632→.dark .text-amber-700,
+   633→.dark .text-yellow-700 {
+   634→  color: oklch(0.769 0.188 70.08);
+   635→}
+   636→
+   637→/* Muted backgrounds in dark mode cards */
+   638→.dark .bg-muted {
+   639→  background-color: oklch(0.22 0 0);
+   640→}
+   641→
+   642→/* Sheet and Dialog dark mode */
+   643→.dark [role="dialog"],
+   644→.dark .sheet {
+   645→  background-color: oklch(0.185 0 0);
+   646→}
+   647→
+   648→/* Popover dark mode */
+   649→.dark [data-radix-popper-content-wrapper] {
+   650→  background-color: oklch(0.22 0 0);
+   651→  border-color: oklch(1 0 0 / 12%);
+   652→}
+   653→
+   654→/* ============ CRM Utility Classes ============ */
+   655→
+   656→/* A-level customer glow */
+   657→.crm-glow-emerald {
+   658→  box-shadow: 0 0 12px 2px oklch(0.696 0.17 162.48 / 0.25), 0 0 4px 0px oklch(0.696 0.17 162.48 / 0.15);
+   659→}
+   660→.dark .crm-glow-emerald {
+   661→  box-shadow: 0 0 16px 4px oklch(0.696 0.17 162.48 / 0.2), 0 0 6px 0px oklch(0.696 0.17 162.48 / 0.1);
+   662→}
+   663→
+   664→/* Emerald-tinted focus rings for inputs */
+   665→input:focus-visible,
+   666→select:focus-visible,
+   667→textarea:focus-visible {
+   668→  outline: 2px solid oklch(0.696 0.17 162.48 / 0.5);
+   669→  outline-offset: 1px;
+   670→}
+   671→
+   672→/* Card hover lift effect */
+   673→.crm-card-lift {
+   674→  transition: transform 0.2s ease, box-shadow 0.2s ease;
+   675→}
+   676→.crm-card-lift:hover {
+   677→  transform: translateY(-2px);
+   678→  box-shadow: 0 4px 12px -2px oklch(0 0 0 / 0.1), 0 2px 6px -2px oklch(0 0 0 / 0.06);
+   679→}
+   680→.dark .crm-card-lift:hover {
+   681→  box-shadow: 0 4px 12px -2px oklch(0 0 0 / 0.3), 0 2px 6px -2px oklch(0 0 0 / 0.2);
+   682→}
+   683→
+   684→/* Mini stat number */
+   685→.crm-stat-mini {
+   686→  font-size: 1.125rem;
+   687→  font-weight: 700;
+   688→  letter-spacing: -0.025em;
+   689→  line-height: 1.25;
+   690→}
+   691→
+   692→/* Activity timeline dot */
+   693→.crm-timeline-dot {
+   694→  width: 8px;
+   695→  height: 8px;
+   696→  border-radius: 9999px;
+   697→  flex-shrink: 0;
+   698→}
+   699→
+   700→/* Smooth tab content transition */
+   701→.crm-tab-content {
+   702→  animation: tabFadeIn 0.2s ease-out;
+   703→}
+   704→@keyframes tabFadeIn {
+   705→  from {
+   706→    opacity: 0;
+   707→    transform: translateY(4px);
+   708→  }
+   709→  to {
+   710→    opacity: 1;
+   711→    transform: translateY(0);
+   712→  }
+   713→}
+   714→
+   715→/* ============ Enhanced Card Glow for Dark Mode ============ */
+   716→.dark .crm-card-glow {
+   717→  box-shadow: 0 0 0 1px rgba(16,185,129,0.1), 0 4px 12px rgba(0,0,0,0.3);
+   718→}
+   719→.dark .crm-card-glow:hover {
+   720→  box-shadow: 0 0 0 1px rgba(16,185,129,0.3), 0 8px 24px rgba(0,0,0,0.4);
+   721→}
+   722→
+   723→/* ============ Tooltip Styling ============ */
+   724→.crm-tooltip {
+   725→  background: hsl(var(--popover));
+   726→  border: 1px solid hsl(var(--border));
+   727→  border-radius: 6px;
+   728→  padding: 4px 8px;
+   729→  font-size: 12px;
+   730→  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+   731→}
+   732→
+   733→/* ============ Kanban Board Styles ============ */
+   734→.kanban-column {
+   735→  min-width: 280px;
+   736→  max-width: 320px;
+   737→  flex-shrink: 0;
+   738→}
+   739→
+   740→.kanban-card {
+   741→  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+   742→  border-left: 3px solid transparent;
+   743→}
+   744→.kanban-card:hover {
+   745→  transform: translateY(-1px) scale(1.005);
+   746→  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.1), 0 2px 6px -2px rgba(0,0,0,0.06);
+   747→}
+   748→.dark .kanban-card:hover {
+   749→  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.35), 0 2px 6px -2px rgba(0,0,0,0.25);
+   750→}
+   751→
+   752→.kanban-card-level-A { border-left-color: #10b981; }
+   753→.kanban-card-level-B { border-left-color: #f59e0b; }
+   754→.kanban-card-level-C { border-left-color: #0ea5e9; }
+   755→.kanban-card-level-D { border-left-color: #f43f5e; }
+   756→
+   757→.kanban-column-header-A { background: linear-gradient(135deg, #ecfdf5, #d1fae5); color: #065f46; }
+   758→.kanban-column-header-B { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #92400e; }
+   759→.kanban-column-header-C { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); color: #075985; }
+   760→.kanban-column-header-D { background: linear-gradient(135deg, #fff1f2, #ffe4e6); color: #9f1239; }
+   761→
+   762→.dark .kanban-column-header-A { background: linear-gradient(135deg, #052e16, #064e3b); color: #6ee7b7; }
+   763→.dark .kanban-column-header-B { background: linear-gradient(135deg, #451a03, #78350f); color: #fcd34d; }
+   764→.dark .kanban-column-header-C { background: linear-gradient(135deg, #082f49, #0c4a6e); color: #7dd3fc; }
+   765→.dark .kanban-column-header-D { background: linear-gradient(135deg, #4c0519, #881337); color: #fda4af; }
+   766→
+   767→/* ============ Command Palette Styles ============ */
+   768→.crm-cmd-group-label {
+   769→  font-size: 11px;
+   770→  font-weight: 600;
+   771→  text-transform: uppercase;
+   772→  letter-spacing: 0.05em;
+   773→  color: oklch(0.556 0 0);
+   774→  padding: 8px 12px 4px;
+   775→}
+   776→
+   777→.crm-cmd-item {
+   778→  transition: all 0.12s ease;
+   779→  border-radius: 6px;
+   780→  margin: 2px 4px;
+   781→  padding: 8px 12px;
+   782→}
+   783→.crm-cmd-item[data-selected="true"],
+   784→.crm-cmd-item:hover {
+   785→  background-color: oklch(0.97 0.005 155);
+   786→}
+   787→.dark .crm-cmd-item[data-selected="true"],
+   788→.dark .crm-cmd-item:hover {
+   789→  background-color: oklch(0.269 0.01 155);
+   790→}
+   791→
+   792→/* ============ Notification Dropdown Styles ============ */
+   793→.notification-item {
+   794→  transition: all 0.15s ease;
+   795→  border-left: 3px solid transparent;
+   796→}
+   797→.notification-item:hover {
+   798→  background-color: oklch(0.97 0.003 155);
+   799→}
+   800→.notification-item-unread {
+   801→  border-left-color: #10b981;
+   802→  background-color: oklch(0.98 0.005 155);
+   803→}
+   804→.dark .notification-item:hover {
+   805→  background-color: oklch(0.269 0.005 155);
+   806→}
+   807→.dark .notification-item-unread {
+   808→  background-color: oklch(0.22 0.005 155);
+   809→}
+   810→
+   811→.notification-dot {
+   812→  width: 6px;
+   813→  height: 6px;
+   814→  border-radius: 9999px;
+   815→  background: #10b981;
+   816→  flex-shrink: 0;
+   817→  animation: notification-pulse 2s ease-in-out infinite;
+   818→}
+   819→@keyframes notification-pulse {
+   820→  0%, 100% { opacity: 1; transform: scale(1); }
+   821→  50% { opacity: 0.5; transform: scale(0.8); }
+   822→}
+   823→
+   824→/* ============ AI Assistant Enhanced Styles ============ */
+   825→.ai-message-enter {
+   826→  animation: aiMsgSlideIn 0.3s ease-out;
+   827→}
+   828→@keyframes aiMsgSlideIn {
+   829→  from {
+   830→    opacity: 0;
+   831→    transform: translateY(8px) scale(0.98);
+   832→  }
+   833→  to {
+   834→    opacity: 1;
+   835→    transform: translateY(0) scale(1);
+   836→  }
+   837→}
+   838→
+   839→.ai-typing-dot {
+   840→  animation: aiTypingBounce 1.4s ease-in-out infinite;
+   841→}
+   842→@keyframes aiTypingBounce {
+   843→  0%, 80%, 100% {
+   844→    transform: scale(0.6);
+   845→    opacity: 0.4;
+   846→  }
+   847→  40% {
+   848→    transform: scale(1);
+   849→    opacity: 1;
+   850→  }
+   851→}
+   852→
+   853→/* ============ Shimmer Loading Effect ============ */
+   854→.crm-shimmer {
+   855→  position: relative;
+   856→  overflow: hidden;
+   857→}
+   858→.crm-shimmer::after {
+   859→  content: '';
+   860→  position: absolute;
+   861→  inset: 0;
+   862→  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 40%), transparent);
+   863→  transform: translateX(-100%);
+   864→  animation: shimmer 2s infinite;
+   865→}
+   866→.dark .crm-shimmer::after {
+   867→  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 8%), transparent);
+   868→}
+   869→@keyframes shimmer {
+   870→  to { transform: translateX(100%); }
+   871→}
+   872→
+   873→/* ============ Export Button Animation ============ */
+   874→.export-btn-success {
+   875→  animation: exportSuccess 0.5s ease-out;
+   876→}
+   877→@keyframes exportSuccess {
+   878→  0% { transform: scale(1); }
+   879→  50% { transform: scale(1.05); }
+   880→  100% { transform: scale(1); }
+   881→}
+   882→
+   883→/* ============ Sidebar Notification Badge Pulse ============ */
+   884→.sidebar-badge-pulse {
+   885→  animation: sidebarBadgePulse 2s ease-in-out infinite;
+   886→}
+   887→@keyframes sidebarBadgePulse {
+   888→  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+   889→  50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+   890→}
+   891→
+   892→/* ============ Print Styles ============ */
+   893→@media print {
+   894→  .no-print {
+   895→    display: none !important;
+   896→  }
+   897→  .crm-sidebar,
+   898→  .crm-header,
+   899→  .sidebar {
+   900→    display: none !important;
+   901→  }
+   902→  main {
+   903→    padding: 0 !important;
+   904→  }
+   905→}
+   906→
+   907→/* ============ Selection Color ============ */
+   908→::selection {
+   909→  background-color: oklch(0.696 0.17 162.48 / 0.25);
+   910→  color: inherit;
+   911→}
+   912→.dark ::selection {
+   913→  background-color: oklch(0.696 0.17 162.48 / 0.35);
+   914→}

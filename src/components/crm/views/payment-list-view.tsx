@@ -17,13 +17,15 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/utils'
-import { DollarSign, CheckCircle2, Clock, AlertTriangle, Plus, ChevronDown, ChevronUp, Check, ChevronsUpDown, Download } from 'lucide-react'
+import { DollarSign, CheckCircle2, Clock, AlertTriangle, Plus, ChevronDown, ChevronUp, Check, ChevronsUpDown, Download, List, LayoutGrid } from 'lucide-react'
 import { PAYMENT_STATUS_LABELS } from '@/lib/types'
 import { exportToCSV } from '@/lib/export-csv'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import { PaymentKanbanView } from './payment-kanban-view'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
@@ -48,6 +50,7 @@ const DEFAULT_PAYMENT_FORM: PaymentForm = {
 export function PaymentListView() {
   const { filters, setFilters } = useCRMStore()
   const queryClient = useQueryClient()
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
 
   const { data, isLoading } = useQuery({
     queryKey: ['payments', filters],
@@ -195,6 +198,10 @@ export function PaymentListView() {
           </SelectContent>
         </Select>
         <div className="ml-auto flex items-center gap-2">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => { if (v) setViewMode(v as 'list' | 'kanban') }} className="bg-muted p-0.5 h-9">
+            <ToggleGroupItem value="list" className="h-8 text-xs px-3 gap-1.5" aria-label="列表视图"><List className="h-3.5 w-3.5" /></ToggleGroupItem>
+            <ToggleGroupItem value="kanban" className="h-8 text-xs px-3 gap-1.5" aria-label="看板视图"><LayoutGrid className="h-3.5 w-3.5" /></ToggleGroupItem>
+          </ToggleGroup>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -240,7 +247,10 @@ export function PaymentListView() {
         </div>
       </div>
 
-      <div className="rounded-lg border overflow-hidden">
+      {viewMode === 'kanban' ? (
+        <PaymentKanbanView />
+      ) : (
+        <div className="rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/30">
@@ -364,6 +374,7 @@ export function PaymentListView() {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* 新建付款 Dialog */}
       <Dialog open={paymentFormOpen} onOpenChange={(v) => !v && setPaymentFormOpen(false)}>

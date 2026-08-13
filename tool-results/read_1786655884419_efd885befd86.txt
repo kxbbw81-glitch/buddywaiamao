@@ -1,0 +1,650 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useState } from 'react'
+     4→import { motion } from 'framer-motion'
+     5→import {
+     6→  Users,
+     7→  Target,
+     8→  FileText,
+     9→  ShoppingCart,
+    10→  DollarSign,
+    11→  TrendingUp,
+    12→  AlertTriangle,
+    13→  AlertCircle,
+    14→  Info,
+    15→  Plus,
+    16→  Bot,
+    17→  BarChart3,
+    18→  Clock,
+    19→  Mail,
+    20→  Phone,
+    21→  MessageSquare,
+    22→  CalendarDays,
+    23→  ArrowUpRight,
+    24→  Sparkles,
+    25→  UserPlus,
+    26→  Calculator,
+    27→  CheckCircle2,
+    28→  ChevronRight,
+    29→  Wallet,
+    30→  PieChart as PieChartIcon,
+    31→  CreditCard,
+    32→  TrendingDown,
+    33→  Eye,
+    34→} from 'lucide-react'
+    35→import { useQuery } from '@tanstack/react-query'
+    36→import { format } from 'date-fns'
+    37→import { zhCN } from 'date-fns/locale'
+    38→import { useCRMStore } from '@/store/use-crm-store'
+    39→import { KPICard } from '@/components/crm/kpi-card'
+    40→import { StatusBadge } from '@/components/crm/status-badge'
+    41→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+    42→import { Badge } from '@/components/ui/badge'
+    43→import { Button } from '@/components/ui/button'
+    44→import { Progress } from '@/components/ui/progress'
+    45→import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+    46→import { cn } from '@/lib/utils'
+    47→import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils'
+    48→import {
+    49→  AreaChart,
+    50→  Area,
+    51→  XAxis,
+    52→  YAxis,
+    53→  CartesianGrid,
+    54→  Tooltip,
+    55→  ResponsiveContainer,
+    56→  PieChart,
+    57→  Pie,
+    58→  Cell,
+    59→  BarChart,
+    60→  Bar,
+    61→} from 'recharts'
+    62→
+    63→const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316']
+    64→
+    65→const activityIcons: Record<string, React.ElementType> = {
+    66→  email: Mail,
+    67→  call: Phone,
+    68→  meeting: Users,
+    69→  note: MessageSquare,
+    70→  follow_up: Clock,
+    71→  system: Bot,
+    72→}
+    73→
+    74→const motivationalLines = [
+    75→  '每一个询盘都是潜在的合作机会',
+    76→  '跟进及时，成交率提升50%',
+    77→  '今天的目标客户，就是明天的订单',
+    78→  '数据驱动决策，效率成就业绩',
+    79→  '客户至上，服务为先',
+    80→]
+    81→
+    82→const quickActions = [
+    83→  { label: '新建客户', icon: UserPlus, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'customer' },
+    84→  { label: '新建询盘', icon: FileText, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'inquiry' },
+    85→  { label: '新建报价', icon: Calculator, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'quotation' },
+    86→  { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+    87→]
+    88→
+    89→const roleQuickActions: Record<string, typeof quickActions> = {
+    90→  finance: [
+    91→    { label: '收款管理', icon: Wallet, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'payments' },
+    92→    { label: '查看订单', icon: ShoppingCart, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'orders' },
+    93→    { label: '报价审核', icon: FileText, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'quotations' },
+    94→    { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+    95→  ],
+    96→  management: [
+    97→    { label: '新建客户', icon: UserPlus, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'customer' },
+    98→    { label: '数据分析', icon: BarChart3, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'analytics' },
+    99→    { label: '查看订单', icon: ShoppingCart, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'orders' },
+   100→    { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+   101→  ],
+   102→}
+   103→
+   104→export function WorkbenchView() {
+   105→  const { currentUser, openInquiryForm, openCustomerForm, openQuotationForm, selectInquiry, toggleAiDrawer } = useCRMStore()
+   106→
+   107→  useEffect(() => {
+   108→  }, [])
+   109→
+   110→  const { data, isLoading } = useQuery({
+   111→    queryKey: ['dashboard'],
+   112→    queryFn: () => fetch('/api/dashboard').then((r) => r.json()),
+   113→    refetchInterval: 30000,
+   114→  })
+   115→
+   116→  const { data: pendingInquiriesData } = useQuery({
+   117→    queryKey: ['pending-inquiries'],
+   118→    queryFn: () => fetch('/api/inquiries?status=new&pageSize=50').then((r) => r.json()),
+   119→    refetchInterval: 30000,
+   120→  })
+   121→
+   122→  const { data: followingInquiriesData } = useQuery({
+   123→    queryKey: ['following-inquiries'],
+   124→    queryFn: () => fetch('/api/inquiries?status=following&pageSize=50').then((r) => r.json()),
+   125→    refetchInterval: 30000,
+   126→  })
+   127→
+   128→  const pendingInquiries = [...(pendingInquiriesData?.data || []), ...(followingInquiriesData?.data || [])]
+   129→    .sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+   130→      const pa = a.priority as string
+   131→      const pb = b.priority as string
+   132→      const priorityOrder = { urgent: 0, high: 1, normal: 2, low: 3 }
+   133→      return (priorityOrder[pa] || 2) - (priorityOrder[pb] || 2)
+   134→    })
+   135→
+   136→  const handleQuickAction = (action: string) => {
+   137→    const { setCurrentModule } = useCRMStore.getState()
+   138→    switch (action) {
+   139→      case 'customer': openCustomerForm(); break
+   140→      case 'inquiry': openInquiryForm(); break
+   141→      case 'quotation': openQuotationForm(); break
+   142→      case 'ai': toggleAiDrawer(); break
+   143→      case 'payments': setCurrentModule('payments'); break
+   144→      case 'orders': setCurrentModule('orders'); break
+   145→      case 'quotations': setCurrentModule('quotations'); break
+   146→      case 'analytics': setCurrentModule('analytics'); break
+   147→    }
+   148→  }
+   149→
+   150→  const activeQuickActions = roleQuickActions[currentUser?.primaryRole || ''] || quickActions
+   151→
+   152→  if (isLoading || !data?.data) {
+   153→    return (
+   154→      <div className="space-y-6">
+   155→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   156→          {[1, 2, 3, 4].map((i) => (
+   157→            <Card key={i} className="p-6 animate-pulse">
+   158→              <div className="h-4 bg-muted rounded w-20 mb-3" />
+   159→              <div className="h-8 bg-muted rounded w-16 mb-2" />
+   160→              <div className="h-4 bg-muted rounded w-24" />
+   161→            </Card>
+   162→          ))}
+   163→        </div>
+   164→      </div>
+   165→    )
+   166→  }
+   167→
+   168→  const { kpis, riskAlerts, recentActivities, charts } = data.data
+   169→
+   170→  const funnelData = [
+   171→    { stage: '询盘', count: kpis.totalInquiries, value: kpis.totalInquiries },
+   172→    { stage: '报价', count: kpis.pendingQuotations, value: kpis.pendingQuotations },
+   173→    { stage: '订单', count: kpis.activeOrders, value: kpis.activeOrders },
+   174→    { stage: '成交', count: kpis.wonInquiries, value: kpis.wonInquiries },
+   175→  ]
+   176→
+   177→  const statusLabels: Record<string, string> = {
+   178→    new: '新询盘', assigned: '已分配', following: '跟进中', quoted: '已报价',
+   179→    won: '已成交', lost: '已流失', pooled: '公海', closed: '已关闭',
+   180→  }
+   181→
+   182→  const today = new Date()
+   183→  const dayOfWeek = format(today, 'EEEE', { locale: zhCN })
+   184→  const dateStr = format(today, 'yyyy年M月d日', { locale: zhCN })
+   185→  const motivLine = motivationalLines[today.getDate() % motivationalLines.length]
+   186→
+   187→  return (
+   188→    <div className="space-y-6 workbench-bg rounded-lg p-1">
+   189→      {/* Welcome Section */}
+   190→      <motion.div
+   191→        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+   192→        initial={{ opacity: 0, y: -10 }}
+   193→        animate={{ opacity: 1, y: 0 }}
+   194→        transition={{ duration: 0.4 }}
+   195→      >
+   196→        <div>
+   197→          <h1 className="text-xl font-bold">
+   198→            欢迎回来, {currentUser?.name || '用户'}!
+   199→          </h1>
+   200→          <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+   201→            <CalendarDays className="h-3.5 w-3.5" />
+   202→            {dateStr} {dayOfWeek}
+   203→          </p>
+   204→        </div>
+   205→        <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+   206→          <Sparkles className="h-3.5 w-3.5" />
+   207→          {motivLine}
+   208→        </p>
+   209→      </motion.div>
+   210→
+   211→      {/* Risk Alerts Bar */}
+   212→      {riskAlerts.length > 0 && (
+   213→        <ScrollArea className="w-full whitespace-nowrap">
+   214→          <div className="flex gap-3 pb-2">
+   215→            {riskAlerts.map((alert: Record<string, unknown>, i: number) => (
+   216→              <motion.div
+   217→                key={i}
+   218→                initial={{ opacity: 0, y: -10 }}
+   219→                animate={{ opacity: 1, y: 0 }}
+   220→                transition={{ delay: i * 0.05 }}
+   221→                className={cn(
+   222→                  'flex items-center gap-2 px-3 py-2 rounded-lg border text-xs shrink-0',
+   223→                  alert.level === 'danger' && 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-400 risk-alert-danger',
+   224→                  alert.level === 'warning' && 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-400',
+   225→                  alert.level === 'info' && 'bg-sky-50 border-sky-200 text-sky-700 dark:bg-sky-950 dark:border-sky-800 dark:text-sky-400'
+   226→                )}
+   227→              >
+   228→                {alert.level === 'danger' ? <AlertTriangle className="h-3 w-3" /> : alert.level === 'warning' ? <AlertCircle className="h-3 w-3" /> : <Info className="h-3 w-3" />}
+   229→                <span>{alert.message as string}</span>
+   230→              </motion.div>
+   231→            ))}
+   232→          </div>
+   233→          <ScrollBar orientation="horizontal" />
+   234→        </ScrollArea>
+   235→      )}
+   236→
+   237→      {/* 今日概览 */}
+   238→      <motion.div
+   239→        className="grid grid-cols-3 gap-3"
+   240→        initial={{ opacity: 0 }}
+   241→        animate={{ opacity: 1 }}
+   242→        transition={{ delay: 0.12 }}
+   243→      >
+   244→        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
+   245→          <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+   246→            <ArrowUpRight className="h-4 w-4" />
+   247→          </div>
+   248→          <div>
+   249→            <p className="text-xs text-muted-foreground">今日新增询盘</p>
+   250→            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.todayInquiries || 0)}</p>
+   251→          </div>
+   252→        </div>
+   253→        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
+   254→          <div className="p-1.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+   255→            <Clock className="h-4 w-4" />
+   256→          </div>
+   257→          <div>
+   258→            <p className="text-xs text-muted-foreground">待跟进</p>
+   259→            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.pendingFollow || 0)}</p>
+   260→          </div>
+   261→        </div>
+   262→        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border crm-card-glow">
+   263→          <div className="p-1.5 rounded-md bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+   264→            <FileText className="h-4 w-4" />
+   265→          </div>
+   266→          <div>
+   267→            <p className="text-xs text-muted-foreground">即将到期报价</p>
+   268→            <p className="text-lg font-bold crm-stat-mini crm-number">{formatNumber(kpis.expiringQuotesCount || 0)}</p>
+   269→          </div>
+   270→        </div>
+   271→      </motion.div>
+   272→
+   273→      {/* 快速操作 Quick Actions */}
+   274→      <motion.div
+   275→        className="grid grid-cols-4 gap-3"
+   276→        initial={{ opacity: 0 }}
+   277→        animate={{ opacity: 1 }}
+   278→        transition={{ delay: 0.2 }}
+   279→      >
+   280→        {activeQuickActions.map((item, i) => (
+   281→          <motion.div
+   282→            key={i}
+   283→            whileHover={{ scale: 1.04 }}
+   284→            whileTap={{ scale: 0.97 }}
+   285→          >
+   286→            <Card
+   287→              className={cn(
+   288→                'cursor-pointer p-4 flex flex-col items-center gap-2 border transition-all hover:shadow-md',
+   289→                item.border
+   290→              )}
+   291→              onClick={() => handleQuickAction(item.action)}
+   292→            >
+   293→              <div className={cn('p-2.5 rounded-xl', item.bg)}>
+   294→                <item.icon className={cn('h-5 w-5', item.color)} />
+   295→              </div>
+   296→              <span className="text-xs font-medium">{item.label}</span>
+   297→            </Card>
+   298→          </motion.div>
+   299→        ))}
+   300→      </motion.div>
+   301→
+   302→      {/* KPI Cards */}
+   303→      <motion.div
+   304→        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+   305→        initial="hidden"
+   306→        animate="visible"
+   307→        variants={{
+   308→          hidden: {},
+   309→          visible: { transition: { staggerChildren: 0.08 } },
+   310→        }}
+   311→      >
+   312→        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+   313→          <KPICard
+   314→            title="活跃客户"
+   315→            value={kpis.totalCustomers}
+   316→            change={12}
+   317→            changeType="increase"
+   318→            icon={<Users className="h-5 w-5" />}
+   319→            variant="emerald"
+   320→          />
+   321→        </motion.div>
+   322→        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+   323→          <KPICard
+   324→            title="活跃询盘"
+   325→            value={kpis.activeInquiries}
+   326→            change={8}
+   327→            changeType="increase"
+   328→            icon={<Target className="h-5 w-5" />}
+   329→            variant="sky"
+   330→          />
+   331→        </motion.div>
+   332→        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+   333→          <KPICard
+   334→            title="待处理报价"
+   335→            value={kpis.pendingQuotations}
+   336→            change={-5}
+   337→            changeType="decrease"
+   338→            icon={<FileText className="h-5 w-5" />}
+   339→            variant="amber"
+   340→          />
+   341→        </motion.div>
+   342→        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+   343→          <KPICard
+   344→            title="进行中订单"
+   345→            value={kpis.activeOrders}
+   346→            change={15}
+   347→            changeType="increase"
+   348→            icon={<ShoppingCart className="h-5 w-5" />}
+   349→            variant="violet"
+   350→          />
+   351→        </motion.div>
+   352→      </motion.div>
+   353→
+   354→      {/* Revenue & Charts Row */}
+   355→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   356→        {/* Revenue KPIs with collection rate */}
+   357→        <motion.div
+   358→          initial={{ opacity: 0, y: 20 }}
+   359→          animate={{ opacity: 1, y: 0 }}
+   360→          transition={{ delay: 0.5 }}
+   361→        >
+   362→          <Card>
+   363→            <CardHeader className="pb-3">
+   364→              <CardTitle className="text-base font-medium flex items-center gap-2">
+   365→                <DollarSign className="h-4 w-4 text-emerald-600" />
+   366→                收款概览
+   367→              </CardTitle>
+   368→            </CardHeader>
+   369→            <CardContent className="space-y-4">
+   370→              <div className="grid grid-cols-2 gap-4">
+   371→                <div className="space-y-1">
+   372→                  <p className="text-xs text-muted-foreground">总订单金额</p>
+   373→                  <p className="text-xl font-bold crm-number">{formatCurrency(kpis.totalRevenue)}</p>
+   374→                </div>
+   375→                <div className="space-y-1">
+   376→                  <p className="text-xs text-muted-foreground">已收款金额</p>
+   377→                  <p className="text-xl font-bold crm-number text-emerald-600">{formatCurrency(kpis.totalPaid)}</p>
+   378→                </div>
+   379→                <div className="space-y-1">
+   380→                  <p className="text-xs text-muted-foreground">订单总数</p>
+   381→                  <p className="text-xl font-bold crm-number">{formatNumber(kpis.activeOrders + kpis.completedOrders)}</p>
+   382→                </div>
+   383→                <div className="space-y-1">
+   384→                  <p className="text-xs text-muted-foreground">已完成订单</p>
+   385→                  <p className="text-xl font-bold crm-number">{formatNumber(kpis.completedOrders)}</p>
+   386→                </div>
+   387→              </div>
+   388→              {/* Collection Rate Progress Bar */}
+   389→              {kpis.totalRevenue > 0 && (
+   390→                <div className="space-y-2 pt-2 border-t">
+   391→                  <div className="flex items-center justify-between text-sm">
+   392→                    <span className="text-muted-foreground">回款率</span>
+   393→                    <span className="font-medium crm-number text-emerald-600">
+   394→                      {((kpis.totalPaid / kpis.totalRevenue) * 100).toFixed(1)}%
+   395→                    </span>
+   396→                  </div>
+   397→                  <Progress value={(kpis.totalPaid / kpis.totalRevenue) * 100} className="h-2" />
+   398→                </div>
+   399→              )}
+   400→            </CardContent>
+   401→          </Card>
+   402→        </motion.div>
+   403→
+   404→        {/* Sales Funnel with conversion rates */}
+   405→        <motion.div
+   406→          initial={{ opacity: 0, y: 20 }}
+   407→          animate={{ opacity: 1, y: 0 }}
+   408→          transition={{ delay: 0.55 }}
+   409→        >
+   410→          <Card>
+   411→            <CardHeader className="pb-3">
+   412→              <CardTitle className="text-base font-medium flex items-center gap-2">
+   413→                <TrendingUp className="h-4 w-4 text-sky-600" />
+   414→                销售漏斗
+   415→              </CardTitle>
+   416→            </CardHeader>
+   417→            <CardContent>
+   418→              <div className="space-y-2">
+   419→                {funnelData.map((item, i) => {
+   420→                  const maxVal = Math.max(...funnelData.map((f) => f.count), 1)
+   421→                  const pct = (item.count / maxVal) * 100
+   422→                  const convRate = i > 0 && funnelData[i - 1].count > 0
+   423→                    ? ((item.count / funnelData[i - 1].count) * 100).toFixed(1)
+   424→                    : null
+   425→                  return (
+   426→                    <div key={i} className="space-y-1">
+   427→                      <div className="flex items-center justify-between text-sm">
+   428→                        <span>{item.stage}</span>
+   429→                        <div className="flex items-center gap-2">
+   430→                          {convRate && (
+   431→                            <span className="text-xs text-muted-foreground">
+   432→                              转化 {convRate}%
+   433→                            </span>
+   434→                          )}
+   435→                          <span className="font-medium crm-number">{item.count}</span>
+   436→                        </div>
+   437→                      </div>
+   438→                      <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+   439→                        <motion.div
+   440→                          className="h-full rounded-full"
+   441→                          style={{ backgroundColor: COLORS[i] }}
+   442→                          initial={{ width: 0 }}
+   443→                          animate={{ width: `${pct}%` }}
+   444→                          transition={{ delay: 0.6 + i * 0.1, duration: 0.5 }}
+   445→                        />
+   446→                      </div>
+   447→                    </div>
+   448→                  )
+   449→                })}
+   450→              </div>
+   451→            </CardContent>
+   452→          </Card>
+   453→        </motion.div>
+   454→      </div>
+   455→
+   456→      {/* Bottom Row: Inquiry Distribution + 待办事项 & Recent Activities */}
+   457→      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+   458→        {/* Inquiry Distribution */}
+   459→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+   460→          <Card>
+   461→            <CardHeader className="pb-3">
+   462→              <CardTitle className="text-base font-medium">询盘状态分布</CardTitle>
+   463→            </CardHeader>
+   464→            <CardContent className="flex items-center gap-4">
+   465→              <div className="w-40 h-40 shrink-0">
+   466→                <ResponsiveContainer width="100%" height="100%">
+   467→                  <PieChart>
+   468→                    <Pie
+   469→                      data={charts.inquiriesByStatus}
+   470→                      cx="50%"
+   471→                      cy="50%"
+   472→                      innerRadius={40}
+   473→                      outerRadius={65}
+   474→                      dataKey="count"
+   475→                      nameKey="status"
+   476→                    >
+   477→                      {charts.inquiriesByStatus.map((_: Record<string, unknown>, i: number) => (
+   478→                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+   479→                      ))}
+   480→                    </Pie>
+   481→                    <Tooltip
+   482→                      formatter={(value: number, name: string) => [value, statusLabels[name] || name]}
+   483→                    />
+   484→                  </PieChart>
+   485→                </ResponsiveContainer>
+   486→              </div>
+   487→              <div className="flex-1 space-y-2">
+   488→                {charts.inquiriesByStatus.map((item: Record<string, unknown>, i: number) => (
+   489→                  <div key={i} className="flex items-center gap-2 text-sm">
+   490→                    <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+   491→                    <span className="text-muted-foreground">{statusLabels[item.status as string] || item.status}</span>
+   492→                    <span className="font-medium ml-auto crm-number">{item.count as number}</span>
+   493→                  </div>
+   494→                ))}
+   495→              </div>
+   496→            </CardContent>
+   497→          </Card>
+   498→        </motion.div>
+   499→
+   500→        {/* 待办事项 */}
+   501→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
+   502→          <Card>
+   503→            <CardHeader className="pb-3">
+   504→              <CardTitle className="text-base font-medium flex items-center gap-2">
+   505→                <CheckCircle2 className="h-4 w-4 text-amber-600" />
+   506→                待办事项
+   507→                <Badge variant="secondary" className="ml-auto text-xs">{pendingInquiries.length} 项待办</Badge>
+   508→              </CardTitle>
+   509→            </CardHeader>
+   510→            <CardContent>
+   511→              <div className="space-y-2 max-h-64 overflow-y-auto crm-scrollbar">
+   512→                {pendingInquiries.length > 0 ? pendingInquiries.slice(0, 10).map((inq: Record<string, unknown>) => (
+   513→                  <div
+   514→                    key={inq.id as string}
+   515→                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+   516→                    onClick={() => selectInquiry(inq.id as string)}
+   517→                  >
+   518→                    <div className="flex-1 min-w-0">
+   519→                      <p className="text-sm font-medium truncate group-hover:text-emerald-600 transition-colors">
+   520→                        {inq.subject as string || inq.inquiryNo as string}
+   521→                      </p>
+   522→                      <p className="text-xs text-muted-foreground truncate">
+   523→                        {(inq.customer as Record<string, unknown>)?.companyName as string || '未关联客户'}
+   524→                      </p>
+   525→                    </div>
+   526→                    <StatusBadge status={inq.priority as string} type="priority" />
+   527→                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+   528→                  </div>
+   529→                )) : (
+   530→                  <p className="text-sm text-muted-foreground py-8 text-center">暂无待办事项 🎉</p>
+   531→                )}
+   532→              </div>
+   533→            </CardContent>
+   534→          </Card>
+   535→        </motion.div>
+   536→
+   537→        {/* Recent Activities */}
+   538→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+   539→          <Card>
+   540→            <CardHeader className="pb-3">
+   541→              <CardTitle className="text-base font-medium flex items-center gap-2">
+   542→                <Clock className="h-4 w-4 text-muted-foreground" />
+   543→                最近动态
+   544→              </CardTitle>
+   545→            </CardHeader>
+   546→            <CardContent>
+   547→              <div className="space-y-3 max-h-64 overflow-y-auto crm-scrollbar">
+   548→                {recentActivities.slice(0, 8).map((activity: Record<string, unknown>, i: number) => {
+   549→                  const IconComp = activityIcons[activity.type as string] || MessageSquare
+   550→                  return (
+   551→                    <div key={i} className="flex items-start gap-3">
+   552→                      <div className="p-1.5 rounded-md bg-muted mt-0.5">
+   553→                        <IconComp className="h-3.5 w-3.5 text-muted-foreground" />
+   554→                      </div>
+   555→                      <div className="flex-1 min-w-0">
+   556→                        <p className="text-sm truncate">{activity.subject as string}</p>
+   557→                        <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+   558→                          {activity.user && <span>{(activity.user as Record<string, unknown>).name as string}</span>}
+   559→                          <span>{format(new Date(activity.createdAt as string), 'MM-dd HH:mm', { locale: zhCN })}</span>
+   560→                        </p>
+   561→                      </div>
+   562→                    </div>
+   563→                  )
+   564→                })}
+   565→              </div>
+   566→            </CardContent>
+   567→          </Card>
+   568→        </motion.div>
+   569→      </div>
+   570→
+   571→      {/* Role-specific Panels */}
+   572→      {(currentUser?.primaryRole === 'finance' || currentUser?.primaryRole === 'super_admin' || currentUser?.primaryRole === 'management') && (
+   573→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.78 }}>
+   574→          <Card>
+   575→            <CardHeader className="pb-3">
+   576→              <CardTitle className="text-base font-medium flex items-center gap-2">
+   577→                <Wallet className="h-4 w-4 text-emerald-600" />
+   578→                财务快览
+   579→                {currentUser?.primaryRole === 'finance' && <Badge variant="secondary" className="ml-auto text-xs bg-emerald-50 text-emerald-700 border-emerald-200">我的工作台</Badge>}
+   580→              </CardTitle>
+   581→            </CardHeader>
+   582→            <CardContent>
+   583→              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+   584→                <div className="space-y-1">
+   585→                  <p className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="h-3 w-3" />应收总额</p>
+   586→                  <p className="text-lg font-bold crm-number">{formatCurrency(kpis.totalRevenue - kpis.totalPaid)}</p>
+   587→                </div>
+   588→                <div className="space-y-1">
+   589→                  <p className="text-xs text-muted-foreground flex items-center gap-1"><TrendingDown className="h-3 w-3 text-red-500" />逾期金额</p>
+   590→                  <p className="text-lg font-bold crm-number text-red-600">{formatCurrency(kpis.totalRevenue - kpis.totalPaid)}</p>
+   591→                </div>
+   592→                <div className="space-y-1">
+   593→                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Eye className="h-3 w-3" />待审批报价</p>
+   594→                  <p className="text-lg font-bold crm-number">{formatNumber(kpis.pendingQuotations)}</p>
+   595→                </div>
+   596→                <div className="space-y-1">
+   597→                  <p className="text-xs text-muted-foreground flex items-center gap-1"><PieChartIcon className="h-3 w-3" />回款率</p>
+   598→                  <p className="text-lg font-bold crm-number text-emerald-600">{kpis.totalRevenue > 0 ? ((kpis.totalPaid / kpis.totalRevenue) * 100).toFixed(1) : 0}%</p>
+   599→                </div>
+   600→              </div>
+   601→            </CardContent>
+   602→          </Card>
+   603→        </motion.div>
+   604→      )}
+   605→
+   606→      {/* Top Customers with gradient bars */}
+   607→      {charts.topCustomers.length > 0 && (
+   608→        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
+   609→          <Card>
+   610→            <CardHeader className="pb-3">
+   611→              <CardTitle className="text-base font-medium flex items-center gap-2">
+   612→                <BarChart3 className="h-4 w-4 text-emerald-600" />
+   613→                Top 客户 (按订单金额)
+   614→              </CardTitle>
+   615→            </CardHeader>
+   616→            <CardContent>
+   617→              <div className="h-52">
+   618→                <ResponsiveContainer width="100%" height="100%">
+   619→                  <BarChart data={charts.topCustomers} layout="vertical">
+   620→                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+   621→                    <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+   622→                    <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
+   623→                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+   624→                    <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
+   625→                      {charts.topCustomers.map((_: Record<string, unknown>, i: number) => (
+   626→                        <Cell
+   627→                          key={i}
+   628→                          fill={`url(#barGradient${i})`}
+   629→                        />
+   630→                      ))}
+   631→                      <defs>
+   632→                        {charts.topCustomers.map((_: Record<string, unknown>, i: number) => (
+   633→                          <linearGradient key={i} id={`barGradient${i}`} x1="0" y1="0" x2="1" y2="0">
+   634→                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.7} />
+   635→                            <stop offset="100%" stopColor="#059669" stopOpacity={1} />
+   636→                          </linearGradient>
+   637→                        ))}
+   638→                      </defs>
+   639→                    </Bar>
+   640→                  </BarChart>
+   641→                </ResponsiveContainer>
+   642→              </div>
+   643→            </CardContent>
+   644→          </Card>
+   645→        </motion.div>
+   646→      )}
+   647→    </div>
+   648→  )
+   649→}
+   650→

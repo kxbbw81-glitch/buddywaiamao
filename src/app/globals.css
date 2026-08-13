@@ -444,14 +444,14 @@
 
 /* Card Hover Shadow Transition */
 .crm-card-hover {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .crm-card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px -5px oklch(0 0 0 / 10%), 0 4px 10px -6px oklch(0 0 0 / 5%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px oklch(0 0 0 / 10%), 0 2px 4px -2px oklch(0 0 0 / 5%);
 }
 .dark .crm-card-hover:hover {
-  box-shadow: 0 8px 25px -5px oklch(0 0 0 / 30%), 0 4px 10px -6px oklch(0 0 0 / 20%);
+  box-shadow: 0 4px 6px -1px oklch(0 0 0 / 30%), 0 2px 4px -2px oklch(0 0 0 / 20%);
 }
 
 /* Status Badge Glow Effects */
@@ -556,6 +556,10 @@
   height: 60%;
   background: #10b981;
   border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px 1px rgba(16,185,129,0.3);
+}
+.dark .sidebar-active-accent::before {
+  box-shadow: 0 0 10px 2px rgba(16,185,129,0.25);
 }
 
 /* Text truncation utility */
@@ -738,14 +742,16 @@ textarea:focus-visible {
 }
 
 .kanban-card {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-left-color 0.15s ease;
   border-left: 3px solid transparent;
 }
 .kanban-card:hover {
   transform: translateY(-1px) scale(1.005);
+  border-left-color: #10b981;
   box-shadow: 0 4px 16px -4px rgba(0,0,0,0.1), 0 2px 6px -2px rgba(0,0,0,0.06);
 }
 .dark .kanban-card:hover {
+  border-left-color: #10b981;
   box-shadow: 0 4px 16px -4px rgba(0,0,0,0.35), 0 2px 6px -2px rgba(0,0,0,0.25);
 }
 
@@ -817,8 +823,8 @@ textarea:focus-visible {
   animation: notification-pulse 2s ease-in-out infinite;
 }
 @keyframes notification-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  50% { opacity: 0.7; transform: scale(0.85); box-shadow: 0 0 0 4px rgba(16,185,129,0); }
 }
 
 /* ============ AI Assistant Enhanced Styles ============ */
@@ -887,6 +893,76 @@ textarea:focus-visible {
 @keyframes sidebarBadgePulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
   50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+}
+
+/* ============ Style Detail Enhancements (Task 4-a) ============ */
+
+/* 1. Data Table Row Hover - smooth left-border highlight */
+.data-table-row-hover {
+  position: relative;
+  border-left: 3px solid transparent;
+  transition: border-left-color 0.15s ease, background-color 0.15s ease;
+}
+.data-table-row-hover:hover {
+  border-left-color: #10b981;
+  background-color: oklch(0.97 0.005 155);
+}
+.dark .data-table-row-hover:hover {
+  border-left-color: #10b981;
+  background-color: oklch(0.269 0.01 155);
+}
+
+/* 3. Button Press Feedback */
+.crm-btn-press {
+  transition: transform 0.1s ease;
+}
+.crm-btn-press:active {
+  transform: scale(0.97);
+}
+
+/* 6. Status Badge Scale-In Animation */
+@keyframes badgeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-badge-scale-in {
+  animation: badgeScaleIn 0.2s ease-out forwards;
+}
+
+/* 8. Empty State Fade-In Animation */
+@keyframes emptyStateFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-empty-state {
+  animation: emptyStateFadeIn 0.35s ease-out forwards;
+}
+
+/* 9. Toast Success Slide-In Animation */
+@keyframes toastSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-toast-success {
+  animation: toastSlideInRight 0.3s ease-out forwards;
 }
 
 /* ============ Print Styles ============ */

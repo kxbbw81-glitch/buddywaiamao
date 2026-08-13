@@ -85,7 +85,7 @@ export async function GET() {
         .slice(0, 10)
         .map(async (r) => {
           const customer = await db.customer.findUnique({ where: { id: r.customerId }, select: { companyName: true, country: true } })
-          return { name: customer?.companyName || 'Unknown', country: customer?.country || '', revenue: r._sum.totalAmount || 0 }
+          return { name: customer?.companyName || 'Unknown', country: customer?.country ?? '', revenue: r._sum.totalAmount || 0 }
         })
     )
 
@@ -95,7 +95,8 @@ export async function GET() {
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
     const todayInquiries = await db.inquiry.count({ where: { createdAt: { gte: todayStart } } })
-    const pendingFollow = await db.inquiry.count({ where: { status: { in: ['assigned', 'following'] } } })
+    const pendingFollow = await db.inquiry.count({ where: { status: { in: ['new', 'assigned', 'following'] } } })
+    const overduePaymentsCount = overduePayments.length
     const expiringQuotesCount = await db.quotation.count({
       where: {
         status: 'sent',
@@ -121,6 +122,7 @@ export async function GET() {
           pendingSamples,
           todayInquiries,
           pendingFollow,
+          overduePaymentsCount,
           expiringQuotesCount,
         },
         riskAlerts: [

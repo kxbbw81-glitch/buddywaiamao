@@ -1140,3 +1140,271 @@ WORKLOG_EOF
 Task ID: 7-g
 Agent: Main Orchestrator
 Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强
+
+---
+Task ID: 2-a
+Agent: Settings Persistence Developer
+Task: 设置页面偏好持久化
+
+## 项目当前状态描述/判断
+
+settings-view.tsx 已存在基础本地存储实现（单 key `nexfab_settings`），但存在以下问题：
+- 使用单个 localStorage key 混合存储通知和显示设置
+- 未使用 Zustand 状态管理，不符合项目架构规范
+- `toastTimerRef` 未声明导致运行时错误
+- 深色模式未持久化且未与 next-themes 双向同步
+- 语言选项包含繁体中文（任务要求仅中文简体/English）
+
+## 当前目标/已完成的修改/验证结果
+
+### 1. 新建 Zustand 设置 store (`src/store/use-settings-store.ts`)
+- 导出 `NotificationSettings` 和 `DisplaySettings` 类型接口
+- 使用两个独立 localStorage key：`nexfab_settings_notifications`、`nexfab_settings_display`
+- 提供 `hydrate()` 方法在客户端挂载时从 localStorage 读取
+- 每个设置变更立即写入 localStorage
+- 导出 `useSettings` 便捷别名
+
+### 2. 重写 `settings-view.tsx`
+- 移除所有内联 localStorage 逻辑，改用 `useSettingsStore`
+- 通知偏好 4 个 Switch 绑定 store 的 `toggleNotification`
+- 显示设置：每页条数 (Select)、紧凑模式 (Switch)、深色模式 (Switch + setTheme)、语言 (Select)
+- 深色模式双向同步：hydrate 时从 next-themes 读取初始值；用户切换时同时调用 store.setDarkMode 和 next-themes setTheme
+- 修复 toastTimer 未声明 bug
+- 通知选项使用配置数组渲染，减少重复代码
+- 语言选项精简为「中文（简体）」和「English」
+
+### 3. 验证结果
+- `bun run lint` 零错误零警告通过
+
+## 新增/修改文件清单
+
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `src/store/use-settings-store.ts` | 新增 | Zustand 设置 store，通知+显示偏好持久化 |
+| `src/components/crm/views/settings-view.tsx` | 重写 | 使用 store 替代内联 localStorage |
+
+## 验证结果
+
+- ✅ ESLint 零错误零警告
+- ✅ TypeScript 严格类型（接口导出、类型断言）
+- ✅ 两个独立 localStorage key
+- ✅ 深色模式与 next-themes 双向同步
+- ✅ UI 文本全中文
+- ✅ emerald/teal 配色，无蓝紫色
+
+## 未解决问题或风险
+
+- 语言切换目前仅存储偏好值，尚未实现实际 i18n 切换（超出当前任务范围）
+WORKLOG_EOF
+
+---
+Task ID: 3-b
+Agent: Order List Developer
+Task: 订单列表增强 - 状态筛选 + 看板视图
+
+## 项目当前状态描述/判断
+
+- 订单列表已有基础表格视图和状态筛选Select（缺少「已取消」选项）
+- 询盘列表已有完整的看板视图实现（inquiry-kanban-view.tsx）作为参考模式
+- CRM Store 已有 selectOrder、orderStatus filter、viewMode 切换所需的所有基础
+- 需要新增：订单看板视图组件、ToggleGroup 视图切换、已取消状态筛选项
+
+## 当前目标/已完成的修改/验证结果
+
+### 1. 新增 order-kanban-view.tsx
+- 4列看板布局：待确认(pending+confirmed) | 生产中(in_production) | 已发货(shipped+ready) | 已完成/已取消(completed+cancelled)
+- emerald/teal/cyan 色系列头，无蓝紫色
+- Framer Motion AnimatePresence + layoutId 卡片动画
+- 每张卡片显示：orderNo（等宽字体）、客户公司名、金额（formatCurrency）、付款条款、相对时间、状态徽章
+- 点击卡片调用 selectOrder 打开详情抽屉
+- 响应式：桌面端水平滚动，移动端垂直堆叠
+- 键盘可访问（Enter/Space）、ARIA labels
+- 空列显示 EmptyColumnState 提示
+
+### 2. 修改 order-list-view.tsx
+- 新增 ToggleGroup（列表/看板）视图切换按钮
+- 新增「已取消」状态筛选项
+- viewMode === 'kanban' 时渲染 OrderKanbanView
+- 两个视图共享 searchQuery 和 filters 状态
+- 移除未使用的 useEffect import
+
+### 3. Lint 验证
+- `bun run lint` 零错误通过
+
+## 新增/修改文件清单
+
+- `src/components/crm/views/order-kanban-view.tsx` — 新增，订单看板视图
+- `src/components/crm/views/order-list-view.tsx` — 修改，添加 ToggleGroup、已取消筛选、看板视图切换
+
+## 验证结果
+
+- ✅ ESLint 零错误
+- ✅ TypeScript 严格类型（OrderRow 接口、KanbanColumnKey 类型、ColumnConfig 接口）
+- ✅ 全部 UI 文本中文
+- ✅ emerald/teal/cyan 色系，无蓝紫色
+- ✅ 遵循 inquiry-kanban-view.tsx 相同模式
+---
+Task ID: 4-a
+Agent: CSS Style Developer
+Task: 样式细节增强
+
+## 当前目标/已完成的修改/验证结果
+
+在 `src/app/globals.css` 中新增/修改了 10 项样式细节增强，所有动画保持微妙专业，使用 emerald 色系，并确保暗色模式兼容：
+
+1. **`data-table-row-hover`** - 新增类，悬停时 3px 左边框 emerald-500 高亮，0.15s 平滑过渡，含暗色模式变体
+2. **`.crm-card-hover` 优化** - 精简为 0.2s ease 过渡，悬停时 translateY(-1px) + 更细腻的 shadow 效果，暗色模式阴影适配
+3. **`.crm-btn-press`** - 新增类，`:active` 状态 scale(0.97) + 0.1s 过渡，提供触觉按压反馈
+4. **`.kanban-card` 悬停增强** - 添加 border-left-color 0.15s 过渡，悬停时显示 emerald-500 左边框高亮，暗色模式同步
+5. **`.notification-dot` 脉冲增强** - 原 notification-pulse 动画增加 emerald 色 box-shadow 脉冲（0→4px 扩散淡出）
+6. **`@keyframes badgeScaleIn`** - 新增状态徽章出现动画类 `.animate-badge-scale-in`，0.2s scale(0.8→1) + fade-in
+7. **`.sidebar-active-accent` 发光增强** - `::before` 伪元素添加 `box-shadow: 0 0 8px 1px rgba(16,185,129,0.3)`，暗色模式加强至 10px 2px
+8. **`@keyframes emptyStateFadeIn`** - 新增 `.animate-empty-state` 类，0.35s opacity(0→1) + translateY(10px→0)
+9. **`@keyframes toastSlideInRight`** - 新增 `.animate-toast-success` 类，0.3s translateX(24px→0) + fade-in
+10. **暗色模式** - 所有新增样式均包含 `.dark` 变体或使用 oklch 透明色自动适配
+
+## 修改文件清单
+
+- `src/app/globals.css` - 新增 ~70 行样式代码，修改 4 处已有样式
+
+## 验证结果
+
+- ✅ `bun run lint` 零错误
+- ✅ 所有已有样式未被破坏（仅修改过渡参数，未改变视觉结构）
+- ✅ 所有新类使用 `@keyframes` 或 CSS transition（高性能）
+- ✅ 动画均为微妙专业风格（0.1s~0.35s 时长，小幅度位移/缩放）
+WORKLOG_EOF
+
+---
+Task ID: 4-b
+Agent: Workbench Enhancement Developer
+Task: 工作台增强 - 迷你趋势图 + 快速操作优化
+
+## 当前目标/已完成的修改/验证结果
+
+### 已完成的修改
+
+#### 1. 新增 "今日概要" 区域（替换原 "今日概览"）
+- 使用横向 flex 布局，带分割线 (`w-px h-10 bg-border`)
+- 显示今日日期（日期+星期）、今日新增询盘、待跟进（含 new/assigned 状态）、逾期款项
+- 逾期款项数据通过新增的 `overduePaymentsCount` KPI 从 dashboard API 获取
+- 卡片背景使用 shadcn/ui Card 组件
+
+#### 2. 新增 "本月新增客户" KPI 卡片（含迷你 sparkline）
+- 纯 SVG 实现的 `MiniSparkline` 组件（80x32px），不使用 Recharts
+- SVG polyline 绘制趋势线，linearGradient 填充区域
+- emerald-500 线条颜色，emerald 渐变填充（20%→2% 透明度）
+- KPI 网格从 4 列扩展到 5 列
+- 加载态 skeleton 也更新为 5 个
+
+#### 3. 快速操作卡片优化
+- 新增描述性副标题（如 "创建和跟进新询盘"、"智能分析辅助决策"）
+- 图标背景改为圆形 + 渐变色（`rounded-full bg-gradient-to-br`）
+- 悬停效果增强：y 方向上移 2px + scale 1.02 + 阴影加深
+- 新增 `QuickActionItem` TypeScript 接口
+
+#### 4. 新增 API 端点
+- `GET /api/dashboard/customer-trend` 返回近6个月客户创建数量及当月数量
+
+#### 5. Dashboard API 增强
+- 新增 `overduePaymentsCount` KPI（逾期款项计数）
+- `pendingFollow` 查询条件扩展为 `new/assigned/following`
+
+### 验证结果
+- ✅ `bun run lint` 零错误
+- ✅ TypeScript 类型检查：无新增错误（仅有项目原有的预存错误）
+- ✅ 所有 UI 文本为中文
+- ✅ 使用 emerald/teal 色彩方案，无蓝紫色
+- ✅ SVG sparkline 为轻量级实现，无第三方图表库
+
+## 新增/修改文件清单
+
+### 新增文件
+- `src/app/api/dashboard/customer-trend/route.ts` — 客户趋势数据 API 端点
+
+### 修改文件
+- `src/app/api/dashboard/route.ts` — 新增 overduePaymentsCount KPI + 扩展 pendingFollow 状态
+- `src/components/crm/views/workbench-view.tsx` — 今日概要区域、sparkline KPI 卡片、快速操作优化、MiniSparkline SVG 组件
+
+## 验证结果
+
+- ✅ `bun run lint` — 零错误
+- ✅ `npx tsc --noEmit` — 无新增 TS 错误（workbench-view.tsx 仅存在项目原有预存错误）
+WORKLOG_EOF
+
+---
+Task ID: 8
+Agent: Main Orchestrator
+Task: 综合QA + 测试数据清理 + 订单看板 + 收款看板 + 设置持久化 + 样式增强 + 工作台增强
+
+## 项目当前状态描述/判断
+
+### 系统状态: 🟢 稳定运行
+- Dev server HTTP 200，正常运行
+- 所有模块功能正常（10个模块视图 + 5个看板视图）
+- 数据已清理，测试数据已移除
+- TypeScript严格类型（dashboard/route.ts null类型已修复）
+
+### 浏览器QA验证结果 (Agent Browser)
+- ✅ 工作台: "今日概要"区域（今日新增询盘/待跟进/逾期款项）、"本月新增客户"KPI含迷你sparkline SVG趋势图
+- ✅ 设置页: 通知偏好4开关 + 显示设置（每页条数/紧凑模式/深色模式/语言），深色模式与next-themes双向同步
+- ✅ 订单列表: 状态筛选含"已取消"，ToggleGroup列表/看板切换
+- ✅ 订单看板: 4列（待确认7/生产中5/已发货2/已完成已取消3），卡片含订单号+客户+金额+付款条款
+- ✅ 收款列表: ToggleGroup列表/看板切换
+- ✅ 收款看板: 3列（待付款/已逾期/已付清），每列含合计金额
+- ✅ 客户数据: 测试数据"--timeout 15000"已清理，无残留
+- ✅ 侧边栏: 10个模块正常导航，计数badge显示
+
+## 本轮完成内容
+
+### Bug修复 (2项)
+1. **测试数据清理** - 删除包含"--timeout"文字的测试客户记录（SQL DELETE）
+2. **TS类型修复** - dashboard/route.ts中customer.country null→undefined（?? 替代 ||）
+
+### 新功能 (6项)
+1. **设置偏好持久化** (Task 2-a) - Zustand store(use-settings-store.ts)，通知偏好+显示设置保存到localStorage，深色模式与next-themes双向同步
+2. **订单看板视图** (Task 3-b) - 4列（待确认/生产中/已发货/已完成已取消），Framer Motion动画，ToggleGroup切换
+3. **收款看板视图** (Task 4-c) - 3列（待付款/已逾期/已付清），每列合计金额，逾期卡片rose左边框，点击跳转订单详情
+4. **工作台"今日概要"** (Task 4-b) - 横向flex布局含分割线，今日新增询盘/待跟进/逾期款项
+5. **工作台迷你sparkline** (Task 4-b) - 纯SVG MiniSparkline组件(80x32px)，emerald渐变填充，显示近6个月客户增长趋势
+6. **客户趋势API** (Task 4-b) - /api/dashboard/customer-trend 返回近6个月客户创建数据
+
+### 样式增强 (10项) (Task 4-a)
+1. data-table-row-hover - 表格行悬停3px emerald左边框
+2. crm-card-hover优化 - 悬停translateY(-1px) + 阴影过渡
+3. crm-btn-press - 按钮active缩放0.97触觉反馈
+4. kanban-card悬停增强 - emerald左边框高亮
+5. notification-dot脉冲增强 - emerald box-shadow脉冲
+6. badgeScaleIn动画 - 状态徽章scale(0.8→1)入场
+7. sidebar-active-accent发光 - emerald box-shadow发光效果
+8. emptyStateFadeIn - 空状态fade-in+translateY动画
+9. toastSlideInRight - 成功提示从右滑入
+10. 全部样式暗色模式适配
+
+### 工作台增强 (2项) (Task 4-b)
+1. 快速操作卡片 - 新增描述副标题、圆形渐变图标背景、悬停y+scale+shadow
+2. Dashboard API增强 - 新增overduePaymentsCount KPI，pendingFollow扩展
+
+### 新增/修改文件清单
+- **新增**: `src/store/use-settings-store.ts`, `src/components/crm/views/order-kanban-view.tsx`, `src/components/crm/views/payment-kanban-view.tsx`, `src/app/api/dashboard/customer-trend/route.ts`
+- **修改**: `src/components/crm/views/settings-view.tsx`, `src/components/crm/views/order-list-view.tsx`, `src/components/crm/views/payment-list-view.tsx`, `src/components/crm/views/workbench-view.tsx`, `src/app/api/dashboard/route.ts`, `src/app/globals.css`
+
+## 未解决问题或风险
+
+### 低优先级
+1. **AI聊天端到端测试**: LLM API已对接但未在浏览器中完整测试
+2. **看板视图拖拽**: 所有看板（客户/询盘/报价/订单/收款）均为静态分组，无拖拽排序
+3. **语言切换**: 设置页已存储语言偏好，但实际i18n切换未实现
+4. **通知为空**: 所有活动记录已读，通知下拉显示"暂无通知"
+
+### 建议下一阶段优先事项
+1. **P1**: AI聊天端到端测试 + SSE流式响应
+2. **P1**: 看板拖拽排序（@dnd-kit/core）
+3. **P2**: 权限中心（用户管理/角色配置）
+4. **P2**: 种子数据优化（增加更多样化客户/订单）
+5. **P2**: 社媒运营模块
+6. **P2**: 数据分析增强（更多图表/筛选维度）
+7. **P3**: 多语言支持i18n
+8. **P3**: 数据看板大屏展示（管理层）
+9. **P3**: 客户地图视图（基于国家分布）
+10. **P3**: WebSocket实时通知推送
