@@ -556,3 +556,277 @@ Task: 第4轮自动化QA + Bug修复 + 大规模功能增强 + 样式细化
 6. **P3**: 社媒运营模块
 7. **P3**: 权限中心(用户管理、角色配置)
 8. **P3**: 多语言支持(英语/中文切换)
+
+---
+Task ID: 5-a
+Agent: Notification Center Developer
+Task: Notification center dropdown
+
+Work Log:
+- Added `readAt DateTime?` field to Activity model in prisma/schema.prisma
+- Ran `bun run db:push` to sync schema changes to SQLite database
+- Created `/api/notifications/route.ts` with GET and PUT endpoints:
+  - GET: fetches recent activities (limit=10), enriches with entity info (customer name, inquiry subject, quotation/order numbers), returns unread count
+  - PUT: supports `markAll: true` to mark all unread as read, or single `id` to mark specific notification as read
+- Created `notification-dropdown.tsx` as a 'use client' component:
+  - Uses shadcn/ui Popover triggered by Bell button
+  - Header with '通知中心' title and '全部已读' button (CheckCheck icon)
+  - Fetches notifications from `/api/notifications?limit=10` on open
+  - Shows notification items with type-specific icons (Phone/Mail/Info/FileText/ShoppingCart), content text, relative time formatting (刚刚/X分钟前/X小时前/昨天/X天前/X周前/X个月前/X年前), unread dot indicator (left border emerald-500 + green dot)
+  - Empty state with Inbox icon and '暂无通知' text
+  - Loading state with spinner
+  - '查看全部' link at bottom
+  - Dynamic unread count badge on Bell icon (supports 99+ overflow)
+- Updated `crm-header.tsx`: replaced static Bell button with NotificationDropdown component, removed unused Bell import
+
+Stage Summary:
+- ✅ Prisma schema updated with `readAt DateTime?` on Activity model
+- ✅ `/api/notifications` API (GET + PUT) created
+- ✅ NotificationDropdown component fully functional with Popover, type icons, relative time, unread indicators
+- ✅ Integrated into CRM header, replacing static Bell button
+- ✅ ESLint passes with 0 errors
+- ✅ All text in Chinese, uses emerald/teal color scheme
+- ✅ Uses shadcn/ui components: Popover, PopoverTrigger, PopoverContent, Button, ScrollArea, Badge, Separator
+
+---
+Task ID: 5-b
+Agent: Data Export Developer
+Task: 添加CSV数据导出功能到CRM列表视图
+
+## 修改内容
+
+### 1. 创建CSV导出工具函数 ✅
+- **文件**: `src/lib/export-csv.ts`
+- **函数**: `exportToCSV(data, filename, columns)`
+- **功能**:
+  - BOM头 (\uFEFF) 确保Excel正确识别中文编码
+  - RFC 4180标准的CSV字段转义（逗号、双引号、换行符）
+  - 支持嵌套对象取值（点号路径如 `owner.name`）
+  - 智能值格式化（嵌套对象自动提取name/companyName，布尔值转是/否）
+  - 通过 Blob + URL.createObjectURL 触发浏览器下载
+  - 下载后自动清理 URL 对象和临时 DOM 元素
+
+### 2. 客户列表导出 ✅
+- **文件**: `src/components/crm/views/customer-list-view.tsx`
+- **导出列**: 公司名称, 国家, 级别(中文标签), 来源(中文标签), 负责人, 最后联系日期, 询盘数, 状态(活跃/不活跃/流失)
+- **数据转换**: 使用 CUSTOMER_LEVEL_LABELS、INQUIRY_SOURCE_LABELS 映射为中文
+
+### 3. 询盘列表导出 ✅
+- **文件**: `src/components/crm/views/inquiry-list-view.tsx`
+- **导出列**: 询盘编号, 主题, 客户, 来源(中文), 状态(中文), 优先级(中文), 负责人, 创建时间
+- **数据转换**: 使用 INQUIRY_STATUS_LABELS、PRIORITY_LABELS 映射为中文
+
+### 4. 报价列表导出 ✅
+- **文件**: `src/components/crm/views/quotation-list-view.tsx`
+- **导出列**: 报价编号, 客户, 贸易条款, 金额, 利润率(百分比字符串), 状态(中文), 创建日期
+- **数据转换**: 使用 QUOTATION_STATUS_LABELS 映射为中文
+
+### 5. 订单列表导出 ✅
+- **文件**: `src/components/crm/views/order-list-view.tsx`
+- **导出列**: 订单编号, 客户, 金额, 付款条款, 状态(中文), 创建日期
+- **数据转换**: 使用 ORDER_STATUS_LABELS 映射为中文
+
+### 6. 收款列表导出 ✅
+- **文件**: `src/components/crm/views/payment-list-view.tsx`
+- **导出列**: 付款编号, 订单, 客户, 金额, 付款方式, 状态(中文), 到期日
+- **数据转换**: 使用 PAYMENT_STATUS_LABELS 映射为中文，付款编号由ID末4位生成
+
+### UI组件
+- 所有列表视图的导出按钮使用 shadcn/ui DropdownMenu 组件
+- 触发按钮: `Button variant='outline' size='sm'` + Download 图标 + '导出' 文字
+- 菜单项: Download 图标(emerald-600色) + '导出CSV' 文字
+- 导出后使用 sonner toast 显示 '导出成功，共 N 条数据'
+- 空数据时显示 toast.info('暂无数据可导出')
+- 导出按钮位于筛选器和新建按钮之间（ml-auto布局）
+
+## 新增文件
+- `src/lib/export-csv.ts` - CSV导出工具函数
+
+## 验证结果
+- ✅ ESLint 通过，0 错误
+- ✅ 所有文本使用中文
+- ✅ 未使用蓝色/紫色，Download图标使用 emerald-600 色
+- ✅ 使用 shadcn/ui 组件: DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, Button
+- ✅ 使用 sonner toast 通知
+- ✅ 5个列表视图均已添加导出功能
+
+---
+Task ID: 5-c
+Agent: Kanban View Developer
+Task: 客户看板视图 + 视图切换 + 批量更新API
+
+## 新增文件
+
+### 1. `src/components/crm/views/customer-kanban-view.tsx` ✅
+- **'use client'** 组件，导出 `CustomerKanbanView`
+- **4列看板**: A级客户(emerald)、B级客户(amber)、C级客户(sky)、D级客户(rose)
+- **列头设计**: 彩色背景 + 图标(Star/Award/UserCircle/Users) + 级别名称 + 客户数量Badge
+- **客户卡片内容**:
+  - 公司名称(加粗，单行截断)
+  - 国旗emoji + 国家名 (使用 `getCountryFlag`)
+  - 来源中文标签 (使用 `INQUIRY_SOURCE_LABELS`)
+  - 负责人姓名
+  - 询盘数量Badge (Inbox图标)
+  - 最后联系时间(相对时间格式：刚刚/X分钟前/X小时前/X天前/X个月前/X年前)
+  - 点击卡片打开客户详情抽屉 (使用 `selectCustomer`)
+- **数据获取**: `useQuery` 从 `/api/customers` 获取，客户端按 `customerLevel` 分组
+- **响应式**: 桌面端水平滚动4列看板，移动端垂直堆叠(每列内卡片水平滚动)
+- **空状态**: 每列无客户时显示 LayoutGrid 图标 + "暂无X级客户" 文字
+- **动画**: Framer Motion `layoutId` + `AnimatePresence mode="popLayout"` 实现卡片进入/退出/重排动画
+- **无障碍**: `role="button"`, `tabIndex={0}`, `aria-label`, 键盘 Enter/Space 支持
+- **Loading**: 翡翠绿旋转 Spinner
+- **暗色模式**: 卡片hover边框颜色适配 dark 模式
+
+### 2. `src/app/api/customers/bulk-update/route.ts` ✅
+- **PUT** 端点
+- 接受 `{ updates: [{ id: string, customerLevel: string }] }`
+- 校验: updates必须是非空数组，customerLevel必须是A/B/C/D之一
+- 逐条更新(跳过失败的单条)，返回 `{ success: true, data: { successCount } }`
+- 错误处理: 400参数错误, 500服务器错误
+
+## 修改文件
+
+### `src/components/crm/views/customer-list-view.tsx` ✅
+- **新增导入**: `useState`, `LayoutGrid`, `List` (lucide-react), `ToggleGroup/ToggleGroupItem`, `CustomerKanbanView`
+- **移除导入**: `useEffect`, `useQueryClient` (不再需要)
+- **视图切换状态**: `const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')`
+- **ToggleGroup**: 在状态筛选器和导出按钮之间插入，包含两个ToggleGroupItem:
+  - List图标 (列表视图)
+  - LayoutGrid图标 (看板视图)
+  - 选中状态自动高亮
+- **条件渲染**: `viewMode === 'kanban'` 时显示 `CustomerKanbanView`，否则显示原有 `DataTable`
+- **未修改 page.tsx**: 所有切换逻辑在 CustomerListView 内部完成
+
+## 验证结果
+- ✅ ESLint 通过，0 错误
+- ✅ 所有UI文本使用中文
+- ✅ 未使用蓝色/紫色（使用emerald/amber/sky/rose四色体系）
+- ✅ 使用emerald/teal作为主色调
+- ✅ 使用shadcn/ui组件: Badge, ScrollArea, ToggleGroup, ToggleGroupItem, Button, Select
+- ✅ 响应式设计 (桌面水平看板 / 移动端垂直堆叠)
+- ✅ Framer Motion 动画 (layoutId + AnimatePresence)
+- ✅ 相对时间格式化 (date-fns differenceIn*)
+- ✅ 客户卡片点击打开详情抽屉 (selectCustomer)
+
+---
+Task ID: 5-d
+Agent: Search Enhancement Developer
+Task: 全局搜索增强 - 跨模块搜索 + Command对话框
+
+## 新增文件
+
+### 1. `src/app/api/search/route.ts` ✅
+- **GET** 端点，接受 `?q=` 查询参数
+- **跨模块搜索**（每类最多5条结果）：
+  - **客户**: companyName、companyNameEn、country 字段模糊匹配
+  - **询盘**: inquiryNo、subject 字段模糊匹配
+  - **报价**: quoteNo 字段模糊匹配
+  - **订单**: orderNo 字段模糊匹配
+- **返回结构化结果**: `{ customers: [...], inquiries: [...], quotations: [...], orders: [...] }`
+- **每条结果包含**: id, type, text(主文本), subtitle(副文本，如国家·级别、金额·客户名)
+- **错误处理**: 500 错误返回中文提示"搜索失败，请稍后重试"
+- 空查询返回空结果而非错误
+
+### 2. `src/components/crm/global-search-dialog.tsx` ✅
+- **'use client'** 组件，导出 `GlobalSearchDialog`
+- **触发方式**:
+  - 点击Header中的搜索区域（带Search图标 + placeholder + ⌘K快捷键提示）
+  - 键盘快捷键: **Cmd+K**（macOS）/ **Ctrl+K**（Windows）
+- **搜索逻辑**: 输入后 300ms 防抖，fetch `/api/search?q=xxx`
+- **结果分组**（Command Group + Heading）：
+  - 客户（Building2 icon，翡翠绿背景）
+  - 询盘（FileText icon，青色背景）
+  - 报价（Calculator icon，琥珀色背景）
+  - 订单（ShoppingCart icon，玫红色背景）
+- **每个结果项**: 彩色图标容器 + 主文本(font-medium, truncate) + 副文本(text-muted-foreground, truncate)
+- **点击行为**: 调用 useCRMStore 的 setCurrentModule + selectCustomer/selectInquiry/selectQuotation/selectOrder 导航到对应模块并打开详情
+- **空状态**:
+  - 有查询无结果: Search图标 + "没有找到结果" + "请尝试其他关键词"
+  - 无查询: Search图标 + "输入关键词搜索客户、询盘..."
+- **Loading状态**: Loader2旋转动画(emerald-600色) + "搜索中..."
+- **响应式**: 桌面端显示完整搜索区域(w-64)，移动端显示Search图标按钮
+- **暗色模式**: 图标容器暗色模式使用 dark:bg-{color}-950/50 配色
+- **CommandDialog**: max-h-[400px] 结果列表
+
+## 修改文件
+
+### `src/components/crm/crm-header.tsx` ✅
+- **移除**: 原有的 `Search`、`Input` 导入，`searchQuery`、`setSearchQuery` store引用
+- **新增**: `GlobalSearchDialog` 组件导入
+- **替换**: 原 `<div><Search/><Input/></div>` 搜索区域替换为 `<GlobalSearchDialog />`
+- **效果**: 搜索区域从简单输入框升级为Command Palette触发器，保持相似的视觉样式
+
+## 验证结果
+- ✅ ESLint 通过，0 错误
+- ✅ 所有UI文本使用中文
+- ✅ 未使用蓝色/紫色（使用emerald/teal/amber/rose四色体系）
+- ✅ 使用shadcn/ui组件: CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem
+- ✅ 使用emerald/teal作为主色调
+- ✅ 响应式设计（桌面完整搜索栏 + 移动端图标按钮）
+- ✅ 键盘快捷键 Cmd+K / Ctrl+K 支持
+- ✅ 防抖搜索（300ms）
+- ✅ 每类最多5条结果限制
+- ✅ 跨模块导航 + 详情抽屉打开
+
+---
+Task ID: 5-e
+Agent: Main Orchestrator
+Task: AI助手上下文感知增强 + 角色工作台差异化 + CSS样式细化
+
+## 项目当前状态描述/判断
+
+### 系统状态: 🟢 稳定运行
+- Dev server HTTP 200，ESLint 0 错误
+- 数据库12个字段（Activity新增readAt）
+- 所有核心功能正常运行
+
+### 浏览器QA验证结果
+- ✅ 角色选择页面: 5个角色卡片，动画正常
+- ✅ 工作台: 财务快览面板(超级管理员/管理层/财务可见)、角色差异化快速操作
+- ✅ 全局搜索: Command Palette打开正常，输入"Tech"返回3个客户结果（TechVista Solutions/Andes Tech/AfroTech Industries），显示级别·国家
+- ✅ 客户看板: 4列（A/B/C/D）看板视图，客户卡片含国旗/来源/负责人/询盘数/相对时间
+- ✅ 视图切换: ToggleGroup在"列表视图"和"看板视图"间切换
+- ✅ 导出按钮: 所有列表视图显示"导出"DropdownMenu
+- ✅ 通知铃铛: 替换为动态NotificationDropdown，支持展开/全部已读
+- ✅ AI助手: 上下文感知（查看客户/询盘时显示上下文标签）、清空对话按钮、思考动画(三点弹跳)
+- ✅ 暗色模式: 所有新组件适配
+
+## 本轮完成内容
+
+### 新功能 (7项)
+1. **通知中心下拉面板** (Task 5-a) - Popover通知列表、类型图标、相对时间、未读标记、全部已读
+2. **CSV数据导出** (Task 5-b) - 5个列表视图的CSV导出（客户/询盘/报价/订单/收款），中文标签映射
+3. **客户看板视图** (Task 5-c) - 4列看板（A/B/C/D级别）、Framer Motion动画、视图切换Toggle
+4. **全局搜索 Command Palette** (Task 5-d) - Cmd+K快捷键、跨模块搜索（客户/询盘/报价/订单）、分组结果
+5. **AI助手上下文感知增强** - 查看客户/询盘时自动带入上下文、快捷操作按钮根据上下文高亮、清空对话、思考动画
+6. **角色工作台差异化** - 财务角色/管理层角色快速操作不同、财务快览面板(应收总额/逾期金额/待审批报价/回款率)
+7. **客户批量更新API** - /api/customers/bulk-update PUT端点
+
+### 增强功能 (5项)
+1. **AI助手UI重设计** - 圆角气泡消息、渐变头像、时间戳显示、上下文Badge、"已关联上下文"提示
+2. **快速操作按钮扩展** - handleQuickAction支持payments/orders/quotations/analytics模块跳转
+3. **CSS动画增强** - 看板卡片样式、Command Palette样式、通知项样式、AI消息进入动画、思考弹跳点、Shimmer加载效果、导出成功动画、通知脉冲、打印样式、选中颜色
+4. **暗色模式优化** - 看板列头渐变暗色适配、Command Item悬停暗色适配、通知项暗色适配
+
+### 新增/修改文件清单
+- **新增**: `src/components/crm/notification-dropdown.tsx`, `src/components/crm/global-search-dialog.tsx`, `src/components/crm/views/customer-kanban-view.tsx`, `src/lib/export-csv.ts`, `src/app/api/notifications/route.ts`, `src/app/api/search/route.ts`, `src/app/api/customers/bulk-update/route.ts`
+- **修改**: `src/components/crm/crm-header.tsx`, `src/components/crm/views/ai-assistant-drawer.tsx`, `src/components/crm/views/workbench-view.tsx`, `src/components/crm/views/customer-list-view.tsx`, `src/components/crm/views/inquiry-list-view.tsx`, `src/components/crm/views/quotation-list-view.tsx`, `src/components/crm/views/order-list-view.tsx`, `src/components/crm/views/payment-list-view.tsx`, `src/app/globals.css`, `prisma/schema.prisma`
+
+## 未解决问题或风险
+
+### 低优先级
+1. **AI聊天端到端测试**: LLM API已对接但实际对话未在浏览器中完整测试（需真实API交互验证）
+2. **种子数据清理**: 之前测试创建的含"--timeout"文字的客户需要清理
+3. **通知中心"查看全部"**: 当前仅显示按钮，点击后无实际导航目标
+4. **看板视图拖拽**: 当前看板为静态分组展示，无拖拽排序功能
+
+### 建议下一阶段优先事项
+1. **P1**: 通知中心"查看全部"导航到活动记录列表页面
+2. **P1**: 看板视图拖拽排序（客户在级别列之间移动）
+3. **P1**: AI聊天端到端测试 + 流式响应(SSE)
+4. **P2**: 种子数据优化（清理测试数据、增加更多样化客户）
+5. **P2**: 权限中心（用户管理、角色配置）
+6. **P2**: 社媒运营模块
+7. **P3**: 多语言支持（英语/中文切换）
+8. **P3**: 数据看板大屏展示（管理层）
+9. **P3**: 客户地图视图（基于国家的客户分布地图）

@@ -17,7 +17,12 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/utils'
-import { DollarSign, CheckCircle2, Clock, AlertTriangle, Plus, ChevronDown, ChevronUp, Check, ChevronsUpDown } from 'lucide-react'
+import { DollarSign, CheckCircle2, Clock, AlertTriangle, Plus, ChevronDown, ChevronUp, Check, ChevronsUpDown, Download } from 'lucide-react'
+import { PAYMENT_STATUS_LABELS } from '@/lib/types'
+import { exportToCSV } from '@/lib/export-csv'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -189,9 +194,50 @@ export function PaymentListView() {
             <SelectItem value="overdue">逾期</SelectItem>
           </SelectContent>
         </Select>
-        <Button size="sm" className="ml-auto" onClick={() => { setForm({ ...DEFAULT_PAYMENT_FORM }); setPaymentFormOpen(true) }}>
-          <Plus className="h-4 w-4 mr-1" /> 新建付款
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" /> 导出
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!payments.length) { toast.info('暂无数据可导出'); return }
+                  const csvData = payments.map((item: Record<string, unknown>) => {
+                    const orderData = item.order as Record<string, unknown> | null
+                    const customer = orderData?.customer as Record<string, unknown> | null
+                    return {
+                      paymentNo: item.id ? `PAY-${String(item.id).slice(-4)}` : '',
+                      orderNo: orderData?.orderNo as string || '',
+                      customerName: customer?.companyName as string || '',
+                      amount: item.amount as number,
+                      paymentMethod: item.paymentMethod as string || '',
+                      status: PAYMENT_STATUS_LABELS[item.status as keyof typeof PAYMENT_STATUS_LABELS] || (item.status as string),
+                      dueDate: item.dueDate ? format(new Date(item.dueDate as string), 'yyyy-MM-dd') : '',
+                    }
+                  })
+                  exportToCSV(csvData, '付款列表', [
+                    { key: 'paymentNo', label: '付款编号' },
+                    { key: 'orderNo', label: '订单' },
+                    { key: 'customerName', label: '客户' },
+                    { key: 'amount', label: '金额' },
+                    { key: 'paymentMethod', label: '付款方式' },
+                    { key: 'status', label: '状态' },
+                    { key: 'dueDate', label: '到期日' },
+                  ])
+                  toast.success(`导出成功，共 ${payments.length} 条数据`)
+                }}
+              >
+                <Download className="h-4 w-4 mr-2 text-emerald-600" /> 导出CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" onClick={() => { setForm({ ...DEFAULT_PAYMENT_FORM }); setPaymentFormOpen(true) }}>
+            <Plus className="h-4 w-4 mr-1" /> 新建付款
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border overflow-hidden">

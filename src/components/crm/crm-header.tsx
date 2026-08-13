@@ -1,13 +1,14 @@
 'use client'
 
-import { Search, Bell, Bot, Sun, Moon } from 'lucide-react'
+import { Bot, Sun, Moon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useCRMStore } from '@/store/use-crm-store'
 import { MODULE_LABELS } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
+import { NotificationDropdown } from '@/components/crm/notification-dropdown'
+import { GlobalSearchDialog } from '@/components/crm/global-search-dialog'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,7 +19,7 @@ import {
 } from '@/components/ui/breadcrumb'
 
 export function CRMHeader() {
-  const { currentModule, searchQuery, setSearchQuery, setAiDrawerOpen } = useCRMStore()
+  const { currentModule, setAiDrawerOpen } = useCRMStore()
   const { theme, setTheme } = useTheme()
 
   return (
@@ -41,15 +42,7 @@ export function CRMHeader() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-2">
-        <div className="relative hidden md:block w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="搜索客户、询盘..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-9"
-          />
-        </div>
+        <GlobalSearchDialog />
 
         <Button variant="ghost" size="icon" className="relative h-9 w-9" onClick={() => setAiDrawerOpen(true)}>
           <Bot className="h-4 w-4" />
@@ -66,12 +59,7 @@ export function CRMHeader() {
           <span className="sr-only">切换主题</span>
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
-          <Bell className="h-4 w-4" />
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white font-medium">
-            3
-          </span>
-        </Button>
+        <NotificationDropdown />
       </div>
     </header>
   )

@@ -1,25 +1,29 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search } from 'lucide-react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Plus, Search, Download, LayoutGrid, List } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import { toast } from 'sonner'
 import { useCRMStore } from '@/store/use-crm-store'
 import { DataTable } from '@/components/crm/data-table'
 import { StatusBadge } from '@/components/crm/status-badge'
-import { INQUIRY_SOURCE_LABELS } from '@/lib/types'
+import { INQUIRY_SOURCE_LABELS, CUSTOMER_LEVEL_LABELS } from '@/lib/types'
 import { getCountryFlag } from '@/lib/utils'
+import { exportToCSV } from '@/lib/export-csv'
 import { Button } from '@/components/ui/button'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { CustomerKanbanView } from './customer-kanban-view'
 
 export function CustomerListView() {
   const { searchQuery, filters, setFilters, openCustomerForm, selectCustomer } = useCRMStore()
-  const queryClient = useQueryClient()
-  
-
-  
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
 
   const { data, isLoading } = useQuery({
     queryKey: ['customers', searchQuery, filters],
@@ -131,20 +135,76 @@ export function CustomerListView() {
             <SelectItem value="lost">流失</SelectItem>
           </SelectContent>
         </Select>
-        <Button size="sm" onClick={() => openCustomerForm()} className="ml-auto">
-          <Plus className="h-4 w-4 mr-1" /> 新建客户
-        </Button>
+        <ToggleGroup type="single" value={viewMode} onValueChange={(v) => { if (v) setViewMode(v as 'list' | 'kanban') }}>
+          <ToggleGroupItem value="list" aria-label="列表视图">
+            <List className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="kanban" aria-label="看板视图">
+            <LayoutGrid className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <div className="ml-auto flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" /> 导出
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!customers.length) { toast.info('暂无数据可导出'); return }
+                  const csvData = customers.map((item: Record<string, unknown>) => {
+                    const owner = item.owner as Record<string, unknown> | null
+                    const count = item._count as Record<string, number> | undefined
+                    const statusMap: Record<string, string> = { active: '活跃', inactive: '不活跃', lost: '流失' }
+                    return {
+                      companyName: item.companyName as string,
+                      country: item.country as string || '',
+                      customerLevel: CUSTOMER_LEVEL_LABELS[item.customerLevel as keyof typeof CUSTOMER_LEVEL_LABELS] || (item.customerLevel as string),
+                      source: INQUIRY_SOURCE_LABELS[item.source as keyof typeof INQUIRY_SOURCE_LABELS] || (item.source as string),
+                      ownerName: owner?.name as string || '',
+                      lastContactAt: item.lastContactAt ? format(new Date(item.lastContactAt as string), 'yyyy-MM-dd') : '',
+                      inquiryCount: count?.inquiries || 0,
+                      status: statusMap[item.status as string] || (item.status as string),
+                    }
+                  })
+                  exportToCSV(csvData, '客户列表', [
+                    { key: 'companyName', label: '公司名称' },
+                    { key: 'country', label: '国家' },
+                    { key: 'customerLevel', label: '级别' },
+                    { key: 'source', label: '来源' },
+                    { key: 'ownerName', label: '负责人' },
+                    { key: 'lastContactAt', label: '最后联系日期' },
+                    { key: 'inquiryCount', label: '询盘数' },
+                    { key: 'status', label: '状态' },
+                  ])
+                  toast.success(`导出成功，共 ${customers.length} 条数据`)
+                }}
+              >
+                <Download className="h-4 w-4 mr-2 text-emerald-600" /> 导出CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" onClick={() => openCustomerForm()}>
+            <Plus className="h-4 w-4 mr-1" /> 新建客户
+          </Button>
+        </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={customers}
-        onRowClick={(item) => selectCustomer(item.id as string)}
-        isLoading={isLoading && customers.length === 0}
-        emptyMessage="暂无客户数据"
-        searchValue=""
-        onSearchChange={() => {}}
-      />
+      {viewMode === 'kanban' ? (
+        <CustomerKanbanView />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={customers}
+          onRowClick={(item) => selectCustomer(item.id as string)}
+          isLoading={isLoading && customers.length === 0}
+          emptyMessage="暂无客户数据"
+          searchValue=""
+          onSearchChange={() => {}}
+        />
+      )}
     </div>
   )
 }

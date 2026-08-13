@@ -235,6 +235,7 @@ model Activity {
   entityType  String?  // customer/inquiry/quotation/order
   entityId    String?
   userId      String?
+  readAt      DateTime?
   createdAt   DateTime @default(now())
 
   user     User?    @relation(fields: [userId], references: [id])

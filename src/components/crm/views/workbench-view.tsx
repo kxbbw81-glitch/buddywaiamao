@@ -26,6 +26,11 @@ import {
   Calculator,
   CheckCircle2,
   ChevronRight,
+  Wallet,
+  PieChart as PieChartIcon,
+  CreditCard,
+  TrendingDown,
+  Eye,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
@@ -81,6 +86,21 @@ const quickActions = [
   { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
 ]
 
+const roleQuickActions: Record<string, typeof quickActions> = {
+  finance: [
+    { label: '收款管理', icon: Wallet, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'payments' },
+    { label: '查看订单', icon: ShoppingCart, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'orders' },
+    { label: '报价审核', icon: FileText, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'quotations' },
+    { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+  ],
+  management: [
+    { label: '新建客户', icon: UserPlus, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', border: 'border-emerald-200 dark:border-emerald-800', action: 'customer' },
+    { label: '数据分析', icon: BarChart3, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/30', border: 'border-teal-200 dark:border-teal-800', action: 'analytics' },
+    { label: '查看订单', icon: ShoppingCart, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200 dark:border-amber-800', action: 'orders' },
+    { label: 'AI分析', icon: Sparkles, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30', border: 'border-rose-200 dark:border-rose-800', action: 'ai' },
+  ],
+}
+
 export function WorkbenchView() {
   const { currentUser, openInquiryForm, openCustomerForm, openQuotationForm, selectInquiry, toggleAiDrawer } = useCRMStore()
 
@@ -114,13 +134,20 @@ export function WorkbenchView() {
     })
 
   const handleQuickAction = (action: string) => {
+    const { setCurrentModule } = useCRMStore.getState()
     switch (action) {
       case 'customer': openCustomerForm(); break
       case 'inquiry': openInquiryForm(); break
       case 'quotation': openQuotationForm(); break
       case 'ai': toggleAiDrawer(); break
+      case 'payments': setCurrentModule('payments'); break
+      case 'orders': setCurrentModule('orders'); break
+      case 'quotations': setCurrentModule('quotations'); break
+      case 'analytics': setCurrentModule('analytics'); break
     }
   }
+
+  const activeQuickActions = roleQuickActions[currentUser?.primaryRole || ''] || quickActions
 
   if (isLoading || !data?.data) {
     return (
@@ -250,7 +277,7 @@ export function WorkbenchView() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        {quickActions.map((item, i) => (
+        {activeQuickActions.map((item, i) => (
           <motion.div
             key={i}
             whileHover={{ scale: 1.04 }}
@@ -540,6 +567,41 @@ export function WorkbenchView() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Role-specific Panels */}
+      {(currentUser?.primaryRole === 'finance' || currentUser?.primaryRole === 'super_admin' || currentUser?.primaryRole === 'management') && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.78 }}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-emerald-600" />
+                财务快览
+                {currentUser?.primaryRole === 'finance' && <Badge variant="secondary" className="ml-auto text-xs bg-emerald-50 text-emerald-700 border-emerald-200">我的工作台</Badge>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="h-3 w-3" />应收总额</p>
+                  <p className="text-lg font-bold crm-number">{formatCurrency(kpis.totalRevenue - kpis.totalPaid)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><TrendingDown className="h-3 w-3 text-red-500" />逾期金额</p>
+                  <p className="text-lg font-bold crm-number text-red-600">{formatCurrency(kpis.totalRevenue - kpis.totalPaid)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><Eye className="h-3 w-3" />待审批报价</p>
+                  <p className="text-lg font-bold crm-number">{formatNumber(kpis.pendingQuotations)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1"><PieChartIcon className="h-3 w-3" />回款率</p>
+                  <p className="text-lg font-bold crm-number text-emerald-600">{kpis.totalRevenue > 0 ? ((kpis.totalPaid / kpis.totalRevenue) * 100).toFixed(1) : 0}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Top Customers with gradient bars */}
       {charts.topCustomers.length > 0 && (

@@ -4,14 +4,20 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { Plus } from 'lucide-react'
+import { Plus, Download } from 'lucide-react'
+import { toast } from 'sonner'
 import { useCRMStore } from '@/store/use-crm-store'
 import { DataTable } from '@/components/crm/data-table'
 import { StatusBadge } from '@/components/crm/status-badge'
+import { INQUIRY_STATUS_LABELS, PRIORITY_LABELS } from '@/lib/types'
 import { getCountryFlag } from '@/lib/utils'
+import { exportToCSV } from '@/lib/export-csv'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const INQUIRY_SOURCE_LABELS: Record<string, string> = {
   email: '邮件', website: '官网', whatsapp: 'WhatsApp', exhibition: '展会',
@@ -156,9 +162,52 @@ export function InquiryListView() {
             <SelectItem value="referral">客户介绍</SelectItem>
           </SelectContent>
         </Select>
-        <Button size="sm" onClick={() => openInquiryForm()} className="ml-auto">
-          <Plus className="h-4 w-4 mr-1" /> 新建询盘
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" /> 导出
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!inquiries.length) { toast.info('暂无数据可导出'); return }
+                  const csvData = inquiries.map((item: Record<string, unknown>) => {
+                    const customer = item.customer as Record<string, unknown> | null
+                    const assignee = item.assignee as Record<string, unknown> | null
+                    return {
+                      inquiryNo: item.inquiryNo as string,
+                      subject: item.subject as string,
+                      customerName: customer?.companyName as string || '',
+                      source: INQUIRY_SOURCE_LABELS[item.source as string] || (item.source as string),
+                      status: INQUIRY_STATUS_LABELS[item.status as keyof typeof INQUIRY_STATUS_LABELS] || (item.status as string),
+                      priority: PRIORITY_LABELS[item.priority as keyof typeof PRIORITY_LABELS] || (item.priority as string),
+                      assigneeName: assignee?.name as string || '',
+                      createdAt: item.createdAt ? format(new Date(item.createdAt as string), 'yyyy-MM-dd') : '',
+                    }
+                  })
+                  exportToCSV(csvData, '询盘列表', [
+                    { key: 'inquiryNo', label: '询盘编号' },
+                    { key: 'subject', label: '主题' },
+                    { key: 'customerName', label: '客户' },
+                    { key: 'source', label: '来源' },
+                    { key: 'status', label: '状态' },
+                    { key: 'priority', label: '优先级' },
+                    { key: 'assigneeName', label: '负责人' },
+                    { key: 'createdAt', label: '创建时间' },
+                  ])
+                  toast.success(`导出成功，共 ${inquiries.length} 条数据`)
+                }}
+              >
+                <Download className="h-4 w-4 mr-2 text-emerald-600" /> 导出CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" onClick={() => openInquiryForm()}>
+            <Plus className="h-4 w-4 mr-1" /> 新建询盘
+          </Button>
+        </div>
       </div>
 
       <DataTable

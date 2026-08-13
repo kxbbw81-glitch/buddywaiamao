@@ -730,3 +730,185 @@ textarea:focus-visible {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* ============ Kanban Board Styles ============ */
+.kanban-column {
+  min-width: 280px;
+  max-width: 320px;
+  flex-shrink: 0;
+}
+
+.kanban-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 3px solid transparent;
+}
+.kanban-card:hover {
+  transform: translateY(-1px) scale(1.005);
+  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.1), 0 2px 6px -2px rgba(0,0,0,0.06);
+}
+.dark .kanban-card:hover {
+  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.35), 0 2px 6px -2px rgba(0,0,0,0.25);
+}
+
+.kanban-card-level-A { border-left-color: #10b981; }
+.kanban-card-level-B { border-left-color: #f59e0b; }
+.kanban-card-level-C { border-left-color: #0ea5e9; }
+.kanban-card-level-D { border-left-color: #f43f5e; }
+
+.kanban-column-header-A { background: linear-gradient(135deg, #ecfdf5, #d1fae5); color: #065f46; }
+.kanban-column-header-B { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #92400e; }
+.kanban-column-header-C { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); color: #075985; }
+.kanban-column-header-D { background: linear-gradient(135deg, #fff1f2, #ffe4e6); color: #9f1239; }
+
+.dark .kanban-column-header-A { background: linear-gradient(135deg, #052e16, #064e3b); color: #6ee7b7; }
+.dark .kanban-column-header-B { background: linear-gradient(135deg, #451a03, #78350f); color: #fcd34d; }
+.dark .kanban-column-header-C { background: linear-gradient(135deg, #082f49, #0c4a6e); color: #7dd3fc; }
+.dark .kanban-column-header-D { background: linear-gradient(135deg, #4c0519, #881337); color: #fda4af; }
+
+/* ============ Command Palette Styles ============ */
+.crm-cmd-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: oklch(0.556 0 0);
+  padding: 8px 12px 4px;
+}
+
+.crm-cmd-item {
+  transition: all 0.12s ease;
+  border-radius: 6px;
+  margin: 2px 4px;
+  padding: 8px 12px;
+}
+.crm-cmd-item[data-selected="true"],
+.crm-cmd-item:hover {
+  background-color: oklch(0.97 0.005 155);
+}
+.dark .crm-cmd-item[data-selected="true"],
+.dark .crm-cmd-item:hover {
+  background-color: oklch(0.269 0.01 155);
+}
+
+/* ============ Notification Dropdown Styles ============ */
+.notification-item {
+  transition: all 0.15s ease;
+  border-left: 3px solid transparent;
+}
+.notification-item:hover {
+  background-color: oklch(0.97 0.003 155);
+}
+.notification-item-unread {
+  border-left-color: #10b981;
+  background-color: oklch(0.98 0.005 155);
+}
+.dark .notification-item:hover {
+  background-color: oklch(0.269 0.005 155);
+}
+.dark .notification-item-unread {
+  background-color: oklch(0.22 0.005 155);
+}
+
+.notification-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #10b981;
+  flex-shrink: 0;
+  animation: notification-pulse 2s ease-in-out infinite;
+}
+@keyframes notification-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ============ AI Assistant Enhanced Styles ============ */
+.ai-message-enter {
+  animation: aiMsgSlideIn 0.3s ease-out;
+}
+@keyframes aiMsgSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ai-typing-dot {
+  animation: aiTypingBounce 1.4s ease-in-out infinite;
+}
+@keyframes aiTypingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ============ Shimmer Loading Effect ============ */
+.crm-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.crm-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 40%), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 2s infinite;
+}
+.dark .crm-shimmer::after {
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 8%), transparent);
+}
+@keyframes shimmer {
+  to { transform: translateX(100%); }
+}
+
+/* ============ Export Button Animation ============ */
+.export-btn-success {
+  animation: exportSuccess 0.5s ease-out;
+}
+@keyframes exportSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* ============ Sidebar Notification Badge Pulse ============ */
+.sidebar-badge-pulse {
+  animation: sidebarBadgePulse 2s ease-in-out infinite;
+}
+@keyframes sidebarBadgePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+}
+
+/* ============ Print Styles ============ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .crm-sidebar,
+  .crm-header,
+  .sidebar {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}
+
+/* ============ Selection Color ============ */
+::selection {
+  background-color: oklch(0.696 0.17 162.48 / 0.25);
+  color: inherit;
+}
+.dark ::selection {
+  background-color: oklch(0.696 0.17 162.48 / 0.35);
+}

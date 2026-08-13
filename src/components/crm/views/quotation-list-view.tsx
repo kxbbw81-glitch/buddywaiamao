@@ -4,16 +4,21 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { Plus } from 'lucide-react'
+import { Plus, Download } from 'lucide-react'
+import { toast } from 'sonner'
 import { useCRMStore } from '@/store/use-crm-store'
 import { DataTable } from '@/components/crm/data-table'
 import { StatusBadge } from '@/components/crm/status-badge'
+import { QUOTATION_STATUS_LABELS } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
-import { formatCurrency } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
+import { exportToCSV } from '@/lib/export-csv'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export function QuotationListView() {
   const { searchQuery, filters, setFilters, openQuotationForm, selectQuotation } = useCRMStore()
@@ -130,9 +135,49 @@ export function QuotationListView() {
             <SelectItem value="rejected">已拒绝</SelectItem>
           </SelectContent>
         </Select>
-        <Button size="sm" onClick={() => openQuotationForm()} className="ml-auto">
-          <Plus className="h-4 w-4 mr-1" /> 新建报价
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" /> 导出
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!quotations.length) { toast.info('暂无数据可导出'); return }
+                  const csvData = quotations.map((item: Record<string, unknown>) => {
+                    const customer = item.customer as Record<string, unknown> | null
+                    return {
+                      quoteNo: item.quoteNo as string,
+                      customerName: customer?.companyName as string || '',
+                      tradeTerm: item.tradeTerm as string || '',
+                      totalAmount: item.totalAmount as number,
+                      profitRate: `${(item.profitRate as number).toFixed(1)}%`,
+                      status: QUOTATION_STATUS_LABELS[item.status as keyof typeof QUOTATION_STATUS_LABELS] || (item.status as string),
+                      createdAt: item.createdAt ? format(new Date(item.createdAt as string), 'yyyy-MM-dd') : '',
+                    }
+                  })
+                  exportToCSV(csvData, '报价列表', [
+                    { key: 'quoteNo', label: '报价编号' },
+                    { key: 'customerName', label: '客户' },
+                    { key: 'tradeTerm', label: '贸易条款' },
+                    { key: 'totalAmount', label: '金额' },
+                    { key: 'profitRate', label: '利润率' },
+                    { key: 'status', label: '状态' },
+                    { key: 'createdAt', label: '创建日期' },
+                  ])
+                  toast.success(`导出成功，共 ${quotations.length} 条数据`)
+                }}
+              >
+                <Download className="h-4 w-4 mr-2 text-emerald-600" /> 导出CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" onClick={() => openQuotationForm()}>
+            <Plus className="h-4 w-4 mr-1" /> 新建报价
+          </Button>
+        </div>
       </div>
 
       <DataTable
