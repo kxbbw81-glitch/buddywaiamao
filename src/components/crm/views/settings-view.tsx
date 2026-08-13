@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useCRMStore } from '@/store/use-crm-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,27 +15,153 @@ import { useTheme } from 'next-themes'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { toast } from 'sonner'
 
-export function SettingsView() {
-  const { currentUser } = useCRMStore()
-  const { theme, setTheme } = useTheme()
-  const [notifications, setNotifications] = useState({
+const STORAGE_KEY = 'nexfab_settings'
+
+interface SettingsData {
+  notifications: {
+    inquiry: boolean
+    approval: boolean
+    orderStatus: boolean
+    payment: boolean
+  }
+  compactTable: boolean
+  pageSize: string
+  language: string
+}
+
+const defaultSettings: SettingsData = {
+  notifications: {
     inquiry: true,
     approval: true,
     orderStatus: true,
     payment: true,
-  })
-  const [compactTable, setCompactTable] = useState(false)
-  const [pageSize, setPageSize] = useState('20')
+  },
+  compactTable: false,
+  pageSize: '20',
+  language: 'zh-CN',
+}
+
+function loadSettings(): SettingsData {
+  if (typeof window === 'undefined') return defaultSettings
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<SettingsData>
+      return {
+        ...defaultSettings,
+        ...parsed,
+        notifications: { ...defaultSettings.notifications, ...parsed.notifications },
+      }
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return defaultSettings
+}
+
+function saveSettings(data: SettingsData) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch {
+    // ignore quota errors
+  }
+}
+
+export function SettingsView() {
+  const { currentUser } = useCRMStore()
+  const { theme, setTheme } = useTheme()
+
+  const [initialized, setInitialized] = useState(false)
+  const [notifications, setNotifications] = useState(defaultSettings.notifications)
+  const [compactTable, setCompactTable] = useState(defaultSettings.compactTable)
+  const [pageSize, setPageSize] = useState(defaultSettings.pageSize)
+  const [language, setLanguage] = useState(defaultSettings.language)
+
+  // Debounced save + toast
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Load settings on mount (batch setState to avoid cascading renders)
+  useEffect(() => {
+    const saved = loadSettings()
+    setNotifications(saved.notifications)
+    setCompactTable(saved.compactTable)
+    setPageSize(saved.pageSize)
+    setLanguage(saved.language)
+    setInitialized(true)
+  }, [])
+
+  // Debounced save + toast
+  const debouncedSave = useCallback((data: SettingsData) => {
+    saveSettings(data)
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current)
+    }
+    toastTimerRef.current = setTimeout(() => {
+      toast.success('已保存')
+    }, 300)
+  }, [])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current)
+      }
+    }
+  }, [])
+
+  const buildSettings = useCallback((
+    notifs: typeof notifications,
+    compact: boolean,
+    size: string,
+    lang: string
+  ): SettingsData => {
+    return {
+      notifications: notifs,
+      compactTable: compact,
+      pageSize: size,
+      language: lang,
+    }
+  }, [])
+
+  const toggleNotif = (key: keyof typeof notifications) => {
+    setNotifications((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      if (initialized) {
+        debouncedSave(buildSettings(next, compactTable, pageSize, language))
+      }
+      return next
+    })
+  }
+
+  const handleCompactChange = (checked: boolean) => {
+    setCompactTable(checked)
+    if (initialized) {
+      debouncedSave(buildSettings(notifications, checked, pageSize, language))
+    }
+  }
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(value)
+    if (initialized) {
+      debouncedSave(buildSettings(notifications, compactTable, value, language))
+    }
+  }
+
+  const handleLanguageChange = (value: string) => {
+    setLanguage(value)
+    if (initialized) {
+      debouncedSave(buildSettings(notifications, compactTable, pageSize, value))
+    }
+  }
 
   if (!currentUser) return null
 
   const initials = currentUser.name.slice(0, 2)
   const roleLabel = ROLE_LABELS[currentUser.primaryRole as keyof typeof ROLE_LABELS] || currentUser.primaryRole
-
-  const toggleNotif = (key: keyof typeof notifications) => {
-    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }))
-  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -172,7 +298,7 @@ export function SettingsView() {
               <p className="text-sm font-medium">默认每页条数</p>
               <p className="text-xs text-muted-foreground">列表默认显示的数据条数</p>
             </div>
-            <Select value={pageSize} onValueChange={setPageSize}>
+            <Select value={pageSize} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="w-20 h-8">
                 <SelectValue />
               </SelectTrigger>
@@ -191,7 +317,7 @@ export function SettingsView() {
             </div>
             <Switch
               checked={compactTable}
-              onCheckedChange={setCompactTable}
+              onCheckedChange={handleCompactChange}
             />
           </div>
           <Separator />
@@ -211,7 +337,16 @@ export function SettingsView() {
               <p className="text-sm font-medium">界面语言</p>
               <p className="text-xs text-muted-foreground">选择系统显示语言</p>
             </div>
-            <Badge variant="outline" className="text-xs">中文（简体）</Badge>
+            <Select value={language} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="w-32 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="zh-CN">中文（简体）</SelectItem>
+                <SelectItem value="zh-TW">中文（繁體）</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

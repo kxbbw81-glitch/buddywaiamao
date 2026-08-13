@@ -38,6 +38,11 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -166,11 +171,24 @@ export function CRMSidebar() {
 
         {currentUser && state === 'collapsed' && (
           <div className="flex justify-center">
-            <Avatar className="h-8 w-8 cursor-pointer" onClick={() => setCurrentModule('settings')}>
-              <AvatarFallback className={cn('text-xs font-semibold', avatarColor)}>
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Avatar
+                  className="h-8 w-8 cursor-pointer transition-transform duration-200 hover:scale-110"
+                  onClick={() => setCurrentModule('settings')}
+                >
+                  <AvatarFallback className={cn('text-xs font-semibold', avatarColor)}>
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="flex flex-col items-center gap-0.5">
+                <span className="font-medium text-sm">{currentUser.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {ROLE_LABELS[currentUser.primaryRole as UserRole] || currentUser.primaryRole}
+                </span>
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
 

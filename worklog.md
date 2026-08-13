@@ -1062,3 +1062,81 @@ Task: 客户联系人新建功能 + 综合QA + worklog更新
 8. **P3**: 数据看板大屏展示（管理层）
 9. **P3**: 客户地图视图（基于国家的客户分布地图）
 10. **P3**: WebSocket实时通知推送
+
+---
+Task ID: 7-f
+Agent: Product List Developer
+Task: 增强产品列表视图 - 分类筛选、搜索、视图切换、表格/网格视图完善
+
+## 项目当前状态描述/判断
+
+### 已有功能
+- ✅ 产品列表视图基础框架（表格/网格视图切换、搜索输入框、分类下拉、新建按钮）
+- ✅ 后端API `/api/products` 支持search（productCode/name/nameEn）和category参数
+- ✅ 数据库Product模型含isActive布尔字段
+
+### 存在问题
+1. **分类筛选失效**: 原实现从已过滤的产品列表中提取分类，当选择了某个分类后下拉仅显示该分类，无法切换
+2. **网格卡片缺少nameEn**: 只显示中文名和编号，未显示英文名
+3. **表格列不完整**: 缺少状态列，列顺序不符合要求（标准价应在成本价之前）
+
+## 当前目标/已完成的修改/验证结果
+
+### 1. 分类筛选修复
+- 新增独立的 `products-all-categories` useQuery，无筛选条件获取全部产品
+- 从全部产品中提取唯一分类填充下拉选项，确保分类筛选器始终显示所有可用分类
+- staleTime设为60秒避免频繁请求
+
+### 2. 搜索功能
+- 搜索输入框已存在且功能正常，通过API搜索productCode/name/nameEn
+- 新增Search图标增加视觉引导
+
+### 3. 视图切换（ToggleGroup）
+- 列表/网格视图切换按钮已存在且功能正常
+- 使用List和Grid3X3图标，选中态为secondary变体
+
+### 4. 网格视图卡片增强
+- 显示: Package图标占位、产品名称(name)、英文名称(nameEn)、产品编号(code)、分类徽章、成本价、标准价、利润率
+- 利润率颜色编码: ≥20%绿色, ≥10%橙色, <10%红色
+- 停售产品左上角显示"停售"徽章
+- 空状态显示Package图标和提示文字
+
+### 5. 表格视图列调整
+- 产品编号(productCode) - 等宽字体
+- 产品名称(name) - 含nameEn副标题
+- 分类(category) - outline徽章
+- 标准价(standardPrice) - 加粗
+- 成本价(costPrice) - 常规
+- 库存单位(unit)
+- 状态(isActive) - 在售(绿色)/停售(灰色)徽章
+
+### 验证结果
+- ✅ ESLint检查通过，无错误
+- ✅ TypeScript类型安全（Product类型显式定义）
+- ✅ 所有文本为中文
+- ✅ 使用formatCurrency格式化价格
+- ✅ 响应式网格布局 (1/2/3/4列)
+
+### 修改文件清单
+- **修改**: `src/components/crm/views/product-list-view.tsx`
+
+## 未解决问题或风险
+
+### 无
+- 所有要求的功能已实现并通过lint检查---
+Task ID: 7-g
+Agent: Main Orchestrator
+Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强
+---
+Task ID: 7-g
+Agent: Main Orchestrator
+Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强
+---
+Task ID: 7-g
+Agent: Main Orchestrator
+Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强
+WORKLOG_EOF
+---
+Task ID: 7-g
+Agent: Main Orchestrator
+Task: Bug修复 + 报价看板 + 设置持久化 + 产品列表增强

@@ -1,30 +1,29 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { Plus, Download } from 'lucide-react'
+import { Plus, Download, List, LayoutGrid } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCRMStore } from '@/store/use-crm-store'
 import { DataTable } from '@/components/crm/data-table'
+import { QuotationKanbanView } from './quotation-kanban-view'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { StatusBadge } from '@/components/crm/status-badge'
 import { QUOTATION_STATUS_LABELS } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { cn, formatCurrency } from '@/lib/utils'
-import { exportToCSV } from '@/lib/export-csv'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
 export function QuotationListView() {
   const { searchQuery, filters, setFilters, openQuotationForm, selectQuotation } = useCRMStore()
-  
-
-  
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
 
   const { data, isLoading } = useQuery({
     queryKey: ['quotations', searchQuery, filters],
@@ -85,11 +84,7 @@ export function QuotationListView() {
             : rate > 0
               ? 'text-red-600 dark:text-red-400'
               : 'text-red-500 font-bold'
-        const barColor = rate >= 20
-          ? 'bg-emerald-500'
-          : rate >= 10
-            ? 'bg-amber-500'
-            : 'bg-red-500'
+        const barColor = rate >= 20 ? 'bg-emerald-500' : rate >= 10 ? 'bg-amber-500' : 'bg-red-500'
         return (
           <div className="flex items-center gap-2">
             <span className={cn('text-sm crm-number', colorClass)}>{rate.toFixed(1)}%</span>
@@ -103,9 +98,7 @@ export function QuotationListView() {
     {
       key: 'status',
       header: '状态',
-      render: (item: Record<string, unknown>) => (
-        <StatusBadge status={item.status as string} type="quotation" />
-      ),
+      render: (item: Record<string, unknown>) => <StatusBadge status={item.status as string} type="quotation" />,
     },
     {
       key: 'validUntil',
@@ -136,6 +129,10 @@ export function QuotationListView() {
           </SelectContent>
         </Select>
         <div className="ml-auto flex items-center gap-2">
+          <ToggleGroup type="single" value={viewMode} onValueChange={setViewMode} className="bg-muted p-0.5 h-9">
+            <ToggleGroupItem value="list" className="h-8 text-xs px-3 gap-1.5" aria-label="列表视图"><List className="h-3.5 w-3.5" /></ToggleGroupItem>
+            <ToggleGroupItem value="kanban" className="h-8 text-xs px-3 gap-1.5" aria-label="看板视图"><LayoutGrid className="h-3.5 w-3.5" /></ToggleGroupItem>
+          </ToggleGroup>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -180,15 +177,19 @@ export function QuotationListView() {
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={quotations}
-        onRowClick={(item) => selectQuotation(item.id as string)}
-        isLoading={isLoading && quotations.length === 0}
-        emptyMessage="暂无报价数据"
-        searchValue=""
-        onSearchChange={() => {}}
-      />
+      {viewMode === 'kanban' ? (
+        <QuotationKanbanView />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={quotations}
+          onRowClick={(item) => selectQuotation(item.id as string)}
+          isLoading={isLoading && quotations.length === 0}
+          emptyMessage="暂无报价数据"
+          searchValue=""
+          onSearchChange={() => {}}
+        />
+      )}
     </div>
   )
 }
