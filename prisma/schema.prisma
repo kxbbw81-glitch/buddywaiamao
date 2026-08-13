@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ User & Auth ============
+model User {
+  id            String   @id @default(cuid())
+  tenantId      Int      @default(1)
+  email         String   @unique
+  name          String
+  passwordHash  String?
+  avatar        String?
+  primaryRole   String   @default("sales") // super_admin / management / sales_manager / sales / finance
+  additionalRoles String  @default("[]") // JSON array
+  department    String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignedInquiries  Inquiry[]
+  approvedQuotations Quotation[]  @relation("Approver")
+  activities         Activity[]
+  createdCustomers   Customer[]  @relation("Owner")
+  createdQuotations  Quotation[]  @relation("Creator")
+  createdOrders      Order[]      @relation("Creator")
+}
+
+// ============ Customer ============
+model Customer {
+  id            String   @id @default(cuid())
+  tenantId      Int      @default(1)
+  companyName   String
+  companyNameEn String?
+  country       String?
+  city          String?
+  website       String?
+  industry      String?
+  customerLevel String   @default("C") // A/B/C/D
+  source        String   @default("manual") // exhibition/b2b/social_media/referral/manual
+  status        String   @default("active") // active/inactive/lost
+  tags          String   @default("[]") // JSON array
+  notes         String?
+  aiScore       Float    @default(0)
+  aiProfile     String?  // JSON
+  ownerId       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastContactAt DateTime?
+
+  owner       User?           @relation("Owner", fields: [ownerId], references: [id])
+  contacts    Contact[]
+  inquiries   Inquiry[]
+  quotations  Quotation[]
+  orders      Order[]
+  samples     Sample[]
+}
+
+model Contact {
+  id            String   @id @default(cuid())
+  customerId    String
+  name          String
+  email         String?
+  phone         String?
+  whatsapp      String?
+  position      String?
+  isDecisionMaker Boolean @default(false)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+// ============ Product ============
+model Product {
+  id            String   @id @default(cuid())
+  tenantId      Int      @default(1)
+  productCode   String   @unique
+  name          String
+  nameEn        String?
+  category      String?
+  specification String?
+  unit          String   @default("PCS")
+  costPrice     Float    @default(0)
+  minPrice      Float    @default(0)
+  standardPrice Float    @default(0)
+  description   String?
+  imageUrl      String?
+  keywords      String   @default("[]") // JSON array
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  quotationItems QuotationItem[]
+}
+
+// ============ Inquiry ============
+model Inquiry {
+  id              String   @id @default(cuid())
+  tenantId        Int      @default(1)
+  customerId      String?
+  inquiryNo       String   @unique
+  source          String   @default("email") // email/website/whatsapp/exhibition/b2b_alibaba/linkedin/social_media
+  subject         String?
+  content         String?
+  contentTranslated String?
+  language        String   @default("en")
+  status          String   @default("new") // new/assigned/following/quoted/won/lost/pooled/closed
+  priority        String   @default("normal") // low/normal/high/urgent
+  assignedTo      String?
+  assignedAt      DateTime?
+  lastFollowUpAt  DateTime?
+  isInPool        Boolean  @default(false)
+  poolEnteredAt   DateTime?
+  aiAnalysis      String?  // JSON
+  aiReplyDraft    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customer   Customer?  @relation(fields: [customerId], references: [id])
+  assignee   User?      @relation(fields: [assignedTo], references: [id])
+  quotations Quotation[]
+  samples    Sample[]
+}
+
+// ============ Quotation ============
+model Quotation {
+  id                String    @id @default(cuid())
+  tenantId          Int       @default(1)
+  inquiryId         String?
+  customerId        String?
+  quoteNo           String    @unique
+  version           Int       @default(1)
+  tradeTerm         String    @default("FOB") // FOB/CIF/EXW/DDP
+  currency          String    @default("USD")
+  exchangeRate      Float     @default(1)
+  totalAmount       Float     @default(0)
+  totalCost         Float     @default(0)
+  profitRate        Float     @default(0)
+  status            String    @default("draft") // draft/sent/accepted/rejected/expired/cancelled
+  validUntil        DateTime?
+  notes             String?
+  aiSuggestion      String?   // JSON
+  marginCheckPassed Boolean?
+  marginCheckReason String?
+  approvedBy        String?
+  approvedAt        DateTime?
+  createdById       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  inquiry    Inquiry?  @relation(fields: [inquiryId], references: [id])
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  approver   User?     @relation("Approver", fields: [approvedBy], references: [id])
+  creator    User?     @relation("Creator", fields: [createdById], references: [id])
+  items      QuotationItem[]
+  orders     Order[]
+}
+
+model QuotationItem {
+  id                String  @id @default(cuid())
+  quotationId       String
+  productId         String?
+  productName       String
+  productSpec       String?
+  quantity          Int
+  unit              String  @default("PCS")
+  unitPrice         Float
+  cost              Float
+  totalPrice        Float
+  priceDeviationFlag Boolean @default(false)
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  product   Product?  @relation(fields: [productId], references: [id])
+}
+
+// ============ Order ============
+model Order {
+  id              String   @id @default(cuid())
+  tenantId        Int      @default(1)
+  quotationId     String?
+  customerId      String?
+  orderNo         String   @unique
+  piNo            String?
+  status          String   @default("pending") // pending/confirmed/in_production/ready/shipped/completed/cancelled
+  totalAmount     Float    @default(0)
+  currency        String   @default("USD")
+  paymentTerm     String?
+  deliveryDate    DateTime?
+  paidAmount      Float    @default(0)
+  aiRiskScore     Float    @default(0)
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+
+  quotation Quotation? @relation(fields: [quotationId], references: [id])
+  customer  Customer? @relation(fields: [customerId], references: [id])
+  creator   User?    @relation("Creator", fields: [createdById], references: [id])
+  payments  Payment[]
+}
+
+// ============ Payment ============
+model Payment {
+  id            String   @id @default(cuid())
+  tenantId      Int      @default(1)
+  orderId       String
+  amount        Float
+  currency      String   @default("USD")
+  paymentMethod String?  // T/T / L/C / Western Union / PayPal
+  paymentDate   DateTime?
+  dueDate       DateTime?
+  status        String   @default("pending") // pending/partial/completed/overdue
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ============ Activity ============
+model Activity {
+  id          String   @id @default(cuid())
+  tenantId    Int      @default(1)
+  type        String   // follow_up/email/call/meeting/note/system
+  subject     String?
+  content     String?
+  entityType  String?  // customer/inquiry/quotation/order
+  entityId    String?
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  user     User?    @relation(fields: [userId], references: [id])
+}
+
+// ============ Sample ============
+model Sample {
+  id            String   @id @default(cuid())
+  tenantId      Int      @default(1)
+  customerId    String?
+  inquiryId     String?
+  productName   String
+  quantity      Int      @default(1)
+  status        String   @default("pending") // pending/approved/sent/in_transit/delivered/testing/confirmed/rejected
+  trackingNo    String?
+  shippingMethod String?
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  testResult    String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  inquiry  Inquiry?  @relation(fields: [inquiryId], references: [id])
+}

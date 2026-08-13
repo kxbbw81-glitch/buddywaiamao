@@ -1,0 +1,224 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { format } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
+import {
+  Globe, MapPin, Building2, ExternalLink, Edit, ShoppingCart,
+  Phone, Mail, UserCircle, Star, ChevronRight,
+} from 'lucide-react'
+import { useCRMStore } from '@/store/use-crm-store'
+import { StatusBadge } from '@/components/crm/status-badge'
+import { DetailSkeleton } from '@/components/crm/loading-skeleton'
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  '美国': '🇺🇸', '德国': '🇩🇪', '阿联酋': '🇦🇪', '日本': '🇯🇵', '尼日利亚': '🇳🇬',
+  '马来西亚': '🇲🇾', '瑞典': '🇸🇪', '印度': '🇮🇳', '英国': '🇬🇧', '法国': '🇫🇷',
+  '巴西': '🇧🇷', '澳大利亚': '🇦🇺', '韩国': '🇰🇷', '中国': '🇨🇳',
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value)
+}
+
+export function CustomerDetailDrawer() {
+  const { selectedCustomerId, selectCustomer } = useCRMStore()
+  
+
+  
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['customer', selectedCustomerId],
+    queryFn: () => fetch(`/api/customers/${selectedCustomerId}`).then((r) => r.json()),
+    enabled: !!selectedCustomerId,
+  })
+
+  const customer = data?.data
+
+  const open = !!selectedCustomerId
+  const flag = COUNTRY_FLAGS[customer?.country || ''] || '🌍'
+
+  return (
+    <Sheet open={open} onOpenChange={(v) => !v && selectCustomer(null)}>
+      <SheetContent className="w-full sm:max-w-xl p-0">
+        {isLoading || !customer ? (
+          <DetailSkeleton />
+        ) : (
+          <>
+            <SheetHeader className="p-6 pb-4">
+              <div className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <SheetTitle className="text-lg flex items-center gap-2">
+                      {flag} {customer.companyName}
+                    </SheetTitle>
+                    {customer.companyNameEn && (
+                      <p className="text-sm text-muted-foreground">{customer.companyNameEn}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={customer.customerLevel} type="customer_level" />
+                    <StatusBadge status={customer.status} type="customer" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  {customer.country && (
+                    <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{customer.country}{customer.city ? ` · ${customer.city}` : ''}</span>
+                  )}
+                  {customer.industry && (
+                    <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{customer.industry}</span>
+                  )}
+                  {customer.website && (
+                    <a href={customer.website.startsWith('http') ? customer.website : `https://${customer.website}`} target="_blank" rel="noopener" className="flex items-center gap-1 text-sky-600 hover:underline">
+                      <Globe className="h-3.5 w-3.5" />官网
+                    </a>
+                  )}
+                </div>
+              </div>
+            </SheetHeader>
+
+            <Separator />
+
+            <Tabs defaultValue="overview" className="px-6">
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="overview" className="text-xs">概览</TabsTrigger>
+                <TabsTrigger value="contacts" className="text-xs">联系人</TabsTrigger>
+                <TabsTrigger value="inquiries" className="text-xs">询盘</TabsTrigger>
+                <TabsTrigger value="orders" className="text-xs">订单</TabsTrigger>
+                <TabsTrigger value="notes" className="text-xs">备注</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="mt-4 pb-6 space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <Card className="p-3"><p className="text-xs text-muted-foreground">询盘总数</p><p className="text-lg font-bold crm-number">{customer.inquiries?.length || 0}</p></Card>
+                  <Card className="p-3"><p className="text-xs text-muted-foreground">报价总数</p><p className="text-lg font-bold crm-number">{customer.quotations?.length || 0}</p></Card>
+                  <Card className="p-3"><p className="text-xs text-muted-foreground">订单总数</p><p className="text-lg font-bold crm-number">{customer.orders?.length || 0}</p></Card>
+                  <Card className="p-3"><p className="text-xs text-muted-foreground">联系人</p><p className="text-lg font-bold crm-number">{customer.contacts?.length || 0}</p></Card>
+                </div>
+
+                <Card className="p-4">
+                  <h4 className="text-sm font-medium mb-2">公司信息</h4>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">客户来源</span><span>{customer.source}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">负责人</span><span>{customer.owner?.name || '未分配'}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">AI评分</span><span className="font-medium text-emerald-600">{customer.aiScore}/100</span></div>
+                    {customer.lastContactAt && (
+                      <div className="flex justify-between"><span className="text-muted-foreground">最后联系</span><span>{format(new Date(customer.lastContactAt), 'yyyy-MM-dd', { locale: zhCN })}</span></div>
+                    )}
+                  </div>
+                </Card>
+
+                {customer.notes && (
+                  <Card className="p-4">
+                    <h4 className="text-sm font-medium mb-2">备注</h4>
+                    <p className="text-sm text-muted-foreground">{customer.notes}</p>
+                  </Card>
+                )}
+
+                {customer.tags && (JSON.parse(customer.tags) as string[]).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(JSON.parse(customer.tags) as string[]).map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="contacts" className="mt-4 pb-6 space-y-3">
+                {customer.contacts?.length > 0 ? customer.contacts.map((contact: Record<string, unknown>) => (
+                  <Card key={contact.id as string} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <UserCircle className="h-8 w-8 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-sm flex items-center gap-1">
+                            {contact.name as string}
+                            {contact.isDecisionMaker && <Star className="h-3 w-3 text-amber-500 fill-amber-500" />}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{contact.position as string || ''}</p>
+                        </div>
+                      </div>
+                      {contact.isDecisionMaker && <Badge className="text-xs">决策者</Badge>}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      {contact.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{contact.email as string}</span>}
+                      {contact.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{contact.phone as string}</span>}
+                    </div>
+                  </Card>
+                )) : <p className="text-sm text-muted-foreground py-8 text-center">暂无联系人</p>}
+              </TabsContent>
+
+              <TabsContent value="inquiries" className="mt-4 pb-6">
+                {customer.inquiries?.length > 0 ? (
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader><TableRow><TableHead className="text-xs">编号</TableHead><TableHead className="text-xs">主题</TableHead><TableHead className="text-xs">状态</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {customer.inquiries.slice(0, 10).map((inq: Record<string, unknown>) => (
+                          <TableRow key={inq.id as string}>
+                            <TableCell className="text-xs font-mono">{inq.inquiryNo as string}</TableCell>
+                            <TableCell className="text-xs">{inq.subject as string}</TableCell>
+                            <TableCell><StatusBadge status={inq.status as string} type="inquiry" /></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : <p className="text-sm text-muted-foreground py-8 text-center">暂无询盘</p>}
+              </TabsContent>
+
+              <TabsContent value="orders" className="mt-4 pb-6">
+                {customer.orders?.length > 0 ? (
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader><TableRow><TableHead className="text-xs">订单号</TableHead><TableHead className="text-xs">金额</TableHead><TableHead className="text-xs">状态</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {customer.orders.slice(0, 10).map((order: Record<string, unknown>) => (
+                          <TableRow key={order.id as string}>
+                            <TableCell className="text-xs font-mono">{order.orderNo as string}</TableCell>
+                            <TableCell className="text-xs crm-number">{formatCurrency(order.totalAmount as number)}</TableCell>
+                            <TableCell><StatusBadge status={order.status as string} type="order" /></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : <p className="text-sm text-muted-foreground py-8 text-center">暂无订单</p>}
+              </TabsContent>
+
+              <TabsContent value="notes" className="mt-4 pb-6">
+                <Textarea
+                  placeholder="添加备注..."
+                  defaultValue={customer.notes || ''}
+                  rows={6}
+                  onBlur={(e) => {
+                    fetch(`/api/customers/${selectedCustomerId}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ notes: e.target.value }),
+                    }).then(() => toast.success('备注已保存')).catch(() => toast.error('保存失败'))
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  )
+}

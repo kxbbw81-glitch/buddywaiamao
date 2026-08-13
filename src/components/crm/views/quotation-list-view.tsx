@@ -1,0 +1,132 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { format } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
+import { Plus } from 'lucide-react'
+import { useCRMStore } from '@/store/use-crm-store'
+import { DataTable } from '@/components/crm/data-table'
+import { StatusBadge } from '@/components/crm/status-badge'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value)
+}
+
+export function QuotationListView() {
+  const { searchQuery, filters, setFilters, openQuotationForm, selectQuotation } = useCRMStore()
+  
+
+  
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['quotations', searchQuery, filters],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (searchQuery) params.set('search', searchQuery)
+      if (filters.quotationStatus) params.set('status', filters.quotationStatus)
+      params.set('page', '1')
+      params.set('pageSize', '50')
+      return fetch(`/api/quotations?${params}`).then((r) => r.json())
+    },
+  })
+
+  const quotations = data?.data || []
+
+  const columns = [
+    {
+      key: 'quoteNo',
+      header: '报价编号',
+      sortable: true,
+      render: (item: Record<string, unknown>) => (
+        <span className="font-mono text-xs font-medium">{item.quoteNo as string}</span>
+      ),
+    },
+    {
+      key: 'customer',
+      header: '客户',
+      render: (item: Record<string, unknown>) => {
+        const customer = item.customer as Record<string, unknown> | null
+        return <span className="text-sm">{customer?.companyName as string || '-'}</span>
+      },
+    },
+    {
+      key: 'tradeTerm',
+      header: '贸易条款',
+      render: (item: Record<string, unknown>) => (
+        <Badge variant="outline" className="text-xs">{item.tradeTerm as string}</Badge>
+      ),
+    },
+    {
+      key: 'totalAmount',
+      header: '总金额',
+      sortable: true,
+      render: (item: Record<string, unknown>) => (
+        <span className="text-sm font-medium crm-number">{formatCurrency(item.totalAmount as number)}</span>
+      ),
+    },
+    {
+      key: 'profitRate',
+      header: '利润率',
+      render: (item: Record<string, unknown>) => {
+        const rate = item.profitRate as number
+        const color = rate >= 20 ? 'text-emerald-600' : rate >= 10 ? 'text-amber-600' : 'text-rose-600'
+        return <span className={`text-sm font-medium crm-number ${color}`}>{rate.toFixed(1)}%</span>
+      },
+    },
+    {
+      key: 'status',
+      header: '状态',
+      render: (item: Record<string, unknown>) => (
+        <StatusBadge status={item.status as string} type="quotation" />
+      ),
+    },
+    {
+      key: 'validUntil',
+      header: '有效期',
+      render: (item: Record<string, unknown>) => (
+        <span className="text-xs text-muted-foreground">
+          {item.validUntil ? format(new Date(item.validUntil as string), 'yyyy-MM-dd', { locale: zhCN }) : '-'}
+        </span>
+      ),
+    },
+  ]
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Input placeholder="搜索报价编号..." className="h-9" value={searchQuery} onChange={(e) => useCRMStore.getState().setSearchQuery(e.target.value)} />
+        </div>
+        <Select value={filters.quotationStatus || 'all'} onValueChange={(v) => setFilters({ quotationStatus: v === 'all' ? undefined : v })}>
+          <SelectTrigger className="h-9 w-28"><SelectValue placeholder="状态" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部状态</SelectItem>
+            <SelectItem value="draft">草稿</SelectItem>
+            <SelectItem value="pending">待审批</SelectItem>
+            <SelectItem value="sent">已发送</SelectItem>
+            <SelectItem value="accepted">已接受</SelectItem>
+            <SelectItem value="rejected">已拒绝</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button size="sm" onClick={() => openQuotationForm()} className="ml-auto">
+          <Plus className="h-4 w-4 mr-1" /> 新建报价
+        </Button>
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={quotations}
+        onRowClick={(item) => selectQuotation(item.id as string)}
+        isLoading={isLoading && quotations.length === 0}
+        emptyMessage="暂无报价数据"
+        searchValue=""
+        onSearchChange={() => {}}
+      />
+    </div>
+  )
+}
