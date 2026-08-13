@@ -897,6 +897,97 @@ textarea:focus-visible {
 
 /* ============ Style Detail Enhancements (Task 4-a) ============ */
 
+/* --- Risk Alert Cards --- */
+.risk-alert-danger {
+  border-left: 3px solid #f43f5e;
+  background-color: oklch(0.97 0.015 10);
+  transition: background-color 0.15s ease;
+}
+.risk-alert-danger:hover {
+  background-color: oklch(0.93 0.025 10);
+}
+.dark .risk-alert-danger {
+  background-color: oklch(0.22 0.012 10);
+}
+.dark .risk-alert-danger:hover {
+  background-color: oklch(0.28 0.018 10);
+}
+
+.risk-alert-warning {
+  border-left: 3px solid #f59e0b;
+  background-color: oklch(0.98 0.015 85);
+  transition: background-color 0.15s ease;
+}
+.risk-alert-warning:hover {
+  background-color: oklch(0.94 0.025 85);
+}
+.dark .risk-alert-warning {
+  background-color: oklch(0.22 0.012 85);
+}
+.dark .risk-alert-warning:hover {
+  background-color: oklch(0.28 0.018 85);
+}
+
+.risk-alert-info {
+  border-left: 3px solid #10b981;
+  background-color: oklch(0.98 0.012 162);
+  transition: background-color 0.15s ease;
+}
+.risk-alert-info:hover {
+  background-color: oklch(0.94 0.020 162);
+}
+.dark .risk-alert-info {
+  background-color: oklch(0.22 0.010 162);
+}
+.dark .risk-alert-info:hover {
+  background-color: oklch(0.28 0.015 162);
+}
+
+/* --- Data Table Sticky Header --- */
+.table-header-sticky thead,
+.table-header-sticky [class*="TableHeader"] {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: oklch(1 0 0 / 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid oklch(0 0 0 / 0.08);
+}
+.dark .table-header-sticky thead,
+.dark .table-header-sticky [class*="TableHeader"] {
+  background-color: oklch(0.15 0 0 / 0.95);
+  border-bottom: 1px solid oklch(1 0 0 / 0.08);
+}
+
+/* --- Breadcrumb Link --- */
+.breadcrumb-link {
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+.breadcrumb-link:hover {
+  text-decoration-color: oklch(0.556 0 0);
+  color: oklch(0.3 0 0);
+}
+.dark .breadcrumb-link:hover {
+  text-decoration-color: oklch(0.7 0 0);
+  color: oklch(0.9 0 0);
+}
+
+/* --- Badge Pulse Animation --- */
+.badge-pulse {
+  animation: badgePulse 2.5s ease-in-out infinite;
+}
+@keyframes badgePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.35); }
+  50% { box-shadow: 0 0 0 4px rgba(16,185,129,0); }
+}
+
 /* 1. Data Table Row Hover - smooth left-border highlight */
 .data-table-row-hover {
   position: relative;

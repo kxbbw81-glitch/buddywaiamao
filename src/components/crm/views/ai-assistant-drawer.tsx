@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
-import { Send, Bot, User, Loader2, Sparkles, Trash2, Building2, FileText, Package, ClipboardList, X, ArrowUpRight } from 'lucide-react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { Send, Bot, User, Sparkles, Trash2, Building2, FileText, Package, ClipboardList, X, ArrowUpRight, Square } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useCRMStore } from '@/store/use-crm-store'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { INQUIRY_STATUS_LABELS, CUSTOMER_LEVEL_LABELS } from '@/lib/types'
+import { toast } from 'sonner'
 
 interface Message {
   id: string
@@ -50,6 +51,7 @@ export function AIAssistantDrawer() {
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   // Fetch context data based on what's selected
   const { data: customerData } = useQuery({
@@ -100,6 +102,11 @@ export function AIAssistantDrawer() {
     }))
   }, [customerData, inquiryData])
 
+  // 发送消息时只保留最近 20 条作为上下文（避免 token 过长）
+  const getRecentMessages = useCallback((allMsgs: Message[]) => {
+    return allMsgs.slice(-20)
+  }, [])
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -112,6 +119,80 @@ export function AIAssistantDrawer() {
       setTimeout(() => inputRef.current?.focus(), 300)
     }
   }, [aiDrawerOpen])
+
+  // 清理中断请求
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
+  /**
+   * 解析 SSE 流，正确处理跨 chunk 的不完整行
+   */
+  async function readSSEStream(
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    onChunk: (content: string) => void,
+    onError: (msg: string) => void,
+  ): Promise<void> {
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      // 最后一个元素可能是不完整的行，保留在 buffer 中
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed || !trimmed.startsWith('data: ')) continue
+
+        const payload = trimmed.slice(6) // 去掉 "data: "
+        if (payload === '[DONE]') continue
+
+        try {
+          const parsed = JSON.parse(payload)
+          if (parsed.error) {
+            onError(parsed.error)
+            return
+          }
+          if (typeof parsed.content === 'string') {
+            onChunk(parsed.content)
+          }
+        } catch {
+          // 跳过格式异常的数据
+        }
+      }
+    }
+
+    // 处理 buffer 中剩余的内容
+    if (buffer.trim().startsWith('data: ')) {
+      const payload = buffer.trim().slice(6)
+      if (payload !== '[DONE]') {
+        try {
+          const parsed = JSON.parse(payload)
+          if (parsed.error) {
+            onError(parsed.error)
+          } else if (typeof parsed.content === 'string') {
+            onChunk(parsed.content)
+          }
+        } catch {
+          // skip
+        }
+      }
+    }
+  }
+
+  const stopStreaming = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setLoading(false)
+    inputRef.current?.focus()
+  }, [])
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || loading) return
@@ -128,7 +209,7 @@ export function AIAssistantDrawer() {
     setInput('')
     setLoading(true)
 
-    // Create placeholder for streaming response
+    // 创建流式回复占位消息
     const assistantId = (Date.now() + 1).toString()
     setMessages((prev) => [
       ...prev,
@@ -140,52 +221,72 @@ export function AIAssistantDrawer() {
       },
     ])
 
+    // 构建多轮对话 messages 数组
+    const historyMessages = getRecentMessages([...messages, userMessage])
+    const apiMessages = historyMessages
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({ role: m.role, content: m.content }))
+
+    const abortController = new AbortController()
+    abortRef.current = abortController
+
     try {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content.trim(), context: contextString || undefined, stream: true }),
+        body: JSON.stringify({
+          messages: apiMessages,
+          context: contextString || undefined,
+        }),
+        signal: abortController.signal,
       })
 
+      // 检查是否返回了 JSON 错误（非 SSE）
+      const contentType = res.headers.get('content-type') ?? ''
       if (!res.ok || !res.body) {
-        throw new Error('请求失败')
+        if (contentType.includes('application/json')) {
+          const errData = await res.json().catch(() => null)
+          const errMsg = errData?.error || '请求失败'
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: errMsg } : m
+            )
+          )
+          toast.error(errMsg)
+        } else {
+          throw new Error('请求失败')
+        }
+        return
       }
 
       const reader = res.body.getReader()
-      const decoder = new TextDecoder()
       let accumulated = ''
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim()
-            if (data === '[DONE]') continue
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.error) {
-                accumulated = parsed.error
-              } else if (parsed.content) {
-                accumulated += parsed.content
-              }
-            } catch {
-              // skip malformed chunks
-            }
+      await readSSEStream(
+        reader,
+        // onChunk
+        (chunkContent: string) => {
+          accumulated += chunkContent
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: accumulated } : m
+            )
+          )
+        },
+        // onError
+        (errMsg: string) => {
+          if (!accumulated) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: errMsg } : m
+              )
+            )
           }
-        }
+          toast.error(errMsg)
+        },
+      )
 
-        // Update the streaming message
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId ? { ...m, content: accumulated } : m))
-        )
-      }
-
-      // If empty, show error
+      // 如果流结束但内容为空
       if (!accumulated) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -195,7 +296,11 @@ export function AIAssistantDrawer() {
           )
         )
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        // 用户主动中断，不报错
+        return
+      }
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
@@ -203,7 +308,9 @@ export function AIAssistantDrawer() {
             : m
         )
       )
+      toast.error('网络错误，请稍后重试')
     } finally {
+      abortRef.current = null
       setLoading(false)
       inputRef.current?.focus()
     }
@@ -217,11 +324,25 @@ export function AIAssistantDrawer() {
   }
 
   const clearMessages = () => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setLoading(false)
     setMessages([])
   }
 
+  // 判断最后一条消息是否是正在流式输出的 assistant 消息
+  const isStreamingLastAssistant = loading && messages.length > 0 && messages[messages.length - 1].role === 'assistant'
+  const lastAssistantHasContent = isStreamingLastAssistant && messages[messages.length - 1].content.length > 0
+
   return (
-    <Sheet open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
+    <Sheet open={aiDrawerOpen} onOpenChange={(open) => {
+      if (!open) {
+        abortRef.current?.abort()
+        abortRef.current = null
+        setLoading(false)
+      }
+      setAiDrawerOpen(open)
+    }}>
       <SheetContent className="w-full sm:max-w-md p-0 flex flex-col">
         {/* Header with context indicator */}
         <SheetHeader className="p-4 border-b space-y-0">
@@ -328,6 +449,7 @@ export function AIAssistantDrawer() {
                     : 'bg-muted rounded-tl-sm'
                 )}>
                   {msg.content}
+                  {/* 流式输出时，末尾闪烁光标 */}
                   {loading && msg.role === 'assistant' && msg === messages[messages.length - 1] && msg.content && (
                     <span className="inline-block w-1.5 h-4 bg-emerald-600 dark:bg-emerald-400 ml-0.5 animate-pulse rounded-sm align-middle" />
                   )}
@@ -339,7 +461,8 @@ export function AIAssistantDrawer() {
             </div>
           ))}
 
-          {loading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && !messages[messages.length - 1].content && (
+          {/* 思考中动画：仅当最后一条 assistant 消息内容为空时显示 */}
+          {isStreamingLastAssistant && !lastAssistantHasContent && (
             <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <Avatar className="h-8 w-8 shrink-0">
                 <AvatarFallback className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
@@ -385,14 +508,25 @@ export function AIAssistantDrawer() {
                 className="flex-1 pr-10 rounded-xl border-emerald-200 dark:border-emerald-800 focus-visible:ring-emerald-500/20"
               />
             </div>
-            <Button
-              size="icon"
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim() || loading}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/20"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            {loading ? (
+              <Button
+                size="icon"
+                onClick={stopStreaming}
+                className="rounded-xl bg-rose-600 hover:bg-rose-700 shadow-sm shadow-rose-600/20"
+                title="停止生成"
+              >
+                <Square className="h-3.5 w-3.5" />
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                onClick={() => sendMessage(input)}
+                disabled={!input.trim()}
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/20"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground mt-2 px-1">
             按 Enter 发送 · AI 可能产生不准确的信息

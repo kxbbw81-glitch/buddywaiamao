@@ -189,7 +189,7 @@ export function PaymentKanbanView() {
                 <span>合计</span>
                 <span className="font-medium crm-number text-foreground">{formatCurrency(col.totalAmount)}</span>
               </div>
-              <ScrollArea className="max-h-64" horizontal>
+              <ScrollArea className="max-h-64">
                 <div className="flex gap-2 pb-2">
                   {col.items.map((item: PaymentRow) => {
                     const isOverdue = item.status === 'overdue'

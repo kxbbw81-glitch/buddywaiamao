@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/breadcrumb'
 
 export function CRMHeader() {
-  const { currentModule, setAiDrawerOpen } = useCRMStore()
+  const { currentModule, setAiDrawerOpen, setCurrentModule: setModule } = useCRMStore()
   const { theme, setTheme } = useTheme()
 
   return (
@@ -30,7 +30,15 @@ export function CRMHeader() {
       <Breadcrumb className="hidden sm:flex">
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="#" className="text-muted-foreground">NexFab CRM</BreadcrumbLink>
+            <BreadcrumbLink
+              className="text-muted-foreground breadcrumb-link"
+              onClick={(e) => {
+                e.preventDefault()
+                setModule('workbench')
+              }}
+            >
+              NexFab CRM
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>

@@ -283,10 +283,10 @@ export function WorkbenchView() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg border text-xs shrink-0',
-                  alert.level === 'danger' && 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-400 risk-alert-danger',
-                  alert.level === 'warning' && 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-400',
-                  alert.level === 'info' && 'bg-sky-50 border-sky-200 text-sky-700 dark:bg-sky-950 dark:border-sky-800 dark:text-sky-400'
+                  'flex items-center gap-2 px-3 py-2 rounded-lg text-xs shrink-0 crm-card-hover',
+                  alert.level === 'danger' && 'border border-rose-200 text-rose-700 dark:border-rose-800 dark:text-rose-400 risk-alert-danger',
+                  alert.level === 'warning' && 'border border-amber-200 text-amber-700 dark:border-amber-800 dark:text-amber-400 risk-alert-warning',
+                  alert.level === 'info' && 'border border-emerald-200 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400 risk-alert-info'
                 )}
               >
                 {alert.level === 'danger' ? <AlertTriangle className="h-3 w-3" /> : alert.level === 'warning' ? <AlertCircle className="h-3 w-3" /> : <Info className="h-3 w-3" />}

@@ -14,6 +14,7 @@ import { ROLE_LABELS } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 // Components
+import { useCRMKeyboard } from '@/hooks/use-crm-keyboard'
 import { CRMSidebar } from '@/components/crm/crm-sidebar'
 import { CRMHeader } from '@/components/crm/crm-header'
 import { WorkbenchView } from '@/components/crm/views/workbench-view'
@@ -30,6 +31,7 @@ import { QuotationDetailDrawer } from '@/components/crm/views/quotation-detail-d
 import { QuotationFormDialog } from '@/components/crm/views/quotation-form-dialog'
 import { OrderListView } from '@/components/crm/views/order-list-view'
 import { OrderDetailDrawer } from '@/components/crm/views/order-detail-drawer'
+import { SampleDetailDrawer } from '@/components/crm/views/sample-detail-drawer'
 import { OrderFormDialog } from '@/components/crm/views/order-form-dialog'
 import { SampleListView } from '@/components/crm/views/sample-list-view'
 import { PaymentListView } from '@/components/crm/views/payment-list-view'
@@ -239,7 +241,9 @@ function ModuleView() {
 
 function CRMApp() {
   const { currentUser, setCurrentUser } = useCRMStore()
-  
+
+  // Global keyboard shortcuts (only when user is logged in)
+  useCRMKeyboard()
 
   useEffect(() => {
     
@@ -280,6 +284,7 @@ function CRMApp() {
       <InquiryDetailDrawer />
       <QuotationDetailDrawer />
       <OrderDetailDrawer />
+      <SampleDetailDrawer />
 
       {/* Form Dialogs */}
       <CustomerFormDialog />

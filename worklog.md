@@ -1408,3 +1408,308 @@ Task: 综合QA + 测试数据清理 + 订单看板 + 收款看板 + 设置持久
 8. **P3**: 数据看板大屏展示（管理层）
 9. **P3**: 客户地图视图（基于国家分布）
 10. **P3**: WebSocket实时通知推送
+
+---
+Task ID: 9-1
+Agent: AI Streaming Developer
+Task: AI助手SSE流式响应
+
+## 项目当前状态描述/判断
+
+- AI聊天API已有基础SSE流式实现（char-by-char拆分），但存在以下问题：
+  1. 仅支持单轮对话（`message`字符串），不支持多轮（`messages`数组）
+  2. char-by-char拆分对长文本过于细碎，打字效果不自然
+  3. 前端SSE解析未处理跨chunk不完整行
+  4. 无中止生成功能
+  5. 错误未通过toast提示用户
+- 前端drawer已使用fetch+getReader消费SSE流，基本架构可用
+
+## 当前目标/已完成的修改/验证结果
+
+### 1. 重写 `/api/ai/chat/route.ts`
+- **移除非流式模式**：统一返回SSE流（`text/event-stream`）
+- **支持两种请求格式**：
+  - 多轮模式：`{ messages: [{role, content}, ...], context?: string }`
+  - 单轮兼容：`{ message: string, context?: string }`
+- **智能分块算法**（`splitIntoChunks`）：
+  - 中文字符：2-3字一组
+  - 英文单词：整词输出
+  - 标点/空白：1-2个一组
+  - 每块之间15-40ms延迟，模拟自然打字节奏
+- **SSE格式**：`data: {"content":"chunk"}\n\n`，结束标记 `data: [DONE]\n\n`
+- **错误处理**：LLM调用失败返回JSON 500，空回复返回JSON 500
+- **响应头**：`X-Accel-Buffering: no` 防止Nginx缓冲
+
+### 2. 更新 `ai-assistant-drawer.tsx`
+- **多轮对话**：发送完整对话历史（最近20条）作为`messages`数组
+- **SSE buffer处理**（`readSSEStream`函数）：
+  - 正确处理跨chunk的不完整行（buffer机制）
+  - 解析`data:`前缀，跳过`[DONE]`标记
+  - 支持流内错误`{error: "..."}`
+- **中止生成**：
+  - `AbortController` + `stopStreaming` 回调
+  - 发送按钮变为红色方块「停止」按钮
+  - 关闭抽屉时自动中止
+  - `AbortError`静默处理（不报错）
+- **Toast错误通知**（sonner）：
+  - 网络错误/LLM错误通过`toast.error`提示
+  - 流内错误通过`toast.error`提示
+- **UI优化**：
+  - 移除未使用的`Loader2`、`Separator`、`currentUser`、`currentModule`、`selectedQuotationId`、`selectedOrderId`变量引用
+  - 保留思考动画（bouncing dots）在内容为空时显示
+  - 保留流式光标（emerald闪烁竖线）在内容输出中显示
+
+## 新增/修改文件清单
+
+- `src/app/api/ai/chat/route.ts` — 重写，SSE流式API（多轮对话+智能分块）
+- `src/components/crm/views/ai-assistant-drawer.tsx` — 修改，多轮对话+SSE buffer解析+中止生成+toast错误提示
+
+## 验证结果
+
+- ✅ `bun run lint` 零错误（仅2个预存warning在payment-kanban-view.tsx）
+- ✅ TypeScript严格类型（Message接口、AbortController类型安全）
+- ✅ 所有UI文本中文（"AI 正在思考..."、"停止生成"、"网络错误，请稍后重试"）
+- ✅ emerald/teal色系，停止按钮使用rose色（无蓝紫色）
+- ✅ SSE流式完整实现：智能分块 → SSE事件 → 前端buffer解析 → 增量渲染 → 光标动画
+- ✅ 多轮对话：发送最近20条消息历史
+- ✅ 中止生成：AbortController + 停止按钮 + 抽屉关闭自动中止
+---
+Task ID: 9-2
+Agent: Sample Enhancement Developer
+Task: 样品管理增强
+
+## 项目当前状态描述/判断
+
+样品管理模块已有列表视图（sample-list-view.tsx）和API列表接口（/api/samples），但缺少样品详情抽屉、单条样品查询API、以及列表行点击交互。需要参照订单详情抽屉（order-detail-drawer.tsx）的模式，为样品模块添加完整的详情查看能力。
+
+## 当前目标/已完成的修改/验证结果
+
+### 1. Zustand Store 扩展
+- 在 `use-crm-store.ts` 中新增 `selectedSampleId: string | null` 状态
+- 新增 `selectSample(id: string | null)` action
+- 在 `logout` 中清理 `selectedSampleId`
+
+### 2. 样品详情API
+- 创建 `src/app/api/samples/[id]/route.ts`
+- GET 方法使用 `db.sample.findUnique` 查询单条样品
+- include: customer（id, companyName, country）、inquiry（id, inquiryNo, subject）
+- 404 处理：样品不存在时返回错误提示
+
+### 3. 样品详情抽屉（SampleDetailDrawer）
+- 创建 `src/components/crm/views/sample-detail-drawer.tsx`
+- 使用 Sheet/Drawer 模式（与 order-detail-drawer 一致）
+- Header：样品ID（monospace） + 样品名称 + 状态Badge + 关闭按钮
+- 3个Tab：
+  - **基本信息**：样品编号、名称、规格、数量、状态Badge、创建时间、寄出时间、预计完成日期、物流单号、快递方式、邮寄地址、运费、关联客户（可点击跳转客户详情）、关联询盘（可点击跳转询盘详情）
+  - **状态跟踪**：垂直时间线展示样品生命周期（待处理→已批准→已寄出→运输中→已送达→测试中→已确认），含模拟日期；拒绝状态特殊处理（显示终止标记）
+  - **备注**：展示notes字段，无备注时显示空状态；底部显示时间线摘要（创建/更新/寄出/送达时间）
+- 关联客户/询盘可点击跳转（关闭抽屉后切换模块并打开对应详情）
+- emerald/teal色系，拒绝状态使用rose色
+- 所有文本中文
+
+### 4. 列表行点击
+- 在 `sample-list-view.tsx` 中从 store 解构 `selectSample`
+- DataTable 添加 `onRowClick` 回调，点击行调用 `selectSample(item.id)` 打开详情抽屉
+
+### 5. 页面集成
+- 在 `src/app/page.tsx` 中导入并渲染 `<SampleDetailDrawer />`
+
+### 验证结果
+- ✅ `bun run lint` 通过（0 errors, 2 warnings 为既有payment-kanban-view.tsx警告）
+- ✅ TypeScript严格类型
+- ✅ 遵循项目既有模式（Sheet、useQuery、StatusBadge、DetailSkeleton）
+
+## 新增/修改文件清单
+
+### 新增文件
+1. `src/app/api/samples/[id]/route.ts` - 样品详情API（GET）
+2. `src/components/crm/views/sample-detail-drawer.tsx` - 样品详情抽屉组件
+
+### 修改文件
+1. `src/store/use-crm-store.ts` - 新增 selectedSampleId/selectSample
+2. `src/components/crm/views/sample-list-view.tsx` - 行点击打开详情
+3. `src/app/page.tsx` - 导入并渲染 SampleDetailDrawer
+
+## 验证结果
+- ✅ lint通过（0 errors）
+- ✅ 所有UI文本中文
+- ✅ emerald/teal色系，无蓝紫色
+
+---
+Task ID: 9-3+9-5
+Agent: Analytics & Keyboard Developer
+Task: 数据分析真实数据 + 全局键盘快捷键
+
+## 项目当前状态描述/判断
+- 数据分析视图(analytics-view.tsx)此前使用全部硬编码假数据
+- 系统无全局键盘快捷键支持
+- 需要将分析数据接入真实数据库查询
+
+## 当前目标/已完成的修改/验证结果
+
+### Task 9-3: 数据分析页真实数据
+1. **创建 `/api/analytics` GET接口** (`src/app/api/analytics/route.ts`):
+   - 支持 `dateRange` 查询参数: this_week/this_month/this_quarter/this_year
+   - `inquiryTrend`: 近6个月询盘月度计数（$queryRaw + strftime分组，补全空月份）
+   - `quotationTrend`: 近6个月报价月度计数
+   - `orderTrend`: 近6个月订单月度计数
+   - `funnelData`: 按询盘状态分组统计（询盘/报价/订单/流失）
+   - `sourceData`: 按询盘来源字段分组（中文标签映射）
+   - `salesRanking`: 每用户询盘数 + 订单成交额 + 转化率（won/total）
+   - `orderStatusData`: 按订单状态分组（中文标签映射）
+
+2. **重写 `analytics-view.tsx`**:
+   - 移除全部硬编码数据（monthlyInquiryTrend/monthlyQuotationTrend/monthlyOrderTrend/funnelData/sourceData/salesRanking）
+   - 使用 `useQuery` 调用 `/api/analytics?dateRange=...` 获取真实数据
+   - `dateRange` 下拉框实际过滤API查询（queryKey包含dateRange）
+   - 新增「订单状态分布」水平柱状图卡片（使用orderStatusData）
+   - 新增 `ChartSkeleton` / `KPISkeleton` 加载骨架屏组件
+   - 加载中显示骨架屏，数据为空时显示"暂无数据"提示
+   - 色系调整为 emerald/teal（替换原蓝色 #0ea5e9 → #14b8a6）
+   - 地区映射改用中文键名
+
+### Task 9-5: CRM全局键盘快捷键
+1. **创建 `src/hooks/use-crm-keyboard.ts`**:
+   - `useEffect` + `document.keydown` 监听
+   - 仅在 `currentUser` 存在时激活（effect内early return）
+   - `Escape`: 关闭所有抽屉/表单/对话框（selectCustomer(null)等）
+   - `1-9` 数字键: 切换侧边栏模块（1=工作台, 2=询盘, 3=客户, 4=产品, 5=报价, 6=样品, 7=订单, 8=收款, 9=分析）
+   - `k` 键（无修饰符）: 模拟 Cmd+K 打开全局搜索
+   - 不在 INPUT/TEXTAREA/SELECT/contentEditable 元素中触发
+   - 不在 `[role="dialog"]` 存在时触发
+
+2. **集成到 `src/app/page.tsx` CRMApp**:
+   - 导入并调用 `useCRMKeyboard()`
+
+## 新增/修改文件清单
+1. `src/app/api/analytics/route.ts` - 新建，分析数据API
+2. `src/components/crm/views/analytics-view.tsx` - 重写，使用真实数据+骨架屏+订单状态图表
+3. `src/hooks/use-crm-keyboard.ts` - 新建，全局键盘快捷键hook
+4. `src/app/page.tsx` - 修改，导入并使用useCRMKeyboard
+
+## 验证结果
+- ✅ `bun run lint` 通过（0 errors, 2 warnings为已有的payment-kanban-view无关警告）
+- ✅ 所有UI文本中文
+- ✅ emerald/teal色系，无蓝紫色
+- ✅ TypeScript strict
+- ✅ 键盘快捷键不干扰输入框和对话框
+
+---
+Task ID: 9-6
+Agent: Style Enhancement Developer
+Task: 样式细节增强
+
+## 当前目标/已完成的修改/验证结果
+
+1. **Risk Alert Cards Enhancement**: 风险预警卡片增加3px左侧彩色边框（danger=rose, warning=amber, info=emerald），使用CSS类替代内联背景色实现暗色模式兼容，添加hover暗化效果和crm-card-hover一致性类。info级别从sky改为emerald色系。
+2. **Data Table Sticky Header**: 表格容器增加`overflow-auto`和`max-h-[calc(100vh-280px)]`，Table组件添加`table-header-sticky`类，thead sticky定位+z-10+bg-background/95+backdrop-blur+底部边框。
+3. **Breadcrumb Enhancement**: "NexFab CRM"面包屑改为可点击，点击后导航到workbench，添加`breadcrumb-link`类实现hover下划线效果。通过store的setCurrentModule实现导航。
+4. **Sidebar Badge Pulse**: 模块计数徽章（count>0时）添加`badge-pulse`类，实现emerald色脉冲光晕动画。
+5. **globals.css新增样式**: risk-alert-danger/warning/info（左色边+背景色+hover暗化+暗色模式）、table-header-sticky（sticky thead+毛玻璃背景）、breadcrumb-link（透明下划线hover显现+暗色模式）、badge-pulse（emerald脉冲动画）。
+
+## 新增/修改文件清单
+- `src/app/globals.css` - 新增risk-alert-danger/warning/info、table-header-sticky、breadcrumb-link、badge-pulse样式类
+- `src/components/crm/views/workbench-view.tsx` - 风险预警卡片样式增强
+- `src/components/crm/data-table.tsx` - 表格sticky header
+- `src/components/crm/crm-header.tsx` - 面包屑可点击+hover下划线
+- `src/components/crm/crm-sidebar.tsx` - 徽章脉冲动画
+
+## 验证结果
+- ✅ `bun run lint` 通过（0 errors, 2 warnings为已有的payment-kanban-view无关警告）
+- ✅ 所有新增CSS类包含暗色模式变体
+- ✅ emerald/teal色系，无蓝紫色（info级别从sky改为emerald）
+- ✅ 所有hover效果使用CSS transition平滑过渡
+---
+Task ID: 9
+Agent: Main Orchestrator
+Task: AI流式响应 + 样品详情 + 分析真实数据 + 键盘快捷键 + 样式增强
+
+## 项目当前状态描述/判断
+
+### 系统状态: 🟢 稳定运行
+- Dev server HTTP 200，TypeScript 0错误(src/)
+- 所有11个模块视图正常运行
+- 5个看板视图 + 6个详情抽屉(客户/询盘/报价/订单/样品/新增活动记录)
+- AI助手支持SSE流式响应
+- 数据分析使用真实数据库数据
+- 全局键盘快捷键生效
+
+### 浏览器QA验证结果 (Agent Browser)
+- ✅ 工作台: 今日概要(新增询盘/待跟进/逾期)、本月新增客户+sparkline、风险告警彩色左边框
+- ✅ 样品管理: 表格正常渲染、点击行打开详情抽屉(3 Tab: 基本信息/状态跟踪/备注)
+- ✅ 数据分析: 真实数据图表(订单状态分布、客户地区分布、Top客户)、KPI卡片、销售漏斗
+- ✅ AI助手: 抽屉打开正常、快捷操作按钮、Escape关闭
+- ✅ 键盘快捷键: Escape关闭抽屉
+- ✅ 面包屑: "NexFab CRM"可点击导航回工作台
+- ✅ 侧边栏: 计数badge显示(目标线索21/报价11/样品5)
+
+## 本轮完成内容
+
+### 新功能 (5项)
+1. **AI助手SSE流式响应** (Task 9-1) - 后端智能分块(chunking)模拟流式输出，前端SSE buffer解析、逐字显示、AbortController停止生成、多轮对话(last 20 messages)
+2. **样品详情抽屉** (Task 9-2) - 3 Tab(基本信息/状态跟踪/备注)，含样品编号/名称/规格/数量/状态/物流/关联客户(可点击)/关联询盘(可点击)，状态跟踪垂直时间线
+3. **样品API** (Task 9-2) - /api/samples/[id] GET端点，include customer + inquiry
+4. **数据分析真实数据** (Task 9-3) - /api/analytics API返回7种真实数据(询盘趋势/报价趋势/订单趋势/漏斗/来源分布/销售排行/订单状态)，dateRange筛选，新增订单状态分布图
+5. **全局键盘快捷键** (Task 9-5) - Escape关闭所有抽屉/Dialog、数字键1-9切换模块、k键打开搜索(自动模拟Cmd+K)
+
+### 样式增强 (5项) (Task 9-6)
+1. **风险告警卡片** - 3色左边框(danger=rose/warning=amber/info=emerald) + 微弱背景色 + 暗色模式
+2. **数据表格固定表头** - thead sticky + backdrop-blur + z-10 + 底部边框
+3. **面包屑可点击** - "NexFab CRM"导航到工作台 + hover下划线效果
+4. **侧边栏badge脉冲** - 计数badge微弱emerald脉冲动画
+5. **CSS新增** - risk-alert-*/table-header-sticky/breadcrumb-link/badge-pulse类
+
+### 新增/修改文件清单
+- **新增**: `src/app/api/samples/[id]/route.ts`, `src/components/crm/views/sample-detail-drawer.tsx`, `src/app/api/analytics/route.ts`, `src/hooks/use-crm-keyboard.ts`
+- **修改**: `src/app/api/ai/chat/route.ts`, `src/components/crm/views/ai-assistant-drawer.tsx`, `src/components/crm/views/analytics-view.tsx`, `src/components/crm/views/workbench-view.tsx`, `src/components/crm/data-table.tsx`, `src/components/crm/crm-header.tsx`, `src/components/crm/crm-sidebar.tsx`, `src/store/use-crm-store.ts`, `src/components/crm/views/sample-list-view.tsx`, `src/app/page.tsx`, `src/app/globals.css`
+
+## 未解决问题或风险
+
+### 中优先级
+1. **AI聊天LLM端到端测试**: SSE流式逻辑已实现，但需要真实LLM API Key才能验证完整对话流程
+2. **数据分析dateRange筛选**: API已支持但SQLite日期函数有限，本周/本月/本季度过滤可能不精确
+3. **样品状态时间线**: 当前使用创建日期推算模拟时间线，非真实状态变更历史
+
+### 低优先级
+4. **看板视图拖拽**: 所有看板仍为静态分组
+5. **语言切换**: 设置页存储偏好但i18n未实现
+6. **通知为空**: 所有活动已读
+
+### 建议下一阶段优先事项
+1. **P1**: AI聊天真实LLM端到端测试(需要配置API Key)
+2. **P1**: 看板拖拽排序(@dnd-kit/core)
+3. **P2**: 权限中心(用户管理/角色配置页面)
+4. **P2**: 种子数据优化(增加更多订单/付款/活动记录)
+5. **P2**: 社媒运营模块
+6. **P2**: 数据分析增强(更多筛选维度/导出PDF)
+7. **P3**: 多语言i18n
+8. **P3**: 数据看板大屏(管理层)
+9. **P3**: 客户地图视图(基于国家分布)
+10. **P3**: WebSocket实时通知
+
+---
+Task ID: 10-2
+Agent: Quotation Detail Developer
+Task: 报价详情抽屉增强
+
+## 项目当前状态描述/判断
+报价详情抽屉原为简单的单页展示，仅有报价项目表格和总计卡片，无Tab结构、无客户导航、无活动记录、无删除功能。需要增强为与订单详情抽屉同级的Tab式详情页面。
+
+## 当前目标/已完成的修改/验证结果
+1. **Header增强**: 报价编号(mono)+版本号 + 状态Badge + 贸易条款Badge + 有效期日期 + "查看客户"按钮(导航到客户详情) + 状态操作按钮(draft→提交审批/pending→审批通过|拒绝/sent→已接受|已拒绝/draft|rejected→删除报价带AlertDialog确认)
+2. **Tab结构**: 新增Tabs组件，3个Tab: 概览/报价项目/动态记录，与订单详情抽屉风格一致
+3. **概览Tab**: 总金额大字(绿色左边框卡片) + 利润率大字(颜色编码 green≥20%/amber≥10%/rose<10%) + 详情卡片(客户公司可点击、贸易条款、币种/汇率、有效期、创建人、创建时间、审批人、关联询盘) + 利润预警 + 备注 + 关联订单 + 时间线
+4. **报价项目Tab**: 项目表格(产品名称、规格、数量、单价、小计、成本) + 价格偏差标记 + 汇总卡片(总金额/总成本/利润率) + 利润率可视化进度条 + 空状态"暂无报价项目"
+5. **动态记录Tab**: 从`/api/activities?entityType=quotation&entityId=xxx`获取活动记录，展示时间线(跟进/邮件/电话/会议/备注/系统)，带颜色图标、时间、内容、操作人
+6. **API增强**: `/api/quotations/[id]` 新增DELETE方法，支持删除报价(级联删除QuotationItem)
+
+## 新增/修改文件清单
+- `src/components/crm/views/quotation-detail-drawer.tsx` - 重写，增强Header+3Tab结构
+- `src/app/api/quotations/[id]/route.ts` - 新增DELETE方法
+
+## 验证结果
+- `bun run lint`: 0 errors, 2 warnings (均为已有的payment-kanban-view.tsx中的无关warning)
+- 所有UI文本中文
+- 使用emerald/teal/amber/rose配色，无蓝紫色
+- 使用shadcn/ui组件(Sheet, Tabs, Badge, Card, Table, AlertDialog等)
+- TypeScript严格类型定义(QuotationItem/QuotationData/ActivityData接口)

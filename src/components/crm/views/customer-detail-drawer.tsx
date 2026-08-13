@@ -7,7 +7,7 @@ import { zhCN } from 'date-fns/locale'
 import {
   Globe, MapPin, Building2, ExternalLink, Edit, ShoppingCart,
   Phone, Mail, UserCircle, Star, ChevronRight, FileText, Plus,
-  MessageCircle, Loader2, UserPlus,
+  MessageCircle, Loader2, UserPlus, Pencil, Trash2,
 } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
 import { StatusBadge } from '@/components/crm/status-badge'
@@ -26,7 +26,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -46,7 +46,7 @@ function ContactInlineForm({ customerId }: { customerId: string }) {
   const [phone, setPhone] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [isDecisionMaker, setIsDecisionMaker] = useState(false)
-  const queryClient = useQueryClient()
+  
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('请输入联系人姓名'); return }
@@ -111,7 +111,7 @@ function ContactInlineForm({ customerId }: { customerId: string }) {
 
 export function CustomerDetailDrawer() {
   const { selectedCustomerId, selectCustomer, selectQuotation, openCustomerForm, openInquiryForm, openQuotationForm, currentUser } = useCRMStore()
-  const queryClient = useQueryClient()
+  
 
   const { data, isLoading } = useQuery({
     queryKey: ['customer', selectedCustomerId],
@@ -283,7 +283,15 @@ export function CustomerDetailDrawer() {
                       </div>
                       {contact.isDecisionMaker && <Badge className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">决策者</Badge>}
                     </div>
-                    <div className="mt-2.5 flex flex-wrap gap-4 text-xs text-muted-foreground">
+                    <div className="mt-2 flex items-center gap-2">
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-emerald-600" onClick={() => startEditContact(contact)} aria-label="编辑联系人">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-rose-600" onClick={() => handleDeleteContact(contact.id!)} aria-label="删除联系人">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
                       {contact.email && <span className="flex items-center gap-1 hover:text-emerald-600 transition-colors"><Mail className="h-3 w-3" />{contact.email as string}</span>}
                       {contact.phone && <span className="flex items-center gap-1 hover:text-emerald-600 transition-colors"><Phone className="h-3 w-3" />{contact.phone as string}</span>}
                       {contact.whatsapp && <span className="flex items-center gap-1 hover:text-emerald-600 transition-colors"><MessageCircle className="h-3 w-3" />{contact.whatsapp as string}</span>}

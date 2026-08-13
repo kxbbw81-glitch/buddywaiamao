@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Check, ChevronsUpDown } from 'lucide-react'
+import { Product, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_FORM = {
@@ -172,8 +173,46 @@ export function InquiryFormDialog() {
             <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="询盘主题" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">内容</Label>
-            <Textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} placeholder="询盘内容..." rows={5} />
+            <Label className="text-xs">关联产品</Label>
+            <Popover open={productOpen} onOpenChange={setProductOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={productOpen}
+                  className="w-full justify-between h-9 text-sm"
+                >
+                  {selectedProduct
+                    ? `${selectedProduct.name}${selectedProduct.nameEn ? ` (${selectedProduct.productCode})` : '搜索并选择产品...'}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="搜索产品名称或编号..." value={productSearch} onValueChange={setProductSearch} />
+                  <CommandList className="max-h-64">
+                    <CommandEmpty>未找到产品</CommandEmpty>
+                    <CommandGroup>
+                      {products.map((p: Record<string, unknown>) => (
+                        <CommandItem
+                          key={p.id as string}
+                          value={p.productCode as string}
+                          onSelect={() => handleProductSelect(p.id)}
+                        >
+                          <Check
+                            className={cn(
+                            'mr-2 h-4 w-4',
+                            form.productId === p.id ? 'opacity-100' : 'opacity-0'
+                          )}
+                          <span className="text-sm">{p.name}</span>
+                          <span className="ml-1 text-xs text-muted-foreground">{p.productCode}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={closeInquiryForm}>取消</Button>

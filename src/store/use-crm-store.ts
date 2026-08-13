@@ -13,6 +13,7 @@ interface CRMState {
   selectedQuotationId: string | null
   selectedOrderId: string | null
   selectedProductId: string | null
+  selectedSampleId: string | null
   searchQuery: string
   filters: CRMFilters
   customerFormOpen: boolean
@@ -40,6 +41,7 @@ interface CRMActions {
   selectQuotation: (id: string | null) => void
   selectOrder: (id: string | null) => void
   selectProduct: (id: string | null) => void
+  selectSample: (id: string | null) => void
   setSearchQuery: (query: string) => void
   setFilters: (filters: Partial<CRMFilters>) => void
   clearFilters: () => void
@@ -68,6 +70,7 @@ export const useCRMStore = create<CRMState & CRMActions>((set) => ({
   selectedQuotationId: null,
   selectedOrderId: null,
   selectedProductId: null,
+  selectedSampleId: null,
   searchQuery: '',
   filters: {},
   customerFormOpen: false,
@@ -94,6 +97,7 @@ export const useCRMStore = create<CRMState & CRMActions>((set) => ({
   selectQuotation: (id) => set({ selectedQuotationId: id }),
   selectOrder: (id) => set({ selectedOrderId: id }),
   selectProduct: (id) => set({ selectedProductId: id }),
+  selectSample: (id) => set({ selectedSampleId: id }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setFilters: (filters) => set((s) => ({ filters: { ...s.filters, ...filters } })),
   clearFilters: () => set({ filters: {} }),
@@ -119,6 +123,7 @@ export const useCRMStore = create<CRMState & CRMActions>((set) => ({
       selectedQuotationId: null,
       selectedOrderId: null,
       selectedProductId: null,
+      selectedSampleId: null,
       filters: {},
       searchQuery: '',
     })

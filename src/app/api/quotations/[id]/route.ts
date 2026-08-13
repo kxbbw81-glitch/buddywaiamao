@@ -59,3 +59,21 @@ export async function PUT(
     return NextResponse.json({ success: false, error: '更新报价失败' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const quotation = await db.quotation.findUnique({ where: { id } })
+    if (!quotation) {
+      return NextResponse.json({ success: false, error: '报价不存在' }, { status: 404 })
+    }
+    await db.quotation.delete({ where: { id } })
+    return NextResponse.json({ success: true, message: '报价已删除' })
+  } catch (error) {
+    console.error('Quotation DELETE error:', error)
+    return NextResponse.json({ success: false, error: '删除报价失败' }, { status: 500 })
+  }
+}

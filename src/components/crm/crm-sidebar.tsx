@@ -223,7 +223,7 @@ function SidebarBadgeCount({ query }: { query: string }) {
   const count = data?.total || 0
   if (count === 0) return null
   return (
-    <span className="ml-auto text-[10px] font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 min-w-[20px] text-center crm-number">
+    <span className="ml-auto text-[10px] font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 min-w-[20px] text-center crm-number badge-pulse">
       {count > 99 ? '99+' : count}
     </span>
   )

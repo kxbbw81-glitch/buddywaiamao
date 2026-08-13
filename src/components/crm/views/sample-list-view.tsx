@@ -49,7 +49,7 @@ const DEFAULT_SAMPLE_FORM: SampleForm = {
 const SHIPPING_METHODS = ['DHL', 'FedEx', 'UPS', 'TNT', 'EMS', '顺丰', '海运']
 
 export function SampleListView() {
-  const { searchQuery, filters, setFilters } = useCRMStore()
+  const { searchQuery, filters, setFilters, selectSample } = useCRMStore()
   const queryClient = useQueryClient()
   const [sampleFormOpen, setSampleFormOpen] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
@@ -225,6 +225,7 @@ export function SampleListView() {
         emptyMessage="暂无样品数据"
         searchValue=""
         onSearchChange={() => {}}
+        onRowClick={(item) => selectSample(item.id as string)}
       />
 
       {/* 新建样品 Dialog */}

@@ -150,8 +150,8 @@ export function DataTable<T extends Record<string, unknown>>({
         </div>
       </div>
 
-      <div className="rounded-lg border overflow-hidden">
-        <Table>
+      <div className="rounded-lg border overflow-auto max-h-[calc(100vh-280px)]">
+        <Table className="table-header-sticky">
           <TableHeader>
             <TableRow className="bg-muted/30">
               {columns.map((col) => (
