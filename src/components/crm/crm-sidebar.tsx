@@ -13,6 +13,7 @@ import {
   BarChart3,
   Bot,
   Settings,
+  ShieldCheck,
   LogOut,
   ChevronDown,
   Zap,
@@ -60,6 +61,7 @@ const navItems: Array<{ key: ModuleKey; label: string; icon: React.ElementType; 
   { key: 'orders', label: '合同订单', icon: ShoppingCart },
   { key: 'payments', label: '收款管理', icon: DollarSign },
   { key: 'analytics', label: '数据分析', icon: BarChart3, roles: ['super_admin', 'management', 'sales_manager'] },
+  { key: 'user_management', label: '权限中心', icon: ShieldCheck, roles: ['super_admin'] },
   { key: 'settings', label: '系统设置', icon: Settings },
 ]
 

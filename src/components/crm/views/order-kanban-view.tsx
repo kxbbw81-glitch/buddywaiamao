@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo, useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ClipboardCheck, Factory, Truck, CheckCircle, LayoutGrid } from 'lucide-react'
 import { differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -11,6 +11,18 @@ import { StatusBadge } from '@/components/crm/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn, formatCurrency } from '@/lib/utils'
+import {
+  useKanbanDnd,
+  DndContext,
+  SortableContext,
+  DragOverlay,
+  verticalListSortingStrategy,
+  useSortableCard,
+  getColumnHighlightClass,
+  getColumnIndicatorClass,
+  getInsertionIndicatorClass,
+  type KanbanColumn,
+} from '@/hooks/use-kanban-dnd'
 
 interface OrderRow {
   id: string
@@ -84,6 +96,20 @@ const COLUMN_CONFIG: ColumnConfig[] = [
   },
 ]
 
+/** Map column key to target status */
+function getColumnTargetStatus(columnKey: KanbanColumnKey, currentStatus: string): string {
+  switch (columnKey) {
+    case 'pending_confirmed':
+      return currentStatus === 'confirmed' ? 'confirmed' : 'pending'
+    case 'in_production':
+      return 'in_production'
+    case 'shipped':
+      return currentStatus === 'ready' ? 'ready' : 'shipped'
+    case 'closed':
+      return currentStatus === 'cancelled' ? 'cancelled' : 'completed'
+  }
+}
+
 function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr)
   const now = new Date()
@@ -98,33 +124,10 @@ function formatRelativeDate(dateStr: string): string {
   return `${Math.floor(days / 365)}年前`
 }
 
-function OrderCard({ order, config }: { order: OrderRow; config: ColumnConfig }) {
-  const { selectOrder } = useCRMStore()
+function OrderCardContent({ order, config }: { order: OrderRow; config: ColumnConfig }) {
   const isCancelled = order.status === 'cancelled'
-
   return (
-    <motion.div
-      layoutId={`order-${order.id}`}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: isCancelled ? 0.6 : 1, y: 0 }}
-      exit={{ opacity: 0, y: -12, transition: { duration: 0.15 } }}
-      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-      onClick={() => selectOrder(order.id)}
-      className={cn(
-        'p-3 rounded-lg border bg-card cursor-pointer transition-colors duration-150 hover:shadow-md active:scale-[0.98]',
-        config.cardBorder,
-        isCancelled && 'opacity-60'
-      )}
-      role="button"
-      tabIndex={0}
-      aria-label={`查看订单 ${order.orderNo} 的详情`}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          selectOrder(order.id)
-        }
-      }}
-    >
+    <>
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="font-mono text-xs font-medium text-muted-foreground">
           {order.orderNo}
@@ -140,7 +143,7 @@ function OrderCard({ order, config }: { order: OrderRow; config: ColumnConfig })
         <span className="text-sm font-medium crm-number">
           {formatCurrency(order.totalAmount, order.currency)}
         </span>
-        {order.status === 'cancelled' && (
+        {isCancelled && (
           <CheckCircle className="h-3.5 w-3.5 text-rose-500" />
         )}
         {order.status === 'completed' && (
@@ -162,7 +165,47 @@ function OrderCard({ order, config }: { order: OrderRow; config: ColumnConfig })
           {formatRelativeDate(order.createdAt)}
         </span>
       </div>
-    </motion.div>
+    </>
+  )
+}
+
+function OrderCard({ order, config, isGlobalDragging, overId }: {
+  order: OrderRow; config: ColumnConfig; isGlobalDragging: boolean; overId: string | null
+}) {
+  const { selectOrder } = useCRMStore()
+  const { attributes, listeners, setNodeRef, style } = useSortableCard(order.id)
+  const isCancelled = order.status === 'cancelled'
+  const insertionClass = getInsertionIndicatorClass(order.id, overId, null, isGlobalDragging)
+
+  return (
+    <div ref={setNodeRef} style={style} className={insertionClass}>
+      <motion.div
+        layoutId={`order-${order.id}`}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: isCancelled ? 0.6 : 1, y: 0 }}
+        exit={{ opacity: 0, y: -12, transition: { duration: 0.15 } }}
+        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+        onClick={() => !isGlobalDragging && selectOrder(order.id)}
+        className={cn(
+          'p-3 rounded-lg border bg-card cursor-grab active:cursor-grabbing transition-colors duration-150 hover:shadow-md active:scale-[0.98]',
+          config.cardBorder,
+          isCancelled && 'opacity-60'
+        )}
+        role="button"
+        tabIndex={0}
+        aria-label={`查看订单 ${order.orderNo} 的详情`}
+        onKeyDown={(e) => {
+          if (!isGlobalDragging && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault()
+            selectOrder(order.id)
+          }
+        }}
+        {...attributes}
+        {...listeners}
+      >
+        <OrderCardContent order={order} config={config} />
+      </motion.div>
+    </div>
   )
 }
 
@@ -177,6 +220,7 @@ function EmptyColumnState({ label }: { label: string }) {
 
 export function OrderKanbanView() {
   const { searchQuery, filters } = useCRMStore()
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['orders-kanban', searchQuery, filters],
@@ -210,6 +254,49 @@ export function OrderKanbanView() {
     return groups
   }, [orders])
 
+  const kanbanColumns: KanbanColumn[] = useMemo(() =>
+    COLUMN_CONFIG.map(config => ({
+      key: config.key,
+      ids: (grouped[config.key] || []).map(o => o.id),
+    })),
+    [grouped]
+  )
+
+  const handleDrop = useCallback(async (itemId: string, columnKey: string) => {
+    const order = orders.find(o => o.id === itemId)
+    if (!order) return
+    const targetStatus = getColumnTargetStatus(columnKey as KanbanColumnKey, order.status)
+    const res = await fetch('/api/bulk-update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'order', id: itemId, status: targetStatus }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || '更新失败')
+    }
+    queryClient.invalidateQueries({ queryKey: ['orders-kanban'] })
+  }, [orders, queryClient])
+
+  const {
+    sensors, activeId, overId, isDragging,
+    activeColumnKey, overColumnKey,
+    handleDragStart, handleDragOver, handleDragEnd, handleDragCancel,
+  } = useKanbanDnd({
+    columns: kanbanColumns,
+    onDrop: handleDrop,
+  })
+
+  const activeOrder = useMemo(() =>
+    orders.find(o => o.id === activeId),
+    [orders, activeId]
+  )
+
+  const activeConfig = useMemo(() =>
+    activeOrder ? COLUMN_CONFIG.find(col => col.statuses.includes(activeOrder.status)) || COLUMN_CONFIG[0] : null,
+    [activeOrder]
+  )
+
   if (isLoading && orders.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -218,90 +305,117 @@ export function OrderKanbanView() {
     )
   }
 
-  return (
-    <div className="space-y-0">
-      <div className="hidden md:block overflow-x-auto">
-        <div className="flex gap-4 min-w-max pb-2">
-          {COLUMN_CONFIG.map((config) => {
-            const Icon = config.icon
-            const items = grouped[config.key] || []
-            return (
-              <div
-                key={config.key}
-                className={cn('w-72 flex-shrink-0 flex flex-col rounded-xl border bg-muted/30 border-t-2', config.accentBorder)}
-              >
-                <div className={cn('flex items-center gap-2 px-4 py-3 rounded-t-[10px]', config.headerBg)}>
-                  <Icon className={cn('h-4 w-4', config.headerText)} />
-                  <span className={cn('text-sm font-semibold', config.headerText)}>{config.label}</span>
-                  <Badge className={cn('ml-auto h-5 text-[10px] px-1.5 border-0', config.countBg)}>
-                    {items.length}
-                  </Badge>
-                </div>
+  const renderColumn = (config: ColumnConfig, items: OrderRow[], isMobile: boolean) => {
+    const Icon = config.icon
+    const highlightClass = getColumnHighlightClass(config.key, activeColumnKey, overColumnKey, isDragging)
+    const indicatorClass = getColumnIndicatorClass(config.key, overColumnKey, activeColumnKey, isDragging)
 
-                <ScrollArea className="flex-1 max-h-[calc(100vh-320px)]">
-                  <div className="p-3 space-y-2.5">
-                    <AnimatePresence mode="popLayout">
-                      {items.length === 0 ? (
-                        <EmptyColumnState label={config.label} />
-                      ) : (
-                        items.map((order) => (
-                          <OrderCard
-                            key={order.id}
-                            order={order}
-                            config={config}
-                          />
-                        ))
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </ScrollArea>
+    if (isMobile) {
+      return (
+        <div key={config.key} className={cn('rounded-xl border bg-muted/30 border-t-2 transition-all duration-200', config.accentBorder, highlightClass, indicatorClass)}>
+          <div className={cn('flex items-center gap-2 px-4 py-2.5 rounded-t-[10px]', config.headerBg)}>
+            <Icon className={cn('h-4 w-4', config.headerText)} />
+            <span className={cn('text-sm font-semibold', config.headerText)}>{config.label}</span>
+            <Badge className={cn('ml-auto h-5 text-[10px] px-1.5 border-0', config.countBg)}>
+              {items.length}
+            </Badge>
+          </div>
+
+          {items.length === 0 ? (
+            <div className="py-4"><EmptyColumnState label={config.label} /></div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="flex gap-2.5 p-3">
+                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                  <AnimatePresence mode="popLayout">
+                    {items.map((order) => (
+                      <div key={order.id} className="w-64 flex-shrink-0">
+                        <OrderCard order={order} config={config} isGlobalDragging={isDragging} overId={overId} />
+                      </div>
+                    ))}
+                  </AnimatePresence>
+                </SortableContext>
               </div>
-            )
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <div
+        key={config.key}
+        className={cn('w-72 flex-shrink-0 flex flex-col rounded-xl border bg-muted/30 border-t-2 transition-all duration-200', config.accentBorder, highlightClass, indicatorClass)}
+      >
+        <div className={cn('flex items-center gap-2 px-4 py-3 rounded-t-[10px]', config.headerBg)}>
+          <Icon className={cn('h-4 w-4', config.headerText)} />
+          <span className={cn('text-sm font-semibold', config.headerText)}>{config.label}</span>
+          <Badge className={cn('ml-auto h-5 text-[10px] px-1.5 border-0', config.countBg)}>
+            {items.length}
+          </Badge>
+        </div>
+
+        <ScrollArea className="flex-1 max-h-[calc(100vh-320px)]">
+          <div className="p-3 space-y-2.5">
+            <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              <AnimatePresence mode="popLayout">
+                {items.length === 0 ? (
+                  <EmptyColumnState label={config.label} />
+                ) : (
+                  items.map((order) => (
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      config={config}
+                      isGlobalDragging={isDragging}
+                      overId={overId}
+                    />
+                  ))
+                )}
+              </AnimatePresence>
+            </SortableContext>
+          </div>
+        </ScrollArea>
+      </div>
+    )
+  }
+
+  return (
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <DragOverlay>
+        {activeOrder && activeConfig && (
+          <div
+            className="p-3 rounded-lg border bg-card border-2 border-dashed border-emerald-400 shadow-xl"
+            style={{ transform: 'scale(1.05)' }}
+          >
+            <OrderCardContent order={activeOrder} config={activeConfig} />
+          </div>
+        )}
+      </DragOverlay>
+
+      <div className="space-y-0">
+        <div className="hidden md:block overflow-x-auto">
+          <div className="flex gap-4 min-w-max pb-2">
+            {COLUMN_CONFIG.map((config) => {
+              const items = grouped[config.key] || []
+              return renderColumn(config, items, false)
+            })}
+          </div>
+        </div>
+
+        <div className="md:hidden space-y-4">
+          {COLUMN_CONFIG.map((config) => {
+            const items = grouped[config.key] || []
+            return renderColumn(config, items, true)
           })}
         </div>
       </div>
-
-      <div className="md:hidden space-y-4">
-        {COLUMN_CONFIG.map((config) => {
-          const Icon = config.icon
-          const items = grouped[config.key] || []
-          return (
-            <div
-              key={config.key}
-              className={cn('rounded-xl border bg-muted/30 border-t-2', config.accentBorder)}
-            >
-              <div className={cn('flex items-center gap-2 px-4 py-2.5 rounded-t-[10px]', config.headerBg)}>
-                <Icon className={cn('h-4 w-4', config.headerText)} />
-                <span className={cn('text-sm font-semibold', config.headerText)}>{config.label}</span>
-                <Badge className={cn('ml-auto h-5 text-[10px] px-1.5 border-0', config.countBg)}>
-                  {items.length}
-                </Badge>
-              </div>
-
-              {items.length === 0 ? (
-                <div className="py-4">
-                  <EmptyColumnState label={config.label} />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="flex gap-2.5 p-3">
-                    <AnimatePresence mode="popLayout">
-                      {items.map((order) => (
-                        <div key={order.id} className="w-64 flex-shrink-0">
-                          <OrderCard
-                            order={order}
-                            config={config}
-                          />
-                        </div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    </DndContext>
   )
 }

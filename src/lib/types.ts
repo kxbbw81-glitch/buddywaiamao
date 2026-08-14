@@ -14,6 +14,7 @@ export type ModuleKey =
   | 'analytics'
   | 'settings'
   | 'activities'
+  | 'user_management'
 
 export interface NavItem {
   key: ModuleKey
@@ -131,6 +132,7 @@ export const MODULE_LABELS: Record<string, string> = {
   analytics: '数据分析',
   settings: '系统设置',
   activities: '活动记录',
+  user_management: '权限中心',
 }
 
 // ============ Dashboard Types ============

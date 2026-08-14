@@ -26,6 +26,7 @@ interface CRMState {
   orderEditId: string | null
   productFormOpen: boolean
   productEditId: string | null
+  paymentFormOpen: boolean
 }
 
 interface CRMActions {
@@ -55,6 +56,8 @@ interface CRMActions {
   closeOrderForm: () => void
   openProductForm: (editId?: string) => void
   closeProductForm: () => void
+  openPaymentForm: () => void
+  closePaymentForm: () => void
   logout: () => void
 }
 
@@ -83,6 +86,7 @@ export const useCRMStore = create<CRMState & CRMActions>((set) => ({
   orderEditId: null,
   productFormOpen: false,
   productEditId: null,
+  paymentFormOpen: false,
 
   // Actions
   setCurrentUser: (user) => set({ currentUser: user }),
@@ -111,6 +115,8 @@ export const useCRMStore = create<CRMState & CRMActions>((set) => ({
   closeOrderForm: () => set({ orderFormOpen: false, orderEditId: null }),
   openProductForm: (editId) => set({ productFormOpen: true, productEditId: editId || null }),
   closeProductForm: () => set({ productFormOpen: false, productEditId: null }),
+  openPaymentForm: () => set({ paymentFormOpen: true }),
+  closePaymentForm: () => set({ paymentFormOpen: false }),
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('nexfab_user')

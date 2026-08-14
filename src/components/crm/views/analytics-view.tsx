@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import {
   Users, ShoppingCart, DollarSign, TrendingUp, Target,
   BarChart3, PieChart as PieChartIcon, Globe, Trophy, Medal, PackageCheck,
+  Clock, UserPlus, CreditCard,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatNumber } from '@/lib/utils'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -49,6 +50,9 @@ const countryToRegion: Record<string, string> = {
   '澳大利亚': '大洋洲',
   '韩国': '亚洲',
   '中国': '亚洲',
+  '墨西哥': '北美',
+  '泰国': '亚洲',
+  '越南': '亚洲',
 }
 
 const regionLabels: Record<string, string> = {
@@ -71,6 +75,15 @@ interface AnalyticsData {
   sourceData: Array<{ name: string; value: number }>
   salesRanking: Array<{ name: string; inquiries: number; revenue: number; conversionRate: number }>
   orderStatusData: Array<{ name: string; value: number }>
+  // Enhanced
+  monthlyRevenue: Array<{ month: string; value: number }>
+  paymentCollectionRate: number
+  avgDealCycle: number
+  topProducts: Array<{ name: string; orderCount: number; quantity: number }>
+  customerAcquisition: Array<{ name: string; value: number }>
+  salesPerformance: Array<{ name: string; revenue: number; orderCount: number }>
+  thisMonthCustomers: number
+  thisMonthOrderAmount: number
 }
 
 function ChartSkeleton({ className }: { className?: string }) {
@@ -78,7 +91,7 @@ function ChartSkeleton({ className }: { className?: string }) {
     <Card>
       <CardHeader className="pb-3">
         <Skeleton className="h-5 w-32" />
-      </CardHeader>
+           </CardHeader>
       <CardContent>
         <Skeleton className={cn("h-52 w-full", className)} />
       </CardContent>
@@ -96,6 +109,21 @@ function KPISkeleton() {
         </div>
         <Skeleton className="h-7 w-24" />
         <Skeleton className="h-3 w-16 mt-2" />
+      </div>
+    </Card>
+  )
+}
+
+function MetricCard({ label, value, icon, kpiBg, colorClass }: { label: string; value: string; icon: React.ReactNode; kpiBg: string; colorClass: string }) {
+  return (
+    <Card className={cn('p-4 crm-card-hover relative overflow-hidden', kpiBg, colorClass)}>
+      <div className="kpi-pattern-overlay" />
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-2">
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <div className="text-muted-foreground">{icon}</div>
+        </div>
+        <p className="text-xl font-bold crm-number">{value}</p>
       </div>
     </Card>
   )
@@ -171,6 +199,16 @@ export function AnalyticsView() {
   const salesRanking = analytics?.salesRanking || []
   const orderStatusData = analytics?.orderStatusData || []
 
+  // Enhanced data
+  const monthlyRevenue = analytics?.monthlyRevenue || []
+  const paymentCollectionRate = analytics?.paymentCollectionRate || 0
+  const avgDealCycle = analytics?.avgDealCycle || 0
+  const topProducts = analytics?.topProducts || []
+  const customerAcquisition = analytics?.customerAcquisition || []
+  const salesPerformance = analytics?.salesPerformance || []
+  const thisMonthCustomers = analytics?.thisMonthCustomers || 0
+  const thisMonthOrderAmount = analytics?.thisMonthOrderAmount || 0
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -192,15 +230,13 @@ export function AnalyticsView() {
       {/* KPI Summary Row */}
       <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}>
         {!kpis ? (
-          <>
-            <KPISkeleton /><KPISkeleton /><KPISkeleton /><KPISkeleton />
-          </>
+          <><KPISkeleton /><KPISkeleton /><KPISkeleton /><KPISkeleton /></>
         ) : (
           [
-            { label: '客户总数', value: kpis.totalCustomers, change: '+3', changeType: 'positive', icon: <Users className="h-5 w-5" />, colorClass: 'kpi-border-emerald', kpiBg: 'kpi-emerald' },
-            { label: '询盘转化率', value: kpis.totalInquiries > 0 ? `${((kpis.wonInquiries / kpis.totalInquiries) * 100).toFixed(1)}%` : '-', change: '+2.1%', changeType: 'positive', icon: <TrendingUp className="h-5 w-5" />, colorClass: 'kpi-border-teal', kpiBg: 'kpi-teal' },
-            { label: '平均订单金额', value: avgOrderAmount > 0 ? formatCurrency(avgOrderAmount) : '-', change: '-5.2%', changeType: 'negative', icon: <DollarSign className="h-5 w-5" />, colorClass: 'kpi-border-amber', kpiBg: 'kpi-amber' },
-            { label: '回款率', value: `${paymentRate}%`, change: '+1.8%', changeType: 'positive', icon: <Target className="h-5 w-5" />, colorClass: 'kpi-border-rose', kpiBg: 'kpi-rose' },
+            { label: '客户总数', value: kpis.totalCustomers, icon: <Users className="h-5 w-5" />, kpiBg: 'kpi-emerald', colorClass: 'kpi-border-emerald' },
+            { label: '询盘转化率', value: kpis.totalInquiries > 0 ? `${((kpis.wonInquiries / kpis.totalInquiries) * 100).toFixed(1)}%` : '-', icon: <TrendingUp className="h-5 w-5" />, kpiBg: 'kpi-teal', colorClass: 'kpi-border-teal' },
+            { label: '平均订单金额', value: avgOrderAmount > 0 ? formatCurrency(avgOrderAmount) : '-', icon: <DollarSign className="h-5 w-5" />, kpiBg: 'kpi-amber', colorClass: 'kpi-border-amber' },
+            { label: '回款率', value: `${paymentRate}%`, icon: <Target className="h-5 w-5" />, kpiBg: 'kpi-rose', colorClass: 'kpi-border-rose' },
           ].map((kpi, i) => (
             <motion.div key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
               <Card className={cn('p-4 crm-card-hover relative overflow-hidden', kpi.kpiBg, kpi.colorClass)}>
@@ -213,9 +249,9 @@ export function AnalyticsView() {
                   <p className="text-xl font-bold crm-number">{kpi.value}</p>
                   <div className={cn(
                     'text-xs mt-1 font-medium',
-                    kpi.changeType === 'positive' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                    'text-emerald-600 dark:text-emerald-400'
                   )}>
-                    {kpi.changeType === 'positive' ? '↑' : '↓'} {kpi.change} 较上月
+                    ↑ 较上月
                   </div>
                 </div>
               </Card>
@@ -224,13 +260,124 @@ export function AnalyticsView() {
         )}
       </motion.div>
 
-      {/* Charts Row 1 */}
+      {/* Enhanced KPI Cards Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <MetricCard
+          label="回款率"
+          value={`${paymentCollectionRate}%`}
+          icon={<CreditCard className="h-5 w-5" />}
+          kpiBg="kpi-emerald"
+          colorClass="kpi-border-emerald"
+        />
+        <MetricCard
+          label="平均成交周期"
+          value={`${avgDealCycle} 天`}
+          icon={<Clock className="h-5 w-5" />}
+          kpiBg="kpi-teal"
+          colorClass="kpi-border-teal"
+        />
+        <MetricCard
+          label="本月新增客户"
+          value={`${thisMonthCustomers}`}
+          icon={<UserPlus className="h-5 w-5" />}
+          kpiBg="kpi-amber"
+          colorClass="kpi-border-amber"
+        />
+        <MetricCard
+          label="本月订单金额"
+          value={formatCurrency(thisMonthOrderAmount)}
+          icon={<ShoppingCart className="h-5 w-5" />}
+          kpiBg="kpi-rose"
+          colorClass="kpi-border-rose"
+        />
+      </div>
+
+      {/* Charts Row 1: Monthly Revenue + Sales Performance Ranking */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Monthly Revenue Trend - AreaChart */}
+        {analyticsLoading ? (
+          <ChartSkeleton />
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+                  月度营收趋势（近12个月）
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthlyRevenue}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="month"
+                        tick={{ fontSize: 10 }}
+                        tickFormatter={(v) => { const parts = v.split('-'); return `${parseInt(parts[1])}月` }}
+                      />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                      <Tooltip
+                        formatter={(value: number) => [formatCurrency(value), '营收']}
+                        labelFormatter={(label) => { const parts = label.split('-'); return `${parts[0]}年${parseInt(parts[1])}月` }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#10b981"
+                        fill="#10b981"
+                        fillOpacity={0.12}
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Sales Performance - Horizontal Bar Chart */}
+        {analyticsLoading ? (
+          <ChartSkeleton />
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-amber-600" />
+                  销售业绩排行
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={salesPerformance} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                      <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 12 }} />
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                      <Bar dataKey="revenue" radius={[0, 4, 4, 0]} barSize={24}>
+                        {salesPerformance.map((_, i) => (
+                          <Cell key={i} fill={i === 0 ? '#10b981' : i === 1 ? '#14b8a6' : i === 2 ? '#f59e0b' : '#06b6d4'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Charts Row 2: Sales Funnel + Monthly Trend Toggle */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Sales Funnel */}
         {analyticsLoading ? (
           <ChartSkeleton />
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -263,7 +410,7 @@ export function AnalyticsView() {
         {analyticsLoading ? (
           <ChartSkeleton />
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -314,13 +461,94 @@ export function AnalyticsView() {
         )}
       </div>
 
-      {/* Charts Row 2 */}
+      {/* Charts Row 3: Top Products + Customer Acquisition */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Top 10 Products by Order Count */}
+        {analyticsLoading ? (
+          <ChartSkeleton />
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium flex items-center gap-2">
+                  <PackageCheck className="h-4 w-4 text-teal-600" />
+                  产品销售Top10
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {topProducts.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-muted-foreground">暂无产品数据</div>
+                ) : (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={topProducts} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                        <XAxis type="number" tick={{ fontSize: 11 }} />
+                        <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
+                        <Tooltip
+                          formatter={(value: number, name: string) => {
+                            if (name === 'orderCount') return [value, '关联订单数']
+                            if (name === 'quantity') return [formatNumber(value), '总数量']
+                            return [value, name]
+                          }}
+                        />
+                        <Bar dataKey="orderCount" fill="#14b8a6" radius={[0, 4, 4, 0]} barSize={18} name="关联订单数" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Customer Acquisition Channels - PieChart */}
+        {analyticsLoading ? (
+          <ChartSkeleton />
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium flex items-center gap-2">
+                  <PieChartIcon className="h-4 w-4 text-amber-600" />
+                  客户获取渠道
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-center gap-4">
+                <div className="w-40 h-40 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={customerAcquisition} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" nameKey="name">
+                        {customerAcquisition.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-2">
+                  {customerAcquisition.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-muted-foreground flex-1">{item.name}</span>
+                      <span className="font-medium crm-number">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Charts Row 4: Inquiry Source + Customer Level */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Inquiry Source Distribution */}
         {analyticsLoading ? (
           <ChartSkeleton />
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -359,7 +587,7 @@ export function AnalyticsView() {
         {analyticsLoading || levelData.length === 0 ? (
           <ChartSkeleton />
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -395,13 +623,13 @@ export function AnalyticsView() {
         )}
       </div>
 
-      {/* Row 3: Region Distribution + Sales Performance Ranking */}
+      {/* Row 5: Region Distribution + Sales Ranking Table */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Customer Region Distribution - Horizontal Bar Chart */}
+        {/* Customer Region Distribution */}
         {analyticsLoading || regionData.length === 0 ? (
           <ChartSkeleton />
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -448,16 +676,16 @@ export function AnalyticsView() {
           </motion.div>
         )}
 
-        {/* Sales Performance Ranking */}
+        {/* Sales Ranking Table */}
         {analyticsLoading ? (
           <ChartSkeleton />
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85 }}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-amber-600" />
-                  销售业绩排行
+                  <BarChart3 className="h-4 w-4 text-emerald-600" />
+                  销售人员详情排行
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -519,13 +747,13 @@ export function AnalyticsView() {
         )}
       </div>
 
-      {/* Row 4: Order Status Distribution + Top Customers */}
+      {/* Row 6: Order Status + Top Customers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Order Status Distribution - Horizontal Bar Chart */}
+        {/* Order Status Distribution */}
         {analyticsLoading ? (
           <ChartSkeleton />
         ) : (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -573,7 +801,7 @@ export function AnalyticsView() {
 
         {/* Top Customers */}
         {topCustomers.length > 0 ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.95 }}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium flex items-center gap-2">

@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo, useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { LayoutGrid, Star, Award, UserCircle, Users, Inbox } from 'lucide-react'
 import { differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -10,6 +10,18 @@ import { INQUIRY_SOURCE_LABELS } from '@/lib/types'
 import { getCountryFlag } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  useKanbanDnd,
+  DndContext,
+  SortableContext,
+  DragOverlay,
+  verticalListSortingStrategy,
+  useSortableCard,
+  getColumnHighlightClass,
+  getColumnIndicatorClass,
+  getInsertionIndicatorClass,
+  type KanbanColumn,
+} from '@/hooks/use-kanban-dnd'
 
 interface CustomerRow {
   id: string
@@ -50,12 +62,12 @@ const LEVEL_CONFIG = [
     level: 'C',
     label: 'C级客户',
     icon: UserCircle,
-    headerBg: 'bg-sky-500',
+    headerBg: 'bg-teal-500',
     headerText: 'text-white',
-    accentBorder: 'border-t-sky-500',
-    cardBorder: 'hover:border-sky-300 dark:hover:border-sky-700',
-    countBg: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-    dotColor: 'bg-sky-500',
+    accentBorder: 'border-t-teal-500',
+    cardBorder: 'hover:border-teal-300 dark:hover:border-teal-700',
+    countBg: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+    dotColor: 'bg-teal-500',
   },
   {
     level: 'D',
@@ -84,40 +96,20 @@ function formatRelativeDate(dateStr: string): string {
   return `${Math.floor(days / 365)}年前`
 }
 
-function CustomerCard({ customer, levelConfig }: { customer: CustomerRow; levelConfig: typeof LEVEL_CONFIG[number] }) {
-  const { selectCustomer } = useCRMStore()
+function CustomerCardContent({ customer, levelConfig }: { customer: CustomerRow; levelConfig: typeof LEVEL_CONFIG[number] }) {
   const inquiryCount = customer._count?.inquiries || 0
 
   return (
-    <motion.div
-      layoutId={`customer-${customer.id}`}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12, transition: { duration: 0.15 } }}
-      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-      onClick={() => selectCustomer(customer.id)}
-      className={`
-        p-3 rounded-lg border bg-card cursor-pointer
-        transition-colors duration-150 ${levelConfig.cardBorder}
-        hover:shadow-md active:scale-[0.98]
-      `}
-      role="button"
-      tabIndex={0}
-      aria-label={`查看客户 ${customer.companyName} 的详情`}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCustomer(customer.id) } }}
-    >
-      {/* Company Name */}
+    <>
       <p className="font-semibold text-sm leading-tight mb-2 line-clamp-1">
         {customer.companyName}
       </p>
 
-      {/* Country */}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
         <span>{getCountryFlag(customer.country || '')}</span>
         <span className="line-clamp-1">{customer.country || '-'}</span>
       </div>
 
-      {/* Source & Owner */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-xs text-muted-foreground line-clamp-1">
           {INQUIRY_SOURCE_LABELS[customer.source as keyof typeof INQUIRY_SOURCE_LABELS] || customer.source}
@@ -127,7 +119,6 @@ function CustomerCard({ customer, levelConfig }: { customer: CustomerRow; levelC
         </span>
       </div>
 
-      {/* Bottom Row: Inquiry Count & Last Contact */}
       <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
         {inquiryCount > 0 ? (
           <Badge variant="secondary" className="h-5 text-[10px] px-1.5 font-medium">
@@ -143,7 +134,45 @@ function CustomerCard({ customer, levelConfig }: { customer: CustomerRow; levelC
           </span>
         )}
       </div>
-    </motion.div>
+    </>
+  )
+}
+
+function CustomerCard({ customer, levelConfig, isGlobalDragging, overId }: {
+  customer: CustomerRow
+  levelConfig: typeof LEVEL_CONFIG[number]
+  isGlobalDragging: boolean
+  overId: string | null
+}) {
+  const { selectCustomer } = useCRMStore()
+  const { attributes, listeners, setNodeRef, style, isDragging } = useSortableCard(customer.id)
+
+  const showInsertion = getInsertionIndicatorClass(customer.id, overId, null, isGlobalDragging)
+
+  return (
+    <div ref={setNodeRef} style={style} className={showInsertion}>
+      <motion.div
+        layoutId={`customer-${customer.id}`}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12, transition: { duration: 0.15 } }}
+        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+        onClick={() => !isGlobalDragging && selectCustomer(customer.id)}
+        className={`
+          p-3 rounded-lg border bg-card cursor-grab active:cursor-grabbing
+          transition-colors duration-150 ${levelConfig.cardBorder}
+          hover:shadow-md active:scale-[0.98]
+        `}
+        role="button"
+        tabIndex={0}
+        aria-label={`查看客户 ${customer.companyName} 的详情`}
+        onKeyDown={(e) => { if (!isGlobalDragging && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); selectCustomer(customer.id) } }}
+        {...attributes}
+        {...listeners}
+      >
+        <CustomerCardContent customer={customer} levelConfig={levelConfig} />
+      </motion.div>
+    </div>
   )
 }
 
@@ -158,6 +187,7 @@ function EmptyColumnState({ level }: { level: string }) {
 
 export function CustomerKanbanView() {
   const { searchQuery, filters } = useCRMStore()
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['customers-kanban', searchQuery, filters],
@@ -165,7 +195,6 @@ export function CustomerKanbanView() {
       const params = new URLSearchParams()
       if (searchQuery) params.set('search', searchQuery)
       if (filters.customerStatus) params.set('status', filters.customerStatus)
-      // Fetch all customers for kanban (no level filter, we group client-side)
       params.set('page', '1')
       params.set('pageSize', '100')
       return fetch(`/api/customers?${params}`).then((r) => r.json())
@@ -185,6 +214,46 @@ export function CustomerKanbanView() {
     return groups
   }, [customers])
 
+  const kanbanColumns: KanbanColumn[] = useMemo(() =>
+    LEVEL_CONFIG.map(config => ({
+      key: config.level,
+      ids: (grouped[config.level] || []).map(c => c.id),
+    })),
+    [grouped]
+  )
+
+  const handleDrop = useCallback(async (itemId: string, columnKey: string) => {
+    const res = await fetch('/api/bulk-update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'customer', id: itemId, customerLevel: columnKey }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || '更新失败')
+    }
+    queryClient.invalidateQueries({ queryKey: ['customers-kanban'] })
+  }, [queryClient])
+
+  const {
+    sensors, activeId, overId, isDragging,
+    activeColumnKey, overColumnKey,
+    handleDragStart, handleDragOver, handleDragEnd, handleDragCancel,
+  } = useKanbanDnd({
+    columns: kanbanColumns,
+    onDrop: handleDrop,
+  })
+
+  const activeCustomer = useMemo(() =>
+    customers.find(c => c.id === activeId),
+    [customers, activeId]
+  )
+
+  const activeLevelConfig = useMemo(() =>
+    activeCustomer ? LEVEL_CONFIG.find(l => l.level === (activeCustomer.customerLevel || 'D')) || LEVEL_CONFIG[3] : null,
+    [activeCustomer]
+  )
+
   if (isLoading && customers.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -193,96 +262,118 @@ export function CustomerKanbanView() {
     )
   }
 
-  return (
-    <div className="space-y-0">
-      {/* Desktop: horizontal scrollable kanban */}
-      <div className="hidden md:block overflow-x-auto">
-        <div className="flex gap-4 min-w-max pb-2">
-          {LEVEL_CONFIG.map((config) => {
-            const Icon = config.icon
-            const items = grouped[config.level] || []
-            return (
-              <div
-                key={config.level}
-                className={`w-72 flex-shrink-0 flex flex-col rounded-xl border bg-muted/30 ${config.accentBorder} border-t-2`}
-              >
-                {/* Column Header */}
-                <div className={`flex items-center gap-2 px-4 py-3 rounded-t-[10px] ${config.headerBg}`}>
-                  <Icon className={`h-4 w-4 ${config.headerText}`} />
-                  <span className={`text-sm font-semibold ${config.headerText}`}>{config.label}</span>
-                  <Badge className={`ml-auto h-5 text-[10px] px-1.5 border-0 ${config.countBg}`}>
-                    {items.length}
-                  </Badge>
-                </div>
+  const renderColumn = (config: typeof LEVEL_CONFIG[number], items: CustomerRow[], isMobile: boolean) => {
+    const Icon = config.icon
+    const highlightClass = getColumnHighlightClass(config.level, activeColumnKey, overColumnKey, isDragging)
+    const indicatorClass = getColumnIndicatorClass(config.level, overColumnKey, activeColumnKey, isDragging)
 
-                {/* Cards */}
-                <ScrollArea className="flex-1 max-h-[calc(100vh-320px)]">
-                  <div className="p-3 space-y-2.5">
-                    <AnimatePresence mode="popLayout">
-                      {items.length === 0 ? (
-                        <EmptyColumnState level={config.level} />
-                      ) : (
-                        items.map((customer) => (
-                          <CustomerCard
-                            key={customer.id}
-                            customer={customer}
-                            levelConfig={config}
-                          />
-                        ))
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </ScrollArea>
+    if (isMobile) {
+      return (
+        <div key={config.level} className={`rounded-xl border bg-muted/30 ${config.accentBorder} border-t-2 transition-all duration-200 ${highlightClass} ${indicatorClass}`}>
+          <div className={`flex items-center gap-2 px-4 py-2.5 rounded-t-[10px] ${config.headerBg}`}>
+            <Icon className={`h-4 w-4 ${config.headerText}`} />
+            <span className={`text-sm font-semibold ${config.headerText}`}>{config.label}</span>
+            <Badge className={`ml-auto h-5 text-[10px] px-1.5 border-0 ${config.countBg}`}>
+              {items.length}
+            </Badge>
+          </div>
+
+          {items.length === 0 ? (
+            <div className="py-4"><EmptyColumnState level={config.level} /></div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="flex gap-2.5 p-3">
+                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                  <AnimatePresence mode="popLayout">
+                    {items.map((customer) => (
+                      <div key={customer.id} className="w-64 flex-shrink-0">
+                        <CustomerCard customer={customer} levelConfig={config} isGlobalDragging={isDragging} overId={overId} />
+                      </div>
+                    ))}
+                  </AnimatePresence>
+                </SortableContext>
               </div>
-            )
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Desktop
+    return (
+      <div
+        key={config.level}
+        className={`w-72 flex-shrink-0 flex flex-col rounded-xl border bg-muted/30 ${config.accentBorder} border-t-2 transition-all duration-200 ${highlightClass} ${indicatorClass}`}
+      >
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-t-[10px] ${config.headerBg}`}>
+          <Icon className={`h-4 w-4 ${config.headerText}`} />
+          <span className={`text-sm font-semibold ${config.headerText}`}>{config.label}</span>
+          <Badge className={`ml-auto h-5 text-[10px] px-1.5 border-0 ${config.countBg}`}>
+            {items.length}
+          </Badge>
+        </div>
+
+        <ScrollArea className="flex-1 max-h-[calc(100vh-320px)]">
+          <div className="p-3 space-y-2.5">
+            <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              <AnimatePresence mode="popLayout">
+                {items.length === 0 ? (
+                  <EmptyColumnState level={config.level} />
+                ) : (
+                  items.map((customer) => (
+                    <CustomerCard
+                      key={customer.id}
+                      customer={customer}
+                      levelConfig={config}
+                      isGlobalDragging={isDragging}
+                      overId={overId}
+                    />
+                  ))
+                )}
+              </AnimatePresence>
+            </SortableContext>
+          </div>
+        </ScrollArea>
+      </div>
+    )
+  }
+
+  return (
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <DragOverlay>
+        {activeCustomer && activeLevelConfig && (
+          <div
+            className="p-3 rounded-lg border bg-card border-2 border-dashed border-emerald-400 shadow-xl"
+            style={{ transform: 'scale(1.05)' }}
+          >
+            <CustomerCardContent customer={activeCustomer} levelConfig={activeLevelConfig} />
+          </div>
+        )}
+      </DragOverlay>
+
+      <div className="space-y-0">
+        <div className="hidden md:block overflow-x-auto">
+          <div className="flex gap-4 min-w-max pb-2">
+            {LEVEL_CONFIG.map((config) => {
+              const items = grouped[config.level] || []
+              return renderColumn(config, items, false)
+            })}
+          </div>
+        </div>
+
+        <div className="md:hidden space-y-4">
+          {LEVEL_CONFIG.map((config) => {
+            const items = grouped[config.level] || []
+            return renderColumn(config, items, true)
           })}
         </div>
       </div>
-
-      {/* Mobile: vertically stacked columns */}
-      <div className="md:hidden space-y-4">
-        {LEVEL_CONFIG.map((config) => {
-          const Icon = config.icon
-          const items = grouped[config.level] || []
-          return (
-            <div
-              key={config.level}
-              className={`rounded-xl border bg-muted/30 ${config.accentBorder} border-t-2`}
-            >
-              {/* Column Header */}
-              <div className={`flex items-center gap-2 px-4 py-2.5 rounded-t-[10px] ${config.headerBg}`}>
-                <Icon className={`h-4 w-4 ${config.headerText}`} />
-                <span className={`text-sm font-semibold ${config.headerText}`}>{config.label}</span>
-                <Badge className={`ml-auto h-5 text-[10px] px-1.5 border-0 ${config.countBg}`}>
-                  {items.length}
-                </Badge>
-              </div>
-
-              {/* Cards - horizontal scroll on mobile */}
-              {items.length === 0 ? (
-                <div className="py-4">
-                  <EmptyColumnState level={config.level} />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="flex gap-2.5 p-3">
-                    <AnimatePresence mode="popLayout">
-                      {items.map((customer) => (
-                        <div key={customer.id} className="w-64 flex-shrink-0">
-                          <CustomerCard
-                            customer={customer}
-                            levelConfig={config}
-                          />
-                        </div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    </DndContext>
   )
 }

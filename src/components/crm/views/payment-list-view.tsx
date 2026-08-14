@@ -48,7 +48,7 @@ const DEFAULT_PAYMENT_FORM: PaymentForm = {
 }
 
 export function PaymentListView() {
-  const { filters, setFilters } = useCRMStore()
+  const { filters, setFilters, openPaymentForm } = useCRMStore()
   const queryClient = useQueryClient()
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
 
@@ -241,8 +241,8 @@ export function PaymentListView() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button size="sm" onClick={() => { setForm({ ...DEFAULT_PAYMENT_FORM }); setPaymentFormOpen(true) }}>
-            <Plus className="h-4 w-4 mr-1" /> 新建付款
+          <Button size="sm" onClick={() => openPaymentForm()}>
+            <Plus className="h-4 w-4 mr-1" /> 新建收款
           </Button>
         </div>
       </div>

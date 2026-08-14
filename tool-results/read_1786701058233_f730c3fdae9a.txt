@@ -1,0 +1,834 @@
+     1→'use client'
+     2→
+     3→import { useState } from 'react'
+     4→import { useQuery } from '@tanstack/react-query'
+     5→import { motion } from 'framer-motion'
+     6→import {
+     7→  Users, ShoppingCart, DollarSign, TrendingUp, Target,
+     8→  BarChart3, PieChart as PieChartIcon, Globe, Trophy, Medal, PackageCheck,
+     9→  Clock, UserPlus, CreditCard,
+    10→} from 'lucide-react'
+    11→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+    12→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+    13→import { Badge } from '@/components/ui/badge'
+    14→import { Button } from '@/components/ui/button'
+    15→import { Skeleton } from '@/components/ui/skeleton'
+    16→import { cn } from '@/lib/utils'
+    17→import { formatCurrency, formatNumber } from '@/lib/utils'
+    18→import {
+    19→  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+    20→} from '@/components/ui/table'
+    21→import {
+    22→  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+    23→  ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar,
+    24→} from 'recharts'
+    25→
+    26→const COLORS = ['#10b981', '#14b8a6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#f97316', '#84cc16']
+    27→
+    28→const REGION_COLORS: Record<string, string> = {
+    29→  '亚洲': '#10b981',
+    30→  '欧洲': '#14b8a6',
+    31→  '北美': '#f59e0b',
+    32→  '南美': '#ec4899',
+    33→  '非洲': '#ef4444',
+    34→  '大洋洲': '#06b6d4',
+    35→  '中东': '#f97316',
+    36→}
+    37→
+    38→const countryToRegion: Record<string, string> = {
+    39→  '美国': '北美',
+    40→  '德国': '欧洲',
+    41→  '阿联酋': '中东',
+    42→  '日本': '亚洲',
+    43→  '尼日利亚': '非洲',
+    44→  '马来西亚': '亚洲',
+    45→  '瑞典': '欧洲',
+    46→  '印度': '亚洲',
+    47→  '英国': '欧洲',
+    48→  '法国': '欧洲',
+    49→  '巴西': '南美',
+    50→  '澳大利亚': '大洋洲',
+    51→  '韩国': '亚洲',
+    52→  '中国': '亚洲',
+    53→  '墨西哥': '北美',
+    54→  '泰国': '亚洲',
+    55→  '越南': '亚洲',
+    56→}
+    57→
+    58→const regionLabels: Record<string, string> = {
+    59→  'Asia': '亚洲',
+    60→  'Europe': '欧洲',
+    61→  'North America': '北美',
+    62→  'South America': '南美',
+    63→  'Africa': '非洲',
+    64→  'Oceania': '大洋洲',
+    65→  'Middle East': '中东',
+    66→}
+    67→
+    68→type TrendMode = 'inquiry' | 'quotation' | 'order'
+    69→
+    70→interface AnalyticsData {
+    71→  inquiryTrend: Array<{ month: string; value: number }>
+    72→  quotationTrend: Array<{ month: string; value: number }>
+    73→  orderTrend: Array<{ month: string; value: number }>
+    74→  funnelData: Array<{ stage: string; value: number }>
+    75→  sourceData: Array<{ name: string; value: number }>
+    76→  salesRanking: Array<{ name: string; inquiries: number; revenue: number; conversionRate: number }>
+    77→  orderStatusData: Array<{ name: string; value: number }>
+    78→  // Enhanced
+    79→  monthlyRevenue: Array<{ month: string; value: number }>
+    80→  paymentCollectionRate: number
+    81→  avgDealCycle: number
+    82→  topProducts: Array<{ name: string; orderCount: number; quantity: number }>
+    83→  customerAcquisition: Array<{ name: string; value: number }>
+    84→  salesPerformance: Array<{ name: string; revenue: number; orderCount: number }>
+    85→  thisMonthCustomers: number
+    86→  thisMonthOrderAmount: number
+    87→}
+    88→
+    89→function ChartSkeleton({ className }: { className?: string }) {
+    90→  return (
+    91→    <Card>
+    92→      <CardHeader className="pb-3">
+    93→        <Skeleton className="h-5 w-32" />
+    94→           </CardHeader>
+    95→      <CardContent>
+    96→        <Skeleton className={cn("h-52 w-full", className)} />
+    97→      </CardContent>
+    98→    </Card>
+    99→  )
+   100→}
+   101→
+   102→function KPISkeleton() {
+   103→  return (
+   104→    <Card className="p-4 relative overflow-hidden">
+   105→      <div className="relative z-10">
+   106→        <div className="flex items-start justify-between mb-2">
+   107→          <Skeleton className="h-3 w-20" />
+   108→          <Skeleton className="h-5 w-5 rounded" />
+   109→        </div>
+   110→        <Skeleton className="h-7 w-24" />
+   111→        <Skeleton className="h-3 w-16 mt-2" />
+   112→      </div>
+   113→    </Card>
+   114→  )
+   115→}
+   116→
+   117→function MetricCard({ label, value, icon, kpiBg, colorClass }: { label: string; value: string; icon: React.ReactNode; kpiBg: string; colorClass: string }) {
+   118→  return (
+   119→    <Card className={cn('p-4 crm-card-hover relative overflow-hidden', kpiBg, colorClass)}>
+   120→      <div className="kpi-pattern-overlay" />
+   121→      <div className="relative z-10">
+   122→        <div className="flex items-start justify-between mb-2">
+   123→          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+   124→          <div className="text-muted-foreground">{icon}</div>
+   125→        </div>
+   126→        <p className="text-xl font-bold crm-number">{value}</p>
+   127→      </div>
+   128→    </Card>
+   129→  )
+   130→}
+   131→
+   132→export function AnalyticsView() {
+   133→  const [dateRange, setDateRange] = useState('this_year')
+   134→  const [trendMode, setTrendMode] = useState<TrendMode>('inquiry')
+   135→
+   136→  const { data: analyticsRes, isLoading: analyticsLoading } = useQuery({
+   137→    queryKey: ['analytics', dateRange],
+   138→    queryFn: () => fetch(`/api/analytics?dateRange=${dateRange}`).then((r) => r.json()),
+   139→  })
+   140→
+   141→  const analytics: AnalyticsData | null = analyticsRes?.data ?? null
+   142→
+   143→  const { data: dashData } = useQuery({
+   144→    queryKey: ['dashboard-analytics'],
+   145→    queryFn: () => fetch('/api/dashboard').then((r) => r.json()),
+   146→  })
+   147→
+   148→  const { data: customersData } = useQuery({
+   149→    queryKey: ['analytics-customers'],
+   150→    queryFn: () => fetch('/api/customers?pageSize=100').then((r) => r.json()),
+   151→  })
+   152→
+   153→  const kpis = dashData?.data?.kpis
+   154→  const topCustomers = dashData?.data?.charts?.topCustomers || []
+   155→  const levelData = dashData?.data?.charts?.customersByLevel || []
+   156→
+   157→  // Compute region distribution from customer data
+   158→  const regionData = (() => {
+   159→    const regions: Record<string, number> = {}
+   160→    const customers = customersData?.data || []
+   161→    for (const c of customers) {
+   162→      const country = (c as Record<string, unknown>).country as string || ''
+   163→      const region = countryToRegion[country] || '其他'
+   164→      regions[region] = (regions[region] || 0) + 1
+   165→    }
+   166→    const total = Object.values(regions).reduce((s, v) => s + v, 0)
+   167→    return Object.entries(regions)
+   168→      .map(([region, count]) => ({
+   169→        name: regionLabels[region] || region,
+   170→        count,
+   171→        percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0',
+   172→      }))
+   173→      .sort((a, b) => b.count - a.count)
+   174→  })()
+   175→
+   176→  // Real trend data from API
+   177→  const trendDataMap: Record<TrendMode, AnalyticsData['inquiryTrend']> = {
+   178→    inquiry: analytics?.inquiryTrend || [],
+   179→    quotation: analytics?.quotationTrend || [],
+   180→    order: analytics?.orderTrend || [],
+   181→  }
+   182→
+   183→  const trendConfig: Record<TrendMode, { label: string; color: string; fillOpacity: number }> = {
+   184→    inquiry: { label: '询盘趋势', color: '#10b981', fillOpacity: 0.15 },
+   185→    quotation: { label: '报价趋势', color: '#14b8a6', fillOpacity: 0.15 },
+   186→    order: { label: '订单趋势', color: '#f59e0b', fillOpacity: 0.15 },
+   187→  }
+   188→
+   189→  const avgOrderAmount = kpis && (kpis.activeOrders + kpis.completedOrders) > 0
+   190→    ? kpis.totalRevenue / (kpis.activeOrders + kpis.completedOrders)
+   191→    : 0
+   192→
+   193→  const paymentRate = kpis && kpis.totalRevenue > 0
+   194→    ? ((kpis.totalPaid / kpis.totalRevenue) * 100).toFixed(1)
+   195→    : '0'
+   196→
+   197→  const funnelData = analytics?.funnelData || []
+   198→  const sourceData = analytics?.sourceData || []
+   199→  const salesRanking = analytics?.salesRanking || []
+   200→  const orderStatusData = analytics?.orderStatusData || []
+   201→
+   202→  // Enhanced data
+   203→  const monthlyRevenue = analytics?.monthlyRevenue || []
+   204→  const paymentCollectionRate = analytics?.paymentCollectionRate || 0
+   205→  const avgDealCycle = analytics?.avgDealCycle || 0
+   206→  const topProducts = analytics?.topProducts || []
+   207→  const customerAcquisition = analytics?.customerAcquisition || []
+   208→  const salesPerformance = analytics?.salesPerformance || []
+   209→  const thisMonthCustomers = analytics?.thisMonthCustomers || 0
+   210→  const thisMonthOrderAmount = analytics?.thisMonthOrderAmount || 0
+   211→
+   212→  return (
+   213→    <div className="space-y-6">
+   214→      <div className="flex flex-wrap items-center justify-between gap-4">
+   215→        <div>
+   216→          <h2 className="text-lg font-semibold">数据分析</h2>
+   217→          <p className="text-sm text-muted-foreground">全面的业务数据分析与洞察</p>
+   218→        </div>
+   219→        <Select value={dateRange} onValueChange={setDateRange}>
+   220→          <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
+   221→          <SelectContent>
+   222→            <SelectItem value="this_week">本周</SelectItem>
+   223→            <SelectItem value="this_month">本月</SelectItem>
+   224→            <SelectItem value="this_quarter">本季度</SelectItem>
+   225→            <SelectItem value="this_year">本年</SelectItem>
+   226→          </SelectContent>
+   227→        </Select>
+   228→      </div>
+   229→
+   230→      {/* KPI Summary Row */}
+   231→      <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}>
+   232→        {!kpis ? (
+   233→          <><KPISkeleton /><KPISkeleton /><KPISkeleton /><KPISkeleton /></>
+   234→        ) : (
+   235→          [
+   236→            { label: '客户总数', value: kpis.totalCustomers, icon: <Users className="h-5 w-5" />, kpiBg: 'kpi-emerald', colorClass: 'kpi-border-emerald' },
+   237→            { label: '询盘转化率', value: kpis.totalInquiries > 0 ? `${((kpis.wonInquiries / kpis.totalInquiries) * 100).toFixed(1)}%` : '-', icon: <TrendingUp className="h-5 w-5" />, kpiBg: 'kpi-teal', colorClass: 'kpi-border-teal' },
+   238→            { label: '平均订单金额', value: avgOrderAmount > 0 ? formatCurrency(avgOrderAmount) : '-', icon: <DollarSign className="h-5 w-5" />, kpiBg: 'kpi-amber', colorClass: 'kpi-border-amber' },
+   239→            { label: '回款率', value: `${paymentRate}%`, icon: <Target className="h-5 w-5" />, kpiBg: 'kpi-rose', colorClass: 'kpi-border-rose' },
+   240→          ].map((kpi, i) => (
+   241→            <motion.div key={i} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+   242→              <Card className={cn('p-4 crm-card-hover relative overflow-hidden', kpi.kpiBg, kpi.colorClass)}>
+   243→                <div className="kpi-pattern-overlay" />
+   244→                <div className="relative z-10">
+   245→                  <div className="flex items-start justify-between mb-2">
+   246→                    <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
+   247→                    <div className="text-muted-foreground">{kpi.icon}</div>
+   248→                  </div>
+   249→                  <p className="text-xl font-bold crm-number">{kpi.value}</p>
+   250→                  <div className={cn(
+   251→                    'text-xs mt-1 font-medium',
+   252→                    'text-emerald-600 dark:text-emerald-400'
+   253→                  )}>
+   254→                    ↑ 较上月
+   255→                  </div>
+   256→                </div>
+   257→              </Card>
+   258→            </motion.div>
+   259→          ))
+   260→        )}
+   261→      </motion.div>
+   262→
+   263→      {/* Enhanced KPI Cards Row */}
+   264→      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+   265→        <MetricCard
+   266→          label="回款率"
+   267→          value={`${paymentCollectionRate}%`}
+   268→          icon={<CreditCard className="h-5 w-5" />}
+   269→          kpiBg="kpi-emerald"
+   270→          colorClass="kpi-border-emerald"
+   271→        />
+   272→        <MetricCard
+   273→          label="平均成交周期"
+   274→          value={`${avgDealCycle} 天`}
+   275→          icon={<Clock className="h-5 w-5" />}
+   276→          kpiBg="kpi-teal"
+   277→          colorClass="kpi-border-teal"
+   278→        />
+   279→        <MetricCard
+   280→          label="本月新增客户"
+   281→          value={`${thisMonthCustomers}`}
+   282→          icon={<UserPlus className="h-5 w-5" />}
+   283→          kpiBg="kpi-amber"
+   284→          colorClass="kpi-border-amber"
+   285→        />
+   286→        <MetricCard
+   287→          label="本月订单金额"
+   288→          value={formatCurrency(thisMonthOrderAmount)}
+   289→          icon={<ShoppingCart className="h-5 w-5" />}
+   290→          kpiBg="kpi-rose"
+   291→          colorClass="kpi-border-rose"
+   292→        />
+   293→      </div>
+   294→
+   295→      {/* Charts Row 1: Monthly Revenue + Sales Performance Ranking */}
+   296→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   297→        {/* Monthly Revenue Trend - AreaChart */}
+   298→        {analyticsLoading ? (
+   299→          <ChartSkeleton />
+   300→        ) : (
+   301→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+   302→            <Card>
+   303→              <CardHeader className="pb-3">
+   304→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   305→                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+   306→                  月度营收趋势（近12个月）
+   307→                </CardTitle>
+   308→              </CardHeader>
+   309→              <CardContent>
+   310→                <div className="h-56">
+   311→                  <ResponsiveContainer width="100%" height="100%">
+   312→                    <AreaChart data={monthlyRevenue}>
+   313→                      <CartesianGrid strokeDasharray="3 3" />
+   314→                      <XAxis
+   315→                        dataKey="month"
+   316→                        tick={{ fontSize: 10 }}
+   317→                        tickFormatter={(v) => { const parts = v.split('-'); return `${parseInt(parts[1])}月` }}
+   318→                      />
+   319→                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+   320→                      <Tooltip
+   321→                        formatter={(value: number) => [formatCurrency(value), '营收']}
+   322→                        labelFormatter={(label) => { const parts = label.split('-'); return `${parts[0]}年${parseInt(parts[1])}月` }}
+   323→                      />
+   324→                      <Area
+   325→                        type="monotone"
+   326→                        dataKey="value"
+   327→                        stroke="#10b981"
+   328→                        fill="#10b981"
+   329→                        fillOpacity={0.12}
+   330→                        strokeWidth={2}
+   331→                      />
+   332→                    </AreaChart>
+   333→                  </ResponsiveContainer>
+   334→                </div>
+   335→              </CardContent>
+   336→            </Card>
+   337→          </motion.div>
+   338→        )}
+   339→
+   340→        {/* Sales Performance - Horizontal Bar Chart */}
+   341→        {analyticsLoading ? (
+   342→          <ChartSkeleton />
+   343→        ) : (
+   344→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+   345→            <Card>
+   346→              <CardHeader className="pb-3">
+   347→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   348→                  <Trophy className="h-4 w-4 text-amber-600" />
+   349→                  销售业绩排行
+   350→                </CardTitle>
+   351→              </CardHeader>
+   352→              <CardContent>
+   353→                <div className="h-56">
+   354→                  <ResponsiveContainer width="100%" height="100%">
+   355→                    <BarChart data={salesPerformance} layout="vertical">
+   356→                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+   357→                      <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+   358→                      <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 12 }} />
+   359→                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+   360→                      <Bar dataKey="revenue" radius={[0, 4, 4, 0]} barSize={24}>
+   361→                        {salesPerformance.map((_, i) => (
+   362→                          <Cell key={i} fill={i === 0 ? '#10b981' : i === 1 ? '#14b8a6' : i === 2 ? '#f59e0b' : '#06b6d4'} />
+   363→                        ))}
+   364→                      </Bar>
+   365→                    </BarChart>
+   366→                  </ResponsiveContainer>
+   367→                </div>
+   368→              </CardContent>
+   369→            </Card>
+   370→          </motion.div>
+   371→        )}
+   372→      </div>
+   373→
+   374→      {/* Charts Row 2: Sales Funnel + Monthly Trend Toggle */}
+   375→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   376→        {/* Sales Funnel */}
+   377→        {analyticsLoading ? (
+   378→          <ChartSkeleton />
+   379→        ) : (
+   380→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+   381→            <Card>
+   382→              <CardHeader className="pb-3">
+   383→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   384→                  <Target className="h-4 w-4 text-emerald-600" />
+   385→                  销售漏斗
+   386→                </CardTitle>
+   387→              </CardHeader>
+   388→              <CardContent>
+   389→                <div className="h-52">
+   390→                  <ResponsiveContainer width="100%" height="100%">
+   391→                    <BarChart data={funnelData}>
+   392→                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+   393→                      <XAxis dataKey="stage" tick={{ fontSize: 12 }} />
+   394→                      <YAxis tick={{ fontSize: 12 }} />
+   395→                      <Tooltip />
+   396→                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+   397→                        {funnelData.map((_, i) => (
+   398→                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+   399→                        ))}
+   400→                      </Bar>
+   401→                    </BarChart>
+   402→                  </ResponsiveContainer>
+   403→                </div>
+   404→              </CardContent>
+   405→            </Card>
+   406→          </motion.div>
+   407→        )}
+   408→
+   409→        {/* Monthly Trend with Toggle */}
+   410→        {analyticsLoading ? (
+   411→          <ChartSkeleton />
+   412→        ) : (
+   413→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+   414→            <Card>
+   415→              <CardHeader className="pb-3">
+   416→                <div className="flex items-center justify-between">
+   417→                  <CardTitle className="text-base font-medium flex items-center gap-2">
+   418→                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+   419→                    {trendConfig[trendMode].label}
+   420→                  </CardTitle>
+   421→                  <div className="flex items-center gap-1">
+   422→                    {(['inquiry', 'quotation', 'order'] as TrendMode[]).map((mode) => (
+   423→                      <Button
+   424→                        key={mode}
+   425→                        size="sm"
+   426→                        variant={trendMode === mode ? 'default' : 'ghost'}
+   427→                        className={cn(
+   428→                          'h-7 text-xs px-2.5',
+   429→                          trendMode === mode && 'bg-emerald-600 hover:bg-emerald-700 text-white'
+   430→                        )}
+   431→                        onClick={() => setTrendMode(mode)}
+   432→                      >
+   433→                        {trendConfig[mode].label.replace('趋势', '')}
+   434→                      </Button>
+   435→                    ))}
+   436→                  </div>
+   437→                </div>
+   438→              </CardHeader>
+   439→              <CardContent>
+   440→                <div className="h-52">
+   441→                  <ResponsiveContainer width="100%" height="100%">
+   442→                    <AreaChart data={trendDataMap[trendMode]}>
+   443→                      <CartesianGrid strokeDasharray="3 3" />
+   444→                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+   445→                      <YAxis tick={{ fontSize: 12 }} />
+   446→                      <Tooltip />
+   447→                      <Area
+   448→                        type="monotone"
+   449→                        dataKey="value"
+   450→                        stroke={trendConfig[trendMode].color}
+   451→                        fill={trendConfig[trendMode].color}
+   452→                        fillOpacity={trendConfig[trendMode].fillOpacity}
+   453→                        strokeWidth={2}
+   454→                      />
+   455→                    </AreaChart>
+   456→                  </ResponsiveContainer>
+   457→                </div>
+   458→              </CardContent>
+   459→            </Card>
+   460→          </motion.div>
+   461→        )}
+   462→      </div>
+   463→
+   464→      {/* Charts Row 3: Top Products + Customer Acquisition */}
+   465→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   466→        {/* Top 10 Products by Order Count */}
+   467→        {analyticsLoading ? (
+   468→          <ChartSkeleton />
+   469→        ) : (
+   470→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+   471→            <Card>
+   472→              <CardHeader className="pb-3">
+   473→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   474→                  <PackageCheck className="h-4 w-4 text-teal-600" />
+   475→                  产品销售Top10
+   476→                </CardTitle>
+   477→              </CardHeader>
+   478→              <CardContent>
+   479→                {topProducts.length === 0 ? (
+   480→                  <div className="text-center py-8 text-sm text-muted-foreground">暂无产品数据</div>
+   481→                ) : (
+   482→                  <div className="h-64">
+   483→                    <ResponsiveContainer width="100%" height="100%">
+   484→                      <BarChart data={topProducts} layout="vertical">
+   485→                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+   486→                        <XAxis type="number" tick={{ fontSize: 11 }} />
+   487→                        <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
+   488→                        <Tooltip
+   489→                          formatter={(value: number, name: string) => {
+   490→                            if (name === 'orderCount') return [value, '关联订单数']
+   491→                            if (name === 'quantity') return [formatNumber(value), '总数量']
+   492→                            return [value, name]
+   493→                          }}
+   494→                        />
+   495→                        <Bar dataKey="orderCount" fill="#14b8a6" radius={[0, 4, 4, 0]} barSize={18} name="关联订单数" />
+   496→                      </BarChart>
+   497→                    </ResponsiveContainer>
+   498→                  </div>
+   499→                )}
+   500→              </CardContent>
+   501→            </Card>
+   502→          </motion.div>
+   503→        )}
+   504→
+   505→        {/* Customer Acquisition Channels - PieChart */}
+   506→        {analyticsLoading ? (
+   507→          <ChartSkeleton />
+   508→        ) : (
+   509→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
+   510→            <Card>
+   511→              <CardHeader className="pb-3">
+   512→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   513→                  <PieChartIcon className="h-4 w-4 text-amber-600" />
+   514→                  客户获取渠道
+   515→                </CardTitle>
+   516→              </CardHeader>
+   517→              <CardContent className="flex items-center gap-4">
+   518→                <div className="w-40 h-40 shrink-0">
+   519→                  <ResponsiveContainer width="100%" height="100%">
+   520→                    <PieChart>
+   521→                      <Pie data={customerAcquisition} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" nameKey="name">
+   522→                        {customerAcquisition.map((_, i) => (
+   523→                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+   524→                        ))}
+   525→                      </Pie>
+   526→                      <Tooltip />
+   527→                    </PieChart>
+   528→                  </ResponsiveContainer>
+   529→                </div>
+   530→                <div className="flex-1 space-y-2">
+   531→                  {customerAcquisition.map((item, i) => (
+   532→                    <div key={i} className="flex items-center gap-2 text-sm">
+   533→                      <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+   534→                      <span className="text-muted-foreground flex-1">{item.name}</span>
+   535→                      <span className="font-medium crm-number">{item.value}</span>
+   536→                    </div>
+   537→                  ))}
+   538→                </div>
+   539→              </CardContent>
+   540→            </Card>
+   541→          </motion.div>
+   542→        )}
+   543→      </div>
+   544→
+   545→      {/* Charts Row 4: Inquiry Source + Customer Level */}
+   546→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   547→        {/* Inquiry Source Distribution */}
+   548→        {analyticsLoading ? (
+   549→          <ChartSkeleton />
+   550→        ) : (
+   551→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+   552→            <Card>
+   553→              <CardHeader className="pb-3">
+   554→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   555→                  <PieChartIcon className="h-4 w-4 text-amber-600" />
+   556→                  询盘来源分布
+   557→                </CardTitle>
+   558→              </CardHeader>
+   559→              <CardContent className="flex items-center gap-4">
+   560→                <div className="w-40 h-40 shrink-0">
+   561→                  <ResponsiveContainer width="100%" height="100%">
+   562→                    <PieChart>
+   563→                      <Pie data={sourceData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" nameKey="name">
+   564→                        {sourceData.map((_, i) => (
+   565→                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+   566→                        ))}
+   567→                      </Pie>
+   568→                      <Tooltip />
+   569→                    </PieChart>
+   570→                  </ResponsiveContainer>
+   571→                </div>
+   572→                <div className="flex-1 space-y-2">
+   573→                  {sourceData.map((item, i) => (
+   574→                    <div key={i} className="flex items-center gap-2 text-sm">
+   575→                      <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+   576→                      <span className="text-muted-foreground flex-1">{item.name}</span>
+   577→                      <span className="font-medium crm-number">{item.value}</span>
+   578→                    </div>
+   579→                  ))}
+   580→                </div>
+   581→              </CardContent>
+   582→            </Card>
+   583→          </motion.div>
+   584→        )}
+   585→
+   586→        {/* Customer Level Distribution */}
+   587→        {analyticsLoading || levelData.length === 0 ? (
+   588→          <ChartSkeleton />
+   589→        ) : (
+   590→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
+   591→            <Card>
+   592→              <CardHeader className="pb-3">
+   593→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   594→                  <Users className="h-4 w-4 text-teal-600" />
+   595→                  客户级别分布
+   596→                </CardTitle>
+   597→              </CardHeader>
+   598→              <CardContent className="flex items-center gap-4">
+   599→                <div className="w-40 h-40 shrink-0">
+   600→                  <ResponsiveContainer width="100%" height="100%">
+   601→                    <PieChart>
+   602→                      <Pie data={levelData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="count" nameKey="level">
+   603→                        {levelData.map((_, i) => (
+   604→                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+   605→                        ))}
+   606→                      </Pie>
+   607→                      <Tooltip />
+   608→                    </PieChart>
+   609→                  </ResponsiveContainer>
+   610→                </div>
+   611→                <div className="flex-1 space-y-2">
+   612→                  {levelData.map((item: Record<string, unknown>, i: number) => (
+   613→                    <div key={i} className="flex items-center gap-2 text-sm">
+   614→                      <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+   615→                      <Badge variant="outline" className="text-xs">{item.level as string}级</Badge>
+   616→                      <span className="font-medium ml-auto crm-number">{item.count as number}</span>
+   617→                    </div>
+   618→                  ))}
+   619→                </div>
+   620→              </CardContent>
+   621→            </Card>
+   622→          </motion.div>
+   623→        )}
+   624→      </div>
+   625→
+   626→      {/* Row 5: Region Distribution + Sales Ranking Table */}
+   627→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   628→        {/* Customer Region Distribution */}
+   629→        {analyticsLoading || regionData.length === 0 ? (
+   630→          <ChartSkeleton />
+   631→        ) : (
+   632→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
+   633→            <Card>
+   634→              <CardHeader className="pb-3">
+   635→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   636→                  <Globe className="h-4 w-4 text-emerald-600" />
+   637→                  客户地区分布
+   638→                </CardTitle>
+   639→              </CardHeader>
+   640→              <CardContent>
+   641→                <div className="h-56">
+   642→                  <ResponsiveContainer width="100%" height="100%">
+   643→                    <BarChart data={regionData} layout="vertical">
+   644→                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+   645→                      <XAxis type="number" tick={{ fontSize: 12 }} />
+   646→                      <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 12 }} />
+   647→                      <Tooltip
+   648→                        formatter={(value: number, name: string) => {
+   649→                          if (name === 'count') return [value, '客户数']
+   650→                          return [value, name]
+   651→                        }}
+   652→                      />
+   653→                      <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={20}>
+   654→                        {regionData.map((entry, i) => (
+   655→                          <Cell
+   656→                            key={i}
+   657→                            fill={REGION_COLORS[entry.name] || COLORS[i % COLORS.length]}
+   658→                          />
+   659→                        ))}
+   660→                      </Bar>
+   661→                    </BarChart>
+   662→                  </ResponsiveContainer>
+   663→                </div>
+   664→                <div className="flex flex-wrap gap-2 mt-3">
+   665→                  {regionData.map((entry) => (
+   666→                    <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+   667→                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: REGION_COLORS[entry.name] || '#888' }} />
+   668→                      <span className="text-muted-foreground">{entry.name}</span>
+   669→                      <span className="font-medium crm-number">{entry.count}</span>
+   670→                      <span className="text-muted-foreground">({entry.percentage}%)</span>
+   671→                    </div>
+   672→                  ))}
+   673→                </div>
+   674→              </CardContent>
+   675→            </Card>
+   676→          </motion.div>
+   677→        )}
+   678→
+   679→        {/* Sales Ranking Table */}
+   680→        {analyticsLoading ? (
+   681→          <ChartSkeleton />
+   682→        ) : (
+   683→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85 }}>
+   684→            <Card>
+   685→              <CardHeader className="pb-3">
+   686→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   687→                  <BarChart3 className="h-4 w-4 text-emerald-600" />
+   688→                  销售人员详情排行
+   689→                </CardTitle>
+   690→              </CardHeader>
+   691→              <CardContent>
+   692→                {salesRanking.length === 0 ? (
+   693→                  <div className="text-center py-8 text-sm text-muted-foreground">暂无销售数据</div>
+   694→                ) : (
+   695→                  <div className="rounded-lg border overflow-hidden">
+   696→                    <Table>
+   697→                      <TableHeader>
+   698→                        <TableRow>
+   699→                          <TableHead className="text-xs w-12">排名</TableHead>
+   700→                          <TableHead className="text-xs">姓名</TableHead>
+   701→                          <TableHead className="text-xs text-right">询盘数</TableHead>
+   702→                          <TableHead className="text-xs text-right">成交额</TableHead>
+   703→                          <TableHead className="text-xs text-right">转化率</TableHead>
+   704→                        </TableRow>
+   705→                      </TableHeader>
+   706→                      <TableBody>
+   707→                        {salesRanking.map((person, i) => (
+   708→                          <TableRow key={i} className="crm-table-row">
+   709→                            <TableCell className="text-xs">
+   710→                              {i === 0 && <div className="flex items-center gap-1"><Trophy className="h-3.5 w-3.5 text-amber-500" /><span className="font-bold text-amber-600">1</span></div>}
+   711→                              {i === 1 && <div className="flex items-center gap-1"><Medal className="h-3.5 w-3.5 text-slate-400" /><span className="font-bold text-slate-500">2</span></div>}
+   712→                              {i === 2 && <div className="flex items-center gap-1"><Medal className="h-3.5 w-3.5 text-amber-700" /><span className="font-bold text-amber-700">3</span></div>}
+   713→                              {i > 2 && <span className="text-muted-foreground">{i + 1}</span>}
+   714→                            </TableCell>
+   715→                            <TableCell className="text-xs font-medium">
+   716→                              <div className="flex items-center gap-1.5">
+   717→                                <div className={cn(
+   718→                                  'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white',
+   719→                                  i === 0 && 'bg-amber-500',
+   720→                                  i === 1 && 'bg-slate-400',
+   721→                                  i === 2 && 'bg-amber-700',
+   722→                                  i > 2 && 'bg-muted text-muted-foreground'
+   723→                                )}>
+   724→                                  {person.name.charAt(0)}
+   725→                                </div>
+   726→                                {person.name}
+   727→                              </div>
+   728→                            </TableCell>
+   729→                            <TableCell className="text-xs text-right crm-number">{person.inquiries}</TableCell>
+   730→                            <TableCell className="text-xs text-right crm-number font-medium text-emerald-600">{formatCurrency(person.revenue)}</TableCell>
+   731→                            <TableCell className="text-xs text-right crm-number">
+   732→                              <span className={cn(
+   733→                                person.conversionRate >= 40 ? 'text-emerald-600' : person.conversionRate >= 30 ? 'text-amber-600' : 'text-rose-600'
+   734→                              )}>
+   735→                                {person.conversionRate}%
+   736→                              </span>
+   737→                            </TableCell>
+   738→                          </TableRow>
+   739→                        ))}
+   740→                      </TableBody>
+   741→                    </Table>
+   742→                  </div>
+   743→                )}
+   744→              </CardContent>
+   745→            </Card>
+   746→          </motion.div>
+   747→        )}
+   748→      </div>
+   749→
+   750→      {/* Row 6: Order Status + Top Customers */}
+   751→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   752→        {/* Order Status Distribution */}
+   753→        {analyticsLoading ? (
+   754→          <ChartSkeleton />
+   755→        ) : (
+   756→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}>
+   757→            <Card>
+   758→              <CardHeader className="pb-3">
+   759→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   760→                  <PackageCheck className="h-4 w-4 text-emerald-600" />
+   761→                  订单状态分布
+   762→                </CardTitle>
+   763→              </CardHeader>
+   764→              <CardContent>
+   765→                {orderStatusData.length === 0 ? (
+   766→                  <div className="text-center py-8 text-sm text-muted-foreground">暂无订单数据</div>
+   767→                ) : (
+   768→                  <>
+   769→                    <div className="h-56">
+   770→                      <ResponsiveContainer width="100%" height="100%">
+   771→                        <BarChart data={orderStatusData} layout="vertical">
+   772→                          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+   773→                          <XAxis type="number" tick={{ fontSize: 12 }} />
+   774→                          <YAxis type="category" dataKey="name" width={70} tick={{ fontSize: 12 }} />
+   775→                          <Tooltip
+   776→                            formatter={(value: number) => [value, '订单数']}
+   777→                          />
+   778→                          <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+   779→                            {orderStatusData.map((_, i) => (
+   780→                              <Cell key={i} fill={COLORS[i % COLORS.length]} />
+   781→                            ))}
+   782→                          </Bar>
+   783→                        </BarChart>
+   784→                      </ResponsiveContainer>
+   785→                    </div>
+   786→                    <div className="flex flex-wrap gap-2 mt-3">
+   787→                      {orderStatusData.map((item, i) => (
+   788→                        <div key={item.name} className="flex items-center gap-1.5 text-xs">
+   789→                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+   790→                          <span className="text-muted-foreground">{item.name}</span>
+   791→                          <span className="font-medium crm-number">{item.value}</span>
+   792→                        </div>
+   793→                      ))}
+   794→                    </div>
+   795→                  </>
+   796→                )}
+   797→              </CardContent>
+   798→            </Card>
+   799→          </motion.div>
+   800→        )}
+   801→
+   802→        {/* Top Customers */}
+   803→        {topCustomers.length > 0 ? (
+   804→          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.95 }}>
+   805→            <Card>
+   806→              <CardHeader className="pb-3">
+   807→                <CardTitle className="text-base font-medium flex items-center gap-2">
+   808→                  <BarChart3 className="h-4 w-4 text-emerald-600" />
+   809→                  Top 客户 (按订单金额)
+   810→                </CardTitle>
+   811→              </CardHeader>
+   812→              <CardContent>
+   813→                <div className="h-56">
+   814→                  <ResponsiveContainer width="100%" height="100%">
+   815→                    <BarChart data={topCustomers} layout="vertical">
+   816→                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+   817→                      <XAxis type="number" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+   818→                      <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11 }} />
+   819→                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+   820→                      <Bar dataKey="revenue" fill="#10b981" radius={[0, 4, 4, 0]} />
+   821→                    </BarChart>
+   822→                  </ResponsiveContainer>
+   823→                </div>
+   824→              </CardContent>
+   825→            </Card>
+   826→          </motion.div>
+   827→        ) : (
+   828→          <ChartSkeleton />
+   829→        )}
+   830→      </div>
+   831→    </div>
+   832→  )
+   833→}
+   834→

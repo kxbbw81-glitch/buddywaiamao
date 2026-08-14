@@ -36,9 +36,11 @@ import { SampleDetailDrawer } from '@/components/crm/views/sample-detail-drawer'
 import { OrderFormDialog } from '@/components/crm/views/order-form-dialog'
 import { SampleListView } from '@/components/crm/views/sample-list-view'
 import { PaymentListView } from '@/components/crm/views/payment-list-view'
+import { PaymentFormDialog } from '@/components/crm/views/payment-form-dialog'
 import { AnalyticsView } from '@/components/crm/views/analytics-view'
 import { AIAssistantDrawer } from '@/components/crm/views/ai-assistant-drawer'
 import { SettingsView } from '@/components/crm/views/settings-view'
+import { UserManagementView } from '@/components/crm/views/user-management-view'
 import { ActivityListView } from '@/components/crm/views/activity-list-view'
 
 // UI Components
@@ -220,6 +222,7 @@ function ModuleView() {
       case 'analytics': return <AnalyticsView />
       case 'settings': return <SettingsView />
       case 'activities': return <ActivityListView />
+      case 'user_management': return <UserManagementView />
       default: return <WorkbenchView />
     }
   }
@@ -293,6 +296,7 @@ function CRMApp() {
       <QuotationFormDialog />
       <ProductFormDialog />
       <OrderFormDialog />
+      <PaymentFormDialog />
 
       {/* AI Assistant */}
       <AIAssistantDrawer />

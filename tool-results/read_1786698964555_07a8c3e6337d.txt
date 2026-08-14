@@ -1,0 +1,2002 @@
+     1→$ next dev -p 3000
+     2→⨯ Failed to start server
+     3→Error: listen EADDRINUSE: address already in use :::3000
+     4→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+     5→    at new Promise (<anonymous>) {
+     6→  code: 'EADDRINUSE',
+     7→  errno: -98,
+     8→  syscall: 'listen',
+     9→  address: '::',
+    10→  port: 3000
+    11→}
+    12→[?25h
+    13→error: script "dev" exited with code 1
+    14→$ next dev -p 3000
+    15→⨯ Failed to start server
+    16→Error: listen EADDRINUSE: address already in use :::3000
+    17→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    18→    at new Promise (<anonymous>) {
+    19→  code: 'EADDRINUSE',
+    20→  errno: -98,
+    21→  syscall: 'listen',
+    22→  address: '::',
+    23→  port: 3000
+    24→}
+    25→[?25h
+    26→error: script "dev" exited with code 1
+    27→$ next dev -p 3000
+    28→⨯ Failed to start server
+    29→Error: listen EADDRINUSE: address already in use :::3000
+    30→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    31→    at new Promise (<anonymous>) {
+    32→  code: 'EADDRINUSE',
+    33→  errno: -98,
+    34→  syscall: 'listen',
+    35→  address: '::',
+    36→  port: 3000
+    37→}
+    38→[?25h
+    39→error: script "dev" exited with code 1
+    40→$ next dev -p 3000
+    41→⨯ Failed to start server
+    42→Error: listen EADDRINUSE: address already in use :::3000
+    43→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    44→    at new Promise (<anonymous>) {
+    45→  code: 'EADDRINUSE',
+    46→  errno: -98,
+    47→  syscall: 'listen',
+    48→  address: '::',
+    49→  port: 3000
+    50→}
+    51→[?25h
+    52→error: script "dev" exited with code 1
+    53→$ next dev -p 3000
+    54→⨯ Failed to start server
+    55→Error: listen EADDRINUSE: address already in use :::3000
+    56→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    57→    at new Promise (<anonymous>) {
+    58→  code: 'EADDRINUSE',
+    59→  errno: -98,
+    60→  syscall: 'listen',
+    61→  address: '::',
+    62→  port: 3000
+    63→}
+    64→[?25h
+    65→error: script "dev" exited with code 1
+    66→$ next dev -p 3000
+    67→⨯ Failed to start server
+    68→Error: listen EADDRINUSE: address already in use :::3000
+    69→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    70→    at new Promise (<anonymous>) {
+    71→  code: 'EADDRINUSE',
+    72→  errno: -98,
+    73→  syscall: 'listen',
+    74→  address: '::',
+    75→  port: 3000
+    76→}
+    77→[?25h
+    78→error: script "dev" exited with code 1
+    79→$ next dev -p 3000
+    80→⨯ Failed to start server
+    81→Error: listen EADDRINUSE: address already in use :::3000
+    82→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    83→    at new Promise (<anonymous>) {
+    84→  code: 'EADDRINUSE',
+    85→  errno: -98,
+    86→  syscall: 'listen',
+    87→  address: '::',
+    88→  port: 3000
+    89→}
+    90→[?25h
+    91→error: script "dev" exited with code 1
+    92→$ next dev -p 3000
+    93→⨯ Failed to start server
+    94→Error: listen EADDRINUSE: address already in use :::3000
+    95→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    96→    at new Promise (<anonymous>) {
+    97→  code: 'EADDRINUSE',
+    98→  errno: -98,
+    99→  syscall: 'listen',
+   100→  address: '::',
+   101→  port: 3000
+   102→}
+   103→[?25h
+   104→error: script "dev" exited with code 1
+   105→$ next dev -p 3000
+   106→⨯ Failed to start server
+   107→Error: listen EADDRINUSE: address already in use :::3000
+   108→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   109→    at new Promise (<anonymous>) {
+   110→  code: 'EADDRINUSE',
+   111→  errno: -98,
+   112→  syscall: 'listen',
+   113→  address: '::',
+   114→  port: 3000
+   115→}
+   116→[?25h
+   117→error: script "dev" exited with code 1
+   118→$ next dev -p 3000
+   119→⨯ Failed to start server
+   120→Error: listen EADDRINUSE: address already in use :::3000
+   121→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   122→    at new Promise (<anonymous>) {
+   123→  code: 'EADDRINUSE',
+   124→  errno: -98,
+   125→  syscall: 'listen',
+   126→  address: '::',
+   127→  port: 3000
+   128→}
+   129→[?25h
+   130→error: script "dev" exited with code 1
+   131→$ next dev -p 3000
+   132→⨯ Failed to start server
+   133→Error: listen EADDRINUSE: address already in use :::3000
+   134→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   135→    at new Promise (<anonymous>) {
+   136→  code: 'EADDRINUSE',
+   137→  errno: -98,
+   138→  syscall: 'listen',
+   139→  address: '::',
+   140→  port: 3000
+   141→}
+   142→[?25h
+   143→error: script "dev" exited with code 1
+   144→$ next dev -p 3000
+   145→⨯ Failed to start server
+   146→Error: listen EADDRINUSE: address already in use :::3000
+   147→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   148→    at new Promise (<anonymous>) {
+   149→  code: 'EADDRINUSE',
+   150→  errno: -98,
+   151→  syscall: 'listen',
+   152→  address: '::',
+   153→  port: 3000
+   154→}
+   155→[?25h
+   156→error: script "dev" exited with code 1
+   157→$ next dev -p 3000
+   158→⨯ Failed to start server
+   159→Error: listen EADDRINUSE: address already in use :::3000
+   160→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   161→    at new Promise (<anonymous>) {
+   162→  code: 'EADDRINUSE',
+   163→  errno: -98,
+   164→  syscall: 'listen',
+   165→  address: '::',
+   166→  port: 3000
+   167→}
+   168→[?25h
+   169→error: script "dev" exited with code 1
+   170→$ next dev -p 3000
+   171→⨯ Failed to start server
+   172→Error: listen EADDRINUSE: address already in use :::3000
+   173→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   174→    at new Promise (<anonymous>) {
+   175→  code: 'EADDRINUSE',
+   176→  errno: -98,
+   177→  syscall: 'listen',
+   178→  address: '::',
+   179→  port: 3000
+   180→}
+   181→[?25h
+   182→error: script "dev" exited with code 1
+   183→$ next dev -p 3000
+   184→⨯ Failed to start server
+   185→Error: listen EADDRINUSE: address already in use :::3000
+   186→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   187→    at new Promise (<anonymous>) {
+   188→  code: 'EADDRINUSE',
+   189→  errno: -98,
+   190→  syscall: 'listen',
+   191→  address: '::',
+   192→  port: 3000
+   193→}
+   194→[?25h
+   195→error: script "dev" exited with code 1
+   196→$ next dev -p 3000
+   197→⨯ Failed to start server
+   198→Error: listen EADDRINUSE: address already in use :::3000
+   199→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   200→    at new Promise (<anonymous>) {
+   201→  code: 'EADDRINUSE',
+   202→  errno: -98,
+   203→  syscall: 'listen',
+   204→  address: '::',
+   205→  port: 3000
+   206→}
+   207→[?25h
+   208→error: script "dev" exited with code 1
+   209→$ next dev -p 3000
+   210→⨯ Failed to start server
+   211→Error: listen EADDRINUSE: address already in use :::3000
+   212→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   213→    at new Promise (<anonymous>) {
+   214→  code: 'EADDRINUSE',
+   215→  errno: -98,
+   216→  syscall: 'listen',
+   217→  address: '::',
+   218→  port: 3000
+   219→}
+   220→[?25h
+   221→error: script "dev" exited with code 1
+   222→$ next dev -p 3000
+   223→⨯ Failed to start server
+   224→Error: listen EADDRINUSE: address already in use :::3000
+   225→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   226→    at new Promise (<anonymous>) {
+   227→  code: 'EADDRINUSE',
+   228→  errno: -98,
+   229→  syscall: 'listen',
+   230→  address: '::',
+   231→  port: 3000
+   232→}
+   233→[?25h
+   234→error: script "dev" exited with code 1
+   235→$ next dev -p 3000
+   236→⨯ Failed to start server
+   237→Error: listen EADDRINUSE: address already in use :::3000
+   238→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   239→    at new Promise (<anonymous>) {
+   240→  code: 'EADDRINUSE',
+   241→  errno: -98,
+   242→  syscall: 'listen',
+   243→  address: '::',
+   244→  port: 3000
+   245→}
+   246→[?25h
+   247→error: script "dev" exited with code 1
+   248→$ next dev -p 3000
+   249→⨯ Failed to start server
+   250→Error: listen EADDRINUSE: address already in use :::3000
+   251→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   252→    at new Promise (<anonymous>) {
+   253→  code: 'EADDRINUSE',
+   254→  errno: -98,
+   255→  syscall: 'listen',
+   256→  address: '::',
+   257→  port: 3000
+   258→}
+   259→[?25h
+   260→error: script "dev" exited with code 1
+   261→$ next dev -p 3000
+   262→⨯ Failed to start server
+   263→Error: listen EADDRINUSE: address already in use :::3000
+   264→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   265→    at new Promise (<anonymous>) {
+   266→  code: 'EADDRINUSE',
+   267→  errno: -98,
+   268→  syscall: 'listen',
+   269→  address: '::',
+   270→  port: 3000
+   271→}
+   272→[?25h
+   273→error: script "dev" exited with code 1
+   274→$ next dev -p 3000
+   275→⨯ Failed to start server
+   276→Error: listen EADDRINUSE: address already in use :::3000
+   277→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   278→    at new Promise (<anonymous>) {
+   279→  code: 'EADDRINUSE',
+   280→  errno: -98,
+   281→  syscall: 'listen',
+   282→  address: '::',
+   283→  port: 3000
+   284→}
+   285→[?25h
+   286→error: script "dev" exited with code 1
+   287→$ next dev -p 3000
+   288→⨯ Failed to start server
+   289→Error: listen EADDRINUSE: address already in use :::3000
+   290→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   291→    at new Promise (<anonymous>) {
+   292→  code: 'EADDRINUSE',
+   293→  errno: -98,
+   294→  syscall: 'listen',
+   295→  address: '::',
+   296→  port: 3000
+   297→}
+   298→[?25h
+   299→error: script "dev" exited with code 1
+   300→$ next dev -p 3000
+   301→⨯ Failed to start server
+   302→Error: listen EADDRINUSE: address already in use :::3000
+   303→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   304→    at new Promise (<anonymous>) {
+   305→  code: 'EADDRINUSE',
+   306→  errno: -98,
+   307→  syscall: 'listen',
+   308→  address: '::',
+   309→  port: 3000
+   310→}
+   311→[?25h
+   312→error: script "dev" exited with code 1
+   313→$ next dev -p 3000
+   314→⨯ Failed to start server
+   315→Error: listen EADDRINUSE: address already in use :::3000
+   316→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   317→    at new Promise (<anonymous>) {
+   318→  code: 'EADDRINUSE',
+   319→  errno: -98,
+   320→  syscall: 'listen',
+   321→  address: '::',
+   322→  port: 3000
+   323→}
+   324→[?25h
+   325→error: script "dev" exited with code 1
+   326→$ next dev -p 3000
+   327→⨯ Failed to start server
+   328→Error: listen EADDRINUSE: address already in use :::3000
+   329→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   330→    at new Promise (<anonymous>) {
+   331→  code: 'EADDRINUSE',
+   332→  errno: -98,
+   333→  syscall: 'listen',
+   334→  address: '::',
+   335→  port: 3000
+   336→}
+   337→[?25h
+   338→error: script "dev" exited with code 1
+   339→$ next dev -p 3000
+   340→⨯ Failed to start server
+   341→Error: listen EADDRINUSE: address already in use :::3000
+   342→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   343→    at new Promise (<anonymous>) {
+   344→  code: 'EADDRINUSE',
+   345→  errno: -98,
+   346→  syscall: 'listen',
+   347→  address: '::',
+   348→  port: 3000
+   349→}
+   350→[?25h
+   351→error: script "dev" exited with code 1
+   352→$ next dev -p 3000
+   353→⨯ Failed to start server
+   354→Error: listen EADDRINUSE: address already in use :::3000
+   355→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   356→    at new Promise (<anonymous>) {
+   357→  code: 'EADDRINUSE',
+   358→  errno: -98,
+   359→  syscall: 'listen',
+   360→  address: '::',
+   361→  port: 3000
+   362→}
+   363→[?25h
+   364→error: script "dev" exited with code 1
+   365→$ next dev -p 3000
+   366→⨯ Failed to start server
+   367→Error: listen EADDRINUSE: address already in use :::3000
+   368→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   369→    at new Promise (<anonymous>) {
+   370→  code: 'EADDRINUSE',
+   371→  errno: -98,
+   372→  syscall: 'listen',
+   373→  address: '::',
+   374→  port: 3000
+   375→}
+   376→[?25h
+   377→error: script "dev" exited with code 1
+   378→$ next dev -p 3000
+   379→⨯ Failed to start server
+   380→Error: listen EADDRINUSE: address already in use :::3000
+   381→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   382→    at new Promise (<anonymous>) {
+   383→  code: 'EADDRINUSE',
+   384→  errno: -98,
+   385→  syscall: 'listen',
+   386→  address: '::',
+   387→  port: 3000
+   388→}
+   389→[?25h
+   390→error: script "dev" exited with code 1
+   391→$ next dev -p 3000
+   392→⨯ Failed to start server
+   393→Error: listen EADDRINUSE: address already in use :::3000
+   394→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   395→    at new Promise (<anonymous>) {
+   396→  code: 'EADDRINUSE',
+   397→  errno: -98,
+   398→  syscall: 'listen',
+   399→  address: '::',
+   400→  port: 3000
+   401→}
+   402→[?25h
+   403→error: script "dev" exited with code 1
+   404→$ next dev -p 3000
+   405→⨯ Failed to start server
+   406→Error: listen EADDRINUSE: address already in use :::3000
+   407→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   408→    at new Promise (<anonymous>) {
+   409→  code: 'EADDRINUSE',
+   410→  errno: -98,
+   411→  syscall: 'listen',
+   412→  address: '::',
+   413→  port: 3000
+   414→}
+   415→[?25h
+   416→error: script "dev" exited with code 1
+   417→$ next dev -p 3000
+   418→⨯ Failed to start server
+   419→Error: listen EADDRINUSE: address already in use :::3000
+   420→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   421→    at new Promise (<anonymous>) {
+   422→  code: 'EADDRINUSE',
+   423→  errno: -98,
+   424→  syscall: 'listen',
+   425→  address: '::',
+   426→  port: 3000
+   427→}
+   428→[?25h
+   429→error: script "dev" exited with code 1
+   430→$ next dev -p 3000
+   431→⨯ Failed to start server
+   432→Error: listen EADDRINUSE: address already in use :::3000
+   433→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   434→    at new Promise (<anonymous>) {
+   435→  code: 'EADDRINUSE',
+   436→  errno: -98,
+   437→  syscall: 'listen',
+   438→  address: '::',
+   439→  port: 3000
+   440→}
+   441→[?25h
+   442→error: script "dev" exited with code 1
+   443→$ next dev -p 3000
+   444→⨯ Failed to start server
+   445→Error: listen EADDRINUSE: address already in use :::3000
+   446→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   447→    at new Promise (<anonymous>) {
+   448→  code: 'EADDRINUSE',
+   449→  errno: -98,
+   450→  syscall: 'listen',
+   451→  address: '::',
+   452→  port: 3000
+   453→}
+   454→[?25h
+   455→error: script "dev" exited with code 1
+   456→$ next dev -p 3000
+   457→⨯ Failed to start server
+   458→Error: listen EADDRINUSE: address already in use :::3000
+   459→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   460→    at new Promise (<anonymous>) {
+   461→  code: 'EADDRINUSE',
+   462→  errno: -98,
+   463→  syscall: 'listen',
+   464→  address: '::',
+   465→  port: 3000
+   466→}
+   467→[?25h
+   468→error: script "dev" exited with code 1
+   469→$ next dev -p 3000
+   470→⨯ Failed to start server
+   471→Error: listen EADDRINUSE: address already in use :::3000
+   472→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   473→    at new Promise (<anonymous>) {
+   474→  code: 'EADDRINUSE',
+   475→  errno: -98,
+   476→  syscall: 'listen',
+   477→  address: '::',
+   478→  port: 3000
+   479→}
+   480→[?25h
+   481→error: script "dev" exited with code 1
+   482→$ next dev -p 3000
+   483→⨯ Failed to start server
+   484→Error: listen EADDRINUSE: address already in use :::3000
+   485→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   486→    at new Promise (<anonymous>) {
+   487→  code: 'EADDRINUSE',
+   488→  errno: -98,
+   489→  syscall: 'listen',
+   490→  address: '::',
+   491→  port: 3000
+   492→}
+   493→[?25h
+   494→error: script "dev" exited with code 1
+   495→$ next dev -p 3000
+   496→⨯ Failed to start server
+   497→Error: listen EADDRINUSE: address already in use :::3000
+   498→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   499→    at new Promise (<anonymous>) {
+   500→  code: 'EADDRINUSE',
+   501→  errno: -98,
+   502→  syscall: 'listen',
+   503→  address: '::',
+   504→  port: 3000
+   505→}
+   506→[?25h
+   507→error: script "dev" exited with code 1
+   508→$ next dev -p 3000
+   509→⨯ Failed to start server
+   510→Error: listen EADDRINUSE: address already in use :::3000
+   511→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   512→    at new Promise (<anonymous>) {
+   513→  code: 'EADDRINUSE',
+   514→  errno: -98,
+   515→  syscall: 'listen',
+   516→  address: '::',
+   517→  port: 3000
+   518→}
+   519→[?25h
+   520→error: script "dev" exited with code 1
+   521→$ next dev -p 3000
+   522→⨯ Failed to start server
+   523→Error: listen EADDRINUSE: address already in use :::3000
+   524→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   525→    at new Promise (<anonymous>) {
+   526→  code: 'EADDRINUSE',
+   527→  errno: -98,
+   528→  syscall: 'listen',
+   529→  address: '::',
+   530→  port: 3000
+   531→}
+   532→[?25h
+   533→error: script "dev" exited with code 1
+   534→$ next dev -p 3000
+   535→⨯ Failed to start server
+   536→Error: listen EADDRINUSE: address already in use :::3000
+   537→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   538→    at new Promise (<anonymous>) {
+   539→  code: 'EADDRINUSE',
+   540→  errno: -98,
+   541→  syscall: 'listen',
+   542→  address: '::',
+   543→  port: 3000
+   544→}
+   545→[?25h
+   546→error: script "dev" exited with code 1
+   547→$ next dev -p 3000
+   548→⨯ Failed to start server
+   549→Error: listen EADDRINUSE: address already in use :::3000
+   550→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   551→    at new Promise (<anonymous>) {
+   552→  code: 'EADDRINUSE',
+   553→  errno: -98,
+   554→  syscall: 'listen',
+   555→  address: '::',
+   556→  port: 3000
+   557→}
+   558→[?25h
+   559→error: script "dev" exited with code 1
+   560→$ next dev -p 3000
+   561→⨯ Failed to start server
+   562→Error: listen EADDRINUSE: address already in use :::3000
+   563→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   564→    at new Promise (<anonymous>) {
+   565→  code: 'EADDRINUSE',
+   566→  errno: -98,
+   567→  syscall: 'listen',
+   568→  address: '::',
+   569→  port: 3000
+   570→}
+   571→[?25h
+   572→error: script "dev" exited with code 1
+   573→$ next dev -p 3000
+   574→⨯ Failed to start server
+   575→Error: listen EADDRINUSE: address already in use :::3000
+   576→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   577→    at new Promise (<anonymous>) {
+   578→  code: 'EADDRINUSE',
+   579→  errno: -98,
+   580→  syscall: 'listen',
+   581→  address: '::',
+   582→  port: 3000
+   583→}
+   584→[?25h
+   585→error: script "dev" exited with code 1
+   586→$ next dev -p 3000
+   587→⨯ Failed to start server
+   588→Error: listen EADDRINUSE: address already in use :::3000
+   589→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   590→    at new Promise (<anonymous>) {
+   591→  code: 'EADDRINUSE',
+   592→  errno: -98,
+   593→  syscall: 'listen',
+   594→  address: '::',
+   595→  port: 3000
+   596→}
+   597→[?25h
+   598→error: script "dev" exited with code 1
+   599→$ next dev -p 3000
+   600→⨯ Failed to start server
+   601→Error: listen EADDRINUSE: address already in use :::3000
+   602→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   603→    at new Promise (<anonymous>) {
+   604→  code: 'EADDRINUSE',
+   605→  errno: -98,
+   606→  syscall: 'listen',
+   607→  address: '::',
+   608→  port: 3000
+   609→}
+   610→[?25h
+   611→error: script "dev" exited with code 1
+   612→$ next dev -p 3000
+   613→⨯ Failed to start server
+   614→Error: listen EADDRINUSE: address already in use :::3000
+   615→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   616→    at new Promise (<anonymous>) {
+   617→  code: 'EADDRINUSE',
+   618→  errno: -98,
+   619→  syscall: 'listen',
+   620→  address: '::',
+   621→  port: 3000
+   622→}
+   623→[?25h
+   624→error: script "dev" exited with code 1
+   625→$ next dev -p 3000
+   626→⨯ Failed to start server
+   627→Error: listen EADDRINUSE: address already in use :::3000
+   628→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   629→    at new Promise (<anonymous>) {
+   630→  code: 'EADDRINUSE',
+   631→  errno: -98,
+   632→  syscall: 'listen',
+   633→  address: '::',
+   634→  port: 3000
+   635→}
+   636→[?25h
+   637→error: script "dev" exited with code 1
+   638→$ next dev -p 3000
+   639→⨯ Failed to start server
+   640→Error: listen EADDRINUSE: address already in use :::3000
+   641→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   642→    at new Promise (<anonymous>) {
+   643→  code: 'EADDRINUSE',
+   644→  errno: -98,
+   645→  syscall: 'listen',
+   646→  address: '::',
+   647→  port: 3000
+   648→}
+   649→[?25h
+   650→error: script "dev" exited with code 1
+   651→$ next dev -p 3000
+   652→⨯ Failed to start server
+   653→Error: listen EADDRINUSE: address already in use :::3000
+   654→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   655→    at new Promise (<anonymous>) {
+   656→  code: 'EADDRINUSE',
+   657→  errno: -98,
+   658→  syscall: 'listen',
+   659→  address: '::',
+   660→  port: 3000
+   661→}
+   662→[?25h
+   663→error: script "dev" exited with code 1
+   664→$ next dev -p 3000
+   665→⨯ Failed to start server
+   666→Error: listen EADDRINUSE: address already in use :::3000
+   667→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   668→    at new Promise (<anonymous>) {
+   669→  code: 'EADDRINUSE',
+   670→  errno: -98,
+   671→  syscall: 'listen',
+   672→  address: '::',
+   673→  port: 3000
+   674→}
+   675→[?25h
+   676→error: script "dev" exited with code 1
+   677→$ next dev -p 3000
+   678→⨯ Failed to start server
+   679→Error: listen EADDRINUSE: address already in use :::3000
+   680→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   681→    at new Promise (<anonymous>) {
+   682→  code: 'EADDRINUSE',
+   683→  errno: -98,
+   684→  syscall: 'listen',
+   685→  address: '::',
+   686→  port: 3000
+   687→}
+   688→[?25h
+   689→error: script "dev" exited with code 1
+   690→$ next dev -p 3000
+   691→⨯ Failed to start server
+   692→Error: listen EADDRINUSE: address already in use :::3000
+   693→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   694→    at new Promise (<anonymous>) {
+   695→  code: 'EADDRINUSE',
+   696→  errno: -98,
+   697→  syscall: 'listen',
+   698→  address: '::',
+   699→  port: 3000
+   700→}
+   701→[?25h
+   702→error: script "dev" exited with code 1
+   703→$ next dev -p 3000
+   704→⨯ Failed to start server
+   705→Error: listen EADDRINUSE: address already in use :::3000
+   706→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   707→    at new Promise (<anonymous>) {
+   708→  code: 'EADDRINUSE',
+   709→  errno: -98,
+   710→  syscall: 'listen',
+   711→  address: '::',
+   712→  port: 3000
+   713→}
+   714→[?25h
+   715→error: script "dev" exited with code 1
+   716→$ next dev -p 3000
+   717→⨯ Failed to start server
+   718→Error: listen EADDRINUSE: address already in use :::3000
+   719→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   720→    at new Promise (<anonymous>) {
+   721→  code: 'EADDRINUSE',
+   722→  errno: -98,
+   723→  syscall: 'listen',
+   724→  address: '::',
+   725→  port: 3000
+   726→}
+   727→[?25h
+   728→error: script "dev" exited with code 1
+   729→$ next dev -p 3000
+   730→⨯ Failed to start server
+   731→Error: listen EADDRINUSE: address already in use :::3000
+   732→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   733→    at new Promise (<anonymous>) {
+   734→  code: 'EADDRINUSE',
+   735→  errno: -98,
+   736→  syscall: 'listen',
+   737→  address: '::',
+   738→  port: 3000
+   739→}
+   740→[?25h
+   741→error: script "dev" exited with code 1
+   742→$ next dev -p 3000
+   743→⨯ Failed to start server
+   744→Error: listen EADDRINUSE: address already in use :::3000
+   745→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   746→    at new Promise (<anonymous>) {
+   747→  code: 'EADDRINUSE',
+   748→  errno: -98,
+   749→  syscall: 'listen',
+   750→  address: '::',
+   751→  port: 3000
+   752→}
+   753→[?25h
+   754→error: script "dev" exited with code 1
+   755→$ next dev -p 3000
+   756→⨯ Failed to start server
+   757→Error: listen EADDRINUSE: address already in use :::3000
+   758→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   759→    at new Promise (<anonymous>) {
+   760→  code: 'EADDRINUSE',
+   761→  errno: -98,
+   762→  syscall: 'listen',
+   763→  address: '::',
+   764→  port: 3000
+   765→}
+   766→[?25h
+   767→error: script "dev" exited with code 1
+   768→$ next dev -p 3000
+   769→⨯ Failed to start server
+   770→Error: listen EADDRINUSE: address already in use :::3000
+   771→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   772→    at new Promise (<anonymous>) {
+   773→  code: 'EADDRINUSE',
+   774→  errno: -98,
+   775→  syscall: 'listen',
+   776→  address: '::',
+   777→  port: 3000
+   778→}
+   779→[?25h
+   780→error: script "dev" exited with code 1
+   781→$ next dev -p 3000
+   782→⨯ Failed to start server
+   783→Error: listen EADDRINUSE: address already in use :::3000
+   784→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   785→    at new Promise (<anonymous>) {
+   786→  code: 'EADDRINUSE',
+   787→  errno: -98,
+   788→  syscall: 'listen',
+   789→  address: '::',
+   790→  port: 3000
+   791→}
+   792→[?25h
+   793→error: script "dev" exited with code 1
+   794→$ next dev -p 3000
+   795→⨯ Failed to start server
+   796→Error: listen EADDRINUSE: address already in use :::3000
+   797→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   798→    at new Promise (<anonymous>) {
+   799→  code: 'EADDRINUSE',
+   800→  errno: -98,
+   801→  syscall: 'listen',
+   802→  address: '::',
+   803→  port: 3000
+   804→}
+   805→[?25h
+   806→error: script "dev" exited with code 1
+   807→$ next dev -p 3000
+   808→⨯ Failed to start server
+   809→Error: listen EADDRINUSE: address already in use :::3000
+   810→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   811→    at new Promise (<anonymous>) {
+   812→  code: 'EADDRINUSE',
+   813→  errno: -98,
+   814→  syscall: 'listen',
+   815→  address: '::',
+   816→  port: 3000
+   817→}
+   818→[?25h
+   819→error: script "dev" exited with code 1
+   820→$ next dev -p 3000
+   821→⨯ Failed to start server
+   822→Error: listen EADDRINUSE: address already in use :::3000
+   823→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   824→    at new Promise (<anonymous>) {
+   825→  code: 'EADDRINUSE',
+   826→  errno: -98,
+   827→  syscall: 'listen',
+   828→  address: '::',
+   829→  port: 3000
+   830→}
+   831→[?25h
+   832→error: script "dev" exited with code 1
+   833→$ next dev -p 3000
+   834→⨯ Failed to start server
+   835→Error: listen EADDRINUSE: address already in use :::3000
+   836→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   837→    at new Promise (<anonymous>) {
+   838→  code: 'EADDRINUSE',
+   839→  errno: -98,
+   840→  syscall: 'listen',
+   841→  address: '::',
+   842→  port: 3000
+   843→}
+   844→[?25h
+   845→error: script "dev" exited with code 1
+   846→$ next dev -p 3000
+   847→⨯ Failed to start server
+   848→Error: listen EADDRINUSE: address already in use :::3000
+   849→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   850→    at new Promise (<anonymous>) {
+   851→  code: 'EADDRINUSE',
+   852→  errno: -98,
+   853→  syscall: 'listen',
+   854→  address: '::',
+   855→  port: 3000
+   856→}
+   857→[?25h
+   858→error: script "dev" exited with code 1
+   859→$ next dev -p 3000
+   860→⨯ Failed to start server
+   861→Error: listen EADDRINUSE: address already in use :::3000
+   862→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   863→    at new Promise (<anonymous>) {
+   864→  code: 'EADDRINUSE',
+   865→  errno: -98,
+   866→  syscall: 'listen',
+   867→  address: '::',
+   868→  port: 3000
+   869→}
+   870→[?25h
+   871→error: script "dev" exited with code 1
+   872→$ next dev -p 3000
+   873→⨯ Failed to start server
+   874→Error: listen EADDRINUSE: address already in use :::3000
+   875→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   876→    at new Promise (<anonymous>) {
+   877→  code: 'EADDRINUSE',
+   878→  errno: -98,
+   879→  syscall: 'listen',
+   880→  address: '::',
+   881→  port: 3000
+   882→}
+   883→[?25h
+   884→error: script "dev" exited with code 1
+   885→$ next dev -p 3000
+   886→⨯ Failed to start server
+   887→Error: listen EADDRINUSE: address already in use :::3000
+   888→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   889→    at new Promise (<anonymous>) {
+   890→  code: 'EADDRINUSE',
+   891→  errno: -98,
+   892→  syscall: 'listen',
+   893→  address: '::',
+   894→  port: 3000
+   895→}
+   896→[?25h
+   897→error: script "dev" exited with code 1
+   898→$ next dev -p 3000
+   899→⨯ Failed to start server
+   900→Error: listen EADDRINUSE: address already in use :::3000
+   901→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   902→    at new Promise (<anonymous>) {
+   903→  code: 'EADDRINUSE',
+   904→  errno: -98,
+   905→  syscall: 'listen',
+   906→  address: '::',
+   907→  port: 3000
+   908→}
+   909→[?25h
+   910→error: script "dev" exited with code 1
+   911→$ next dev -p 3000
+   912→⨯ Failed to start server
+   913→Error: listen EADDRINUSE: address already in use :::3000
+   914→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   915→    at new Promise (<anonymous>) {
+   916→  code: 'EADDRINUSE',
+   917→  errno: -98,
+   918→  syscall: 'listen',
+   919→  address: '::',
+   920→  port: 3000
+   921→}
+   922→[?25h
+   923→error: script "dev" exited with code 1
+   924→$ next dev -p 3000
+   925→⨯ Failed to start server
+   926→Error: listen EADDRINUSE: address already in use :::3000
+   927→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   928→    at new Promise (<anonymous>) {
+   929→  code: 'EADDRINUSE',
+   930→  errno: -98,
+   931→  syscall: 'listen',
+   932→  address: '::',
+   933→  port: 3000
+   934→}
+   935→[?25h
+   936→error: script "dev" exited with code 1
+   937→$ next dev -p 3000
+   938→⨯ Failed to start server
+   939→Error: listen EADDRINUSE: address already in use :::3000
+   940→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   941→    at new Promise (<anonymous>) {
+   942→  code: 'EADDRINUSE',
+   943→  errno: -98,
+   944→  syscall: 'listen',
+   945→  address: '::',
+   946→  port: 3000
+   947→}
+   948→[?25h
+   949→error: script "dev" exited with code 1
+   950→$ next dev -p 3000
+   951→⨯ Failed to start server
+   952→Error: listen EADDRINUSE: address already in use :::3000
+   953→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   954→    at new Promise (<anonymous>) {
+   955→  code: 'EADDRINUSE',
+   956→  errno: -98,
+   957→  syscall: 'listen',
+   958→  address: '::',
+   959→  port: 3000
+   960→}
+   961→[?25h
+   962→error: script "dev" exited with code 1
+   963→$ next dev -p 3000
+   964→⨯ Failed to start server
+   965→Error: listen EADDRINUSE: address already in use :::3000
+   966→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   967→    at new Promise (<anonymous>) {
+   968→  code: 'EADDRINUSE',
+   969→  errno: -98,
+   970→  syscall: 'listen',
+   971→  address: '::',
+   972→  port: 3000
+   973→}
+   974→[?25h
+   975→error: script "dev" exited with code 1
+   976→$ next dev -p 3000
+   977→⨯ Failed to start server
+   978→Error: listen EADDRINUSE: address already in use :::3000
+   979→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   980→    at new Promise (<anonymous>) {
+   981→  code: 'EADDRINUSE',
+   982→  errno: -98,
+   983→  syscall: 'listen',
+   984→  address: '::',
+   985→  port: 3000
+   986→}
+   987→[?25h
+   988→error: script "dev" exited with code 1
+   989→$ next dev -p 3000
+   990→⨯ Failed to start server
+   991→Error: listen EADDRINUSE: address already in use :::3000
+   992→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+   993→    at new Promise (<anonymous>) {
+   994→  code: 'EADDRINUSE',
+   995→  errno: -98,
+   996→  syscall: 'listen',
+   997→  address: '::',
+   998→  port: 3000
+   999→}
+  1000→[?25h
+  1001→error: script "dev" exited with code 1
+  1002→$ next dev -p 3000
+  1003→⨯ Failed to start server
+  1004→Error: listen EADDRINUSE: address already in use :::3000
+  1005→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1006→    at new Promise (<anonymous>) {
+  1007→  code: 'EADDRINUSE',
+  1008→  errno: -98,
+  1009→  syscall: 'listen',
+  1010→  address: '::',
+  1011→  port: 3000
+  1012→}
+  1013→[?25h
+  1014→error: script "dev" exited with code 1
+  1015→$ next dev -p 3000
+  1016→⨯ Failed to start server
+  1017→Error: listen EADDRINUSE: address already in use :::3000
+  1018→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1019→    at new Promise (<anonymous>) {
+  1020→  code: 'EADDRINUSE',
+  1021→  errno: -98,
+  1022→  syscall: 'listen',
+  1023→  address: '::',
+  1024→  port: 3000
+  1025→}
+  1026→[?25h
+  1027→error: script "dev" exited with code 1
+  1028→$ next dev -p 3000
+  1029→⨯ Failed to start server
+  1030→Error: listen EADDRINUSE: address already in use :::3000
+  1031→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1032→    at new Promise (<anonymous>) {
+  1033→  code: 'EADDRINUSE',
+  1034→  errno: -98,
+  1035→  syscall: 'listen',
+  1036→  address: '::',
+  1037→  port: 3000
+  1038→}
+  1039→[?25h
+  1040→error: script "dev" exited with code 1
+  1041→$ next dev -p 3000
+  1042→⨯ Failed to start server
+  1043→Error: listen EADDRINUSE: address already in use :::3000
+  1044→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1045→    at new Promise (<anonymous>) {
+  1046→  code: 'EADDRINUSE',
+  1047→  errno: -98,
+  1048→  syscall: 'listen',
+  1049→  address: '::',
+  1050→  port: 3000
+  1051→}
+  1052→[?25h
+  1053→error: script "dev" exited with code 1
+  1054→$ next dev -p 3000
+  1055→⨯ Failed to start server
+  1056→Error: listen EADDRINUSE: address already in use :::3000
+  1057→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1058→    at new Promise (<anonymous>) {
+  1059→  code: 'EADDRINUSE',
+  1060→  errno: -98,
+  1061→  syscall: 'listen',
+  1062→  address: '::',
+  1063→  port: 3000
+  1064→}
+  1065→[?25h
+  1066→error: script "dev" exited with code 1
+  1067→$ next dev -p 3000
+  1068→⨯ Failed to start server
+  1069→Error: listen EADDRINUSE: address already in use :::3000
+  1070→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1071→    at new Promise (<anonymous>) {
+  1072→  code: 'EADDRINUSE',
+  1073→  errno: -98,
+  1074→  syscall: 'listen',
+  1075→  address: '::',
+  1076→  port: 3000
+  1077→}
+  1078→[?25h
+  1079→error: script "dev" exited with code 1
+  1080→$ next dev -p 3000
+  1081→⨯ Failed to start server
+  1082→Error: listen EADDRINUSE: address already in use :::3000
+  1083→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1084→    at new Promise (<anonymous>) {
+  1085→  code: 'EADDRINUSE',
+  1086→  errno: -98,
+  1087→  syscall: 'listen',
+  1088→  address: '::',
+  1089→  port: 3000
+  1090→}
+  1091→[?25h
+  1092→error: script "dev" exited with code 1
+  1093→$ next dev -p 3000
+  1094→⨯ Failed to start server
+  1095→Error: listen EADDRINUSE: address already in use :::3000
+  1096→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1097→    at new Promise (<anonymous>) {
+  1098→  code: 'EADDRINUSE',
+  1099→  errno: -98,
+  1100→  syscall: 'listen',
+  1101→  address: '::',
+  1102→  port: 3000
+  1103→}
+  1104→[?25h
+  1105→error: script "dev" exited with code 1
+  1106→$ next dev -p 3000
+  1107→⨯ Failed to start server
+  1108→Error: listen EADDRINUSE: address already in use :::3000
+  1109→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1110→    at new Promise (<anonymous>) {
+  1111→  code: 'EADDRINUSE',
+  1112→  errno: -98,
+  1113→  syscall: 'listen',
+  1114→  address: '::',
+  1115→  port: 3000
+  1116→}
+  1117→[?25h
+  1118→error: script "dev" exited with code 1
+  1119→$ next dev -p 3000
+  1120→⨯ Failed to start server
+  1121→Error: listen EADDRINUSE: address already in use :::3000
+  1122→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1123→    at new Promise (<anonymous>) {
+  1124→  code: 'EADDRINUSE',
+  1125→  errno: -98,
+  1126→  syscall: 'listen',
+  1127→  address: '::',
+  1128→  port: 3000
+  1129→}
+  1130→[?25h
+  1131→error: script "dev" exited with code 1
+  1132→$ next dev -p 3000
+  1133→⨯ Failed to start server
+  1134→Error: listen EADDRINUSE: address already in use :::3000
+  1135→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1136→    at new Promise (<anonymous>) {
+  1137→  code: 'EADDRINUSE',
+  1138→  errno: -98,
+  1139→  syscall: 'listen',
+  1140→  address: '::',
+  1141→  port: 3000
+  1142→}
+  1143→[?25h
+  1144→error: script "dev" exited with code 1
+  1145→$ next dev -p 3000
+  1146→⨯ Failed to start server
+  1147→Error: listen EADDRINUSE: address already in use :::3000
+  1148→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1149→    at new Promise (<anonymous>) {
+  1150→  code: 'EADDRINUSE',
+  1151→  errno: -98,
+  1152→  syscall: 'listen',
+  1153→  address: '::',
+  1154→  port: 3000
+  1155→}
+  1156→[?25h
+  1157→error: script "dev" exited with code 1
+  1158→$ next dev -p 3000
+  1159→⨯ Failed to start server
+  1160→Error: listen EADDRINUSE: address already in use :::3000
+  1161→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1162→    at new Promise (<anonymous>) {
+  1163→  code: 'EADDRINUSE',
+  1164→  errno: -98,
+  1165→  syscall: 'listen',
+  1166→  address: '::',
+  1167→  port: 3000
+  1168→}
+  1169→[?25h
+  1170→error: script "dev" exited with code 1
+  1171→$ next dev -p 3000
+  1172→⨯ Failed to start server
+  1173→Error: listen EADDRINUSE: address already in use :::3000
+  1174→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1175→    at new Promise (<anonymous>) {
+  1176→  code: 'EADDRINUSE',
+  1177→  errno: -98,
+  1178→  syscall: 'listen',
+  1179→  address: '::',
+  1180→  port: 3000
+  1181→}
+  1182→[?25h
+  1183→error: script "dev" exited with code 1
+  1184→$ next dev -p 3000
+  1185→⨯ Failed to start server
+  1186→Error: listen EADDRINUSE: address already in use :::3000
+  1187→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1188→    at new Promise (<anonymous>) {
+  1189→  code: 'EADDRINUSE',
+  1190→  errno: -98,
+  1191→  syscall: 'listen',
+  1192→  address: '::',
+  1193→  port: 3000
+  1194→}
+  1195→[?25h
+  1196→error: script "dev" exited with code 1
+  1197→$ next dev -p 3000
+  1198→⨯ Failed to start server
+  1199→Error: listen EADDRINUSE: address already in use :::3000
+  1200→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1201→    at new Promise (<anonymous>) {
+  1202→  code: 'EADDRINUSE',
+  1203→  errno: -98,
+  1204→  syscall: 'listen',
+  1205→  address: '::',
+  1206→  port: 3000
+  1207→}
+  1208→[?25h
+  1209→error: script "dev" exited with code 1
+  1210→$ next dev -p 3000
+  1211→⨯ Failed to start server
+  1212→Error: listen EADDRINUSE: address already in use :::3000
+  1213→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1214→    at new Promise (<anonymous>) {
+  1215→  code: 'EADDRINUSE',
+  1216→  errno: -98,
+  1217→  syscall: 'listen',
+  1218→  address: '::',
+  1219→  port: 3000
+  1220→}
+  1221→[?25h
+  1222→error: script "dev" exited with code 1
+  1223→$ next dev -p 3000
+  1224→⨯ Failed to start server
+  1225→Error: listen EADDRINUSE: address already in use :::3000
+  1226→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1227→    at new Promise (<anonymous>) {
+  1228→  code: 'EADDRINUSE',
+  1229→  errno: -98,
+  1230→  syscall: 'listen',
+  1231→  address: '::',
+  1232→  port: 3000
+  1233→}
+  1234→[?25h
+  1235→error: script "dev" exited with code 1
+  1236→$ next dev -p 3000
+  1237→⨯ Failed to start server
+  1238→Error: listen EADDRINUSE: address already in use :::3000
+  1239→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1240→    at new Promise (<anonymous>) {
+  1241→  code: 'EADDRINUSE',
+  1242→  errno: -98,
+  1243→  syscall: 'listen',
+  1244→  address: '::',
+  1245→  port: 3000
+  1246→}
+  1247→[?25h
+  1248→error: script "dev" exited with code 1
+  1249→$ next dev -p 3000
+  1250→⨯ Failed to start server
+  1251→Error: listen EADDRINUSE: address already in use :::3000
+  1252→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1253→    at new Promise (<anonymous>) {
+  1254→  code: 'EADDRINUSE',
+  1255→  errno: -98,
+  1256→  syscall: 'listen',
+  1257→  address: '::',
+  1258→  port: 3000
+  1259→}
+  1260→[?25h
+  1261→error: script "dev" exited with code 1
+  1262→$ next dev -p 3000
+  1263→⨯ Failed to start server
+  1264→Error: listen EADDRINUSE: address already in use :::3000
+  1265→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1266→    at new Promise (<anonymous>) {
+  1267→  code: 'EADDRINUSE',
+  1268→  errno: -98,
+  1269→  syscall: 'listen',
+  1270→  address: '::',
+  1271→  port: 3000
+  1272→}
+  1273→[?25h
+  1274→error: script "dev" exited with code 1
+  1275→$ next dev -p 3000
+  1276→⨯ Failed to start server
+  1277→Error: listen EADDRINUSE: address already in use :::3000
+  1278→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1279→    at new Promise (<anonymous>) {
+  1280→  code: 'EADDRINUSE',
+  1281→  errno: -98,
+  1282→  syscall: 'listen',
+  1283→  address: '::',
+  1284→  port: 3000
+  1285→}
+  1286→[?25h
+  1287→error: script "dev" exited with code 1
+  1288→$ next dev -p 3000
+  1289→⨯ Failed to start server
+  1290→Error: listen EADDRINUSE: address already in use :::3000
+  1291→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1292→    at new Promise (<anonymous>) {
+  1293→  code: 'EADDRINUSE',
+  1294→  errno: -98,
+  1295→  syscall: 'listen',
+  1296→  address: '::',
+  1297→  port: 3000
+  1298→}
+  1299→[?25h
+  1300→error: script "dev" exited with code 1
+  1301→$ next dev -p 3000
+  1302→⨯ Failed to start server
+  1303→Error: listen EADDRINUSE: address already in use :::3000
+  1304→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1305→    at new Promise (<anonymous>) {
+  1306→  code: 'EADDRINUSE',
+  1307→  errno: -98,
+  1308→  syscall: 'listen',
+  1309→  address: '::',
+  1310→  port: 3000
+  1311→}
+  1312→[?25h
+  1313→error: script "dev" exited with code 1
+  1314→$ next dev -p 3000
+  1315→⨯ Failed to start server
+  1316→Error: listen EADDRINUSE: address already in use :::3000
+  1317→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1318→    at new Promise (<anonymous>) {
+  1319→  code: 'EADDRINUSE',
+  1320→  errno: -98,
+  1321→  syscall: 'listen',
+  1322→  address: '::',
+  1323→  port: 3000
+  1324→}
+  1325→[?25h
+  1326→error: script "dev" exited with code 1
+  1327→$ next dev -p 3000
+  1328→⨯ Failed to start server
+  1329→Error: listen EADDRINUSE: address already in use :::3000
+  1330→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1331→    at new Promise (<anonymous>) {
+  1332→  code: 'EADDRINUSE',
+  1333→  errno: -98,
+  1334→  syscall: 'listen',
+  1335→  address: '::',
+  1336→  port: 3000
+  1337→}
+  1338→[?25h
+  1339→error: script "dev" exited with code 1
+  1340→$ next dev -p 3000
+  1341→⨯ Failed to start server
+  1342→Error: listen EADDRINUSE: address already in use :::3000
+  1343→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1344→    at new Promise (<anonymous>) {
+  1345→  code: 'EADDRINUSE',
+  1346→  errno: -98,
+  1347→  syscall: 'listen',
+  1348→  address: '::',
+  1349→  port: 3000
+  1350→}
+  1351→[?25h
+  1352→error: script "dev" exited with code 1
+  1353→$ next dev -p 3000
+  1354→⨯ Failed to start server
+  1355→Error: listen EADDRINUSE: address already in use :::3000
+  1356→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1357→    at new Promise (<anonymous>) {
+  1358→  code: 'EADDRINUSE',
+  1359→  errno: -98,
+  1360→  syscall: 'listen',
+  1361→  address: '::',
+  1362→  port: 3000
+  1363→}
+  1364→[?25h
+  1365→error: script "dev" exited with code 1
+  1366→$ next dev -p 3000
+  1367→⨯ Failed to start server
+  1368→Error: listen EADDRINUSE: address already in use :::3000
+  1369→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1370→    at new Promise (<anonymous>) {
+  1371→  code: 'EADDRINUSE',
+  1372→  errno: -98,
+  1373→  syscall: 'listen',
+  1374→  address: '::',
+  1375→  port: 3000
+  1376→}
+  1377→[?25h
+  1378→error: script "dev" exited with code 1
+  1379→$ next dev -p 3000
+  1380→⨯ Failed to start server
+  1381→Error: listen EADDRINUSE: address already in use :::3000
+  1382→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1383→    at new Promise (<anonymous>) {
+  1384→  code: 'EADDRINUSE',
+  1385→  errno: -98,
+  1386→  syscall: 'listen',
+  1387→  address: '::',
+  1388→  port: 3000
+  1389→}
+  1390→[?25h
+  1391→error: script "dev" exited with code 1
+  1392→$ next dev -p 3000
+  1393→⨯ Failed to start server
+  1394→Error: listen EADDRINUSE: address already in use :::3000
+  1395→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1396→    at new Promise (<anonymous>) {
+  1397→  code: 'EADDRINUSE',
+  1398→  errno: -98,
+  1399→  syscall: 'listen',
+  1400→  address: '::',
+  1401→  port: 3000
+  1402→}
+  1403→[?25h
+  1404→error: script "dev" exited with code 1
+  1405→$ next dev -p 3000
+  1406→⨯ Failed to start server
+  1407→Error: listen EADDRINUSE: address already in use :::3000
+  1408→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1409→    at new Promise (<anonymous>) {
+  1410→  code: 'EADDRINUSE',
+  1411→  errno: -98,
+  1412→  syscall: 'listen',
+  1413→  address: '::',
+  1414→  port: 3000
+  1415→}
+  1416→[?25h
+  1417→error: script "dev" exited with code 1
+  1418→$ next dev -p 3000
+  1419→⨯ Failed to start server
+  1420→Error: listen EADDRINUSE: address already in use :::3000
+  1421→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1422→    at new Promise (<anonymous>) {
+  1423→  code: 'EADDRINUSE',
+  1424→  errno: -98,
+  1425→  syscall: 'listen',
+  1426→  address: '::',
+  1427→  port: 3000
+  1428→}
+  1429→[?25h
+  1430→error: script "dev" exited with code 1
+  1431→$ next dev -p 3000
+  1432→⨯ Failed to start server
+  1433→Error: listen EADDRINUSE: address already in use :::3000
+  1434→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1435→    at new Promise (<anonymous>) {
+  1436→  code: 'EADDRINUSE',
+  1437→  errno: -98,
+  1438→  syscall: 'listen',
+  1439→  address: '::',
+  1440→  port: 3000
+  1441→}
+  1442→[?25h
+  1443→error: script "dev" exited with code 1
+  1444→$ next dev -p 3000
+  1445→⨯ Failed to start server
+  1446→Error: listen EADDRINUSE: address already in use :::3000
+  1447→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1448→    at new Promise (<anonymous>) {
+  1449→  code: 'EADDRINUSE',
+  1450→  errno: -98,
+  1451→  syscall: 'listen',
+  1452→  address: '::',
+  1453→  port: 3000
+  1454→}
+  1455→[?25h
+  1456→error: script "dev" exited with code 1
+  1457→$ next dev -p 3000
+  1458→⨯ Failed to start server
+  1459→Error: listen EADDRINUSE: address already in use :::3000
+  1460→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1461→    at new Promise (<anonymous>) {
+  1462→  code: 'EADDRINUSE',
+  1463→  errno: -98,
+  1464→  syscall: 'listen',
+  1465→  address: '::',
+  1466→  port: 3000
+  1467→}
+  1468→[?25h
+  1469→error: script "dev" exited with code 1
+  1470→$ next dev -p 3000
+  1471→⨯ Failed to start server
+  1472→Error: listen EADDRINUSE: address already in use :::3000
+  1473→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1474→    at new Promise (<anonymous>) {
+  1475→  code: 'EADDRINUSE',
+  1476→  errno: -98,
+  1477→  syscall: 'listen',
+  1478→  address: '::',
+  1479→  port: 3000
+  1480→}
+  1481→[?25h
+  1482→error: script "dev" exited with code 1
+  1483→$ next dev -p 3000
+  1484→⨯ Failed to start server
+  1485→Error: listen EADDRINUSE: address already in use :::3000
+  1486→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1487→    at new Promise (<anonymous>) {
+  1488→  code: 'EADDRINUSE',
+  1489→  errno: -98,
+  1490→  syscall: 'listen',
+  1491→  address: '::',
+  1492→  port: 3000
+  1493→}
+  1494→[?25h
+  1495→error: script "dev" exited with code 1
+  1496→$ next dev -p 3000
+  1497→⨯ Failed to start server
+  1498→Error: listen EADDRINUSE: address already in use :::3000
+  1499→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1500→    at new Promise (<anonymous>) {
+  1501→  code: 'EADDRINUSE',
+  1502→  errno: -98,
+  1503→  syscall: 'listen',
+  1504→  address: '::',
+  1505→  port: 3000
+  1506→}
+  1507→[?25h
+  1508→error: script "dev" exited with code 1
+  1509→$ next dev -p 3000
+  1510→⨯ Failed to start server
+  1511→Error: listen EADDRINUSE: address already in use :::3000
+  1512→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1513→    at new Promise (<anonymous>) {
+  1514→  code: 'EADDRINUSE',
+  1515→  errno: -98,
+  1516→  syscall: 'listen',
+  1517→  address: '::',
+  1518→  port: 3000
+  1519→}
+  1520→[?25h
+  1521→error: script "dev" exited with code 1
+  1522→$ next dev -p 3000
+  1523→⨯ Failed to start server
+  1524→Error: listen EADDRINUSE: address already in use :::3000
+  1525→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1526→    at new Promise (<anonymous>) {
+  1527→  code: 'EADDRINUSE',
+  1528→  errno: -98,
+  1529→  syscall: 'listen',
+  1530→  address: '::',
+  1531→  port: 3000
+  1532→}
+  1533→[?25h
+  1534→error: script "dev" exited with code 1
+  1535→$ next dev -p 3000
+  1536→⨯ Failed to start server
+  1537→Error: listen EADDRINUSE: address already in use :::3000
+  1538→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1539→    at new Promise (<anonymous>) {
+  1540→  code: 'EADDRINUSE',
+  1541→  errno: -98,
+  1542→  syscall: 'listen',
+  1543→  address: '::',
+  1544→  port: 3000
+  1545→}
+  1546→[?25h
+  1547→error: script "dev" exited with code 1
+  1548→$ next dev -p 3000
+  1549→⨯ Failed to start server
+  1550→Error: listen EADDRINUSE: address already in use :::3000
+  1551→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1552→    at new Promise (<anonymous>) {
+  1553→  code: 'EADDRINUSE',
+  1554→  errno: -98,
+  1555→  syscall: 'listen',
+  1556→  address: '::',
+  1557→  port: 3000
+  1558→}
+  1559→[?25h
+  1560→error: script "dev" exited with code 1
+  1561→$ next dev -p 3000
+  1562→⨯ Failed to start server
+  1563→Error: listen EADDRINUSE: address already in use :::3000
+  1564→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1565→    at new Promise (<anonymous>) {
+  1566→  code: 'EADDRINUSE',
+  1567→  errno: -98,
+  1568→  syscall: 'listen',
+  1569→  address: '::',
+  1570→  port: 3000
+  1571→}
+  1572→[?25h
+  1573→error: script "dev" exited with code 1
+  1574→$ next dev -p 3000
+  1575→⨯ Failed to start server
+  1576→Error: listen EADDRINUSE: address already in use :::3000
+  1577→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1578→    at new Promise (<anonymous>) {
+  1579→  code: 'EADDRINUSE',
+  1580→  errno: -98,
+  1581→  syscall: 'listen',
+  1582→  address: '::',
+  1583→  port: 3000
+  1584→}
+  1585→[?25h
+  1586→error: script "dev" exited with code 1
+  1587→$ next dev -p 3000
+  1588→⨯ Failed to start server
+  1589→Error: listen EADDRINUSE: address already in use :::3000
+  1590→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1591→    at new Promise (<anonymous>) {
+  1592→  code: 'EADDRINUSE',
+  1593→  errno: -98,
+  1594→  syscall: 'listen',
+  1595→  address: '::',
+  1596→  port: 3000
+  1597→}
+  1598→[?25h
+  1599→error: script "dev" exited with code 1
+  1600→$ next dev -p 3000
+  1601→⨯ Failed to start server
+  1602→Error: listen EADDRINUSE: address already in use :::3000
+  1603→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1604→    at new Promise (<anonymous>) {
+  1605→  code: 'EADDRINUSE',
+  1606→  errno: -98,
+  1607→  syscall: 'listen',
+  1608→  address: '::',
+  1609→  port: 3000
+  1610→}
+  1611→[?25h
+  1612→error: script "dev" exited with code 1
+  1613→$ next dev -p 3000
+  1614→⨯ Failed to start server
+  1615→Error: listen EADDRINUSE: address already in use :::3000
+  1616→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1617→    at new Promise (<anonymous>) {
+  1618→  code: 'EADDRINUSE',
+  1619→  errno: -98,
+  1620→  syscall: 'listen',
+  1621→  address: '::',
+  1622→  port: 3000
+  1623→}
+  1624→[?25h
+  1625→error: script "dev" exited with code 1
+  1626→$ next dev -p 3000
+  1627→⨯ Failed to start server
+  1628→Error: listen EADDRINUSE: address already in use :::3000
+  1629→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1630→    at new Promise (<anonymous>) {
+  1631→  code: 'EADDRINUSE',
+  1632→  errno: -98,
+  1633→  syscall: 'listen',
+  1634→  address: '::',
+  1635→  port: 3000
+  1636→}
+  1637→[?25h
+  1638→error: script "dev" exited with code 1
+  1639→$ next dev -p 3000
+  1640→⨯ Failed to start server
+  1641→Error: listen EADDRINUSE: address already in use :::3000
+  1642→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1643→    at new Promise (<anonymous>) {
+  1644→  code: 'EADDRINUSE',
+  1645→  errno: -98,
+  1646→  syscall: 'listen',
+  1647→  address: '::',
+  1648→  port: 3000
+  1649→}
+  1650→[?25h
+  1651→error: script "dev" exited with code 1
+  1652→$ next dev -p 3000
+  1653→⨯ Failed to start server
+  1654→Error: listen EADDRINUSE: address already in use :::3000
+  1655→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1656→    at new Promise (<anonymous>) {
+  1657→  code: 'EADDRINUSE',
+  1658→  errno: -98,
+  1659→  syscall: 'listen',
+  1660→  address: '::',
+  1661→  port: 3000
+  1662→}
+  1663→[?25h
+  1664→error: script "dev" exited with code 1
+  1665→$ next dev -p 3000
+  1666→⨯ Failed to start server
+  1667→Error: listen EADDRINUSE: address already in use :::3000
+  1668→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1669→    at new Promise (<anonymous>) {
+  1670→  code: 'EADDRINUSE',
+  1671→  errno: -98,
+  1672→  syscall: 'listen',
+  1673→  address: '::',
+  1674→  port: 3000
+  1675→}
+  1676→[?25h
+  1677→error: script "dev" exited with code 1
+  1678→$ next dev -p 3000
+  1679→⨯ Failed to start server
+  1680→Error: listen EADDRINUSE: address already in use :::3000
+  1681→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1682→    at new Promise (<anonymous>) {
+  1683→  code: 'EADDRINUSE',
+  1684→  errno: -98,
+  1685→  syscall: 'listen',
+  1686→  address: '::',
+  1687→  port: 3000
+  1688→}
+  1689→[?25h
+  1690→error: script "dev" exited with code 1
+  1691→$ next dev -p 3000
+  1692→⨯ Failed to start server
+  1693→Error: listen EADDRINUSE: address already in use :::3000
+  1694→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1695→    at new Promise (<anonymous>) {
+  1696→  code: 'EADDRINUSE',
+  1697→  errno: -98,
+  1698→  syscall: 'listen',
+  1699→  address: '::',
+  1700→  port: 3000
+  1701→}
+  1702→[?25h
+  1703→error: script "dev" exited with code 1
+  1704→$ next dev -p 3000
+  1705→⨯ Failed to start server
+  1706→Error: listen EADDRINUSE: address already in use :::3000
+  1707→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1708→    at new Promise (<anonymous>) {
+  1709→  code: 'EADDRINUSE',
+  1710→  errno: -98,
+  1711→  syscall: 'listen',
+  1712→  address: '::',
+  1713→  port: 3000
+  1714→}
+  1715→[?25h
+  1716→error: script "dev" exited with code 1
+  1717→$ next dev -p 3000
+  1718→⨯ Failed to start server
+  1719→Error: listen EADDRINUSE: address already in use :::3000
+  1720→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1721→    at new Promise (<anonymous>) {
+  1722→  code: 'EADDRINUSE',
+  1723→  errno: -98,
+  1724→  syscall: 'listen',
+  1725→  address: '::',
+  1726→  port: 3000
+  1727→}
+  1728→[?25h
+  1729→error: script "dev" exited with code 1
+  1730→$ next dev -p 3000
+  1731→⨯ Failed to start server
+  1732→Error: listen EADDRINUSE: address already in use :::3000
+  1733→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1734→    at new Promise (<anonymous>) {
+  1735→  code: 'EADDRINUSE',
+  1736→  errno: -98,
+  1737→  syscall: 'listen',
+  1738→  address: '::',
+  1739→  port: 3000
+  1740→}
+  1741→[?25h
+  1742→error: script "dev" exited with code 1
+  1743→$ next dev -p 3000
+  1744→⨯ Failed to start server
+  1745→Error: listen EADDRINUSE: address already in use :::3000
+  1746→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1747→    at new Promise (<anonymous>) {
+  1748→  code: 'EADDRINUSE',
+  1749→  errno: -98,
+  1750→  syscall: 'listen',
+  1751→  address: '::',
+  1752→  port: 3000
+  1753→}
+  1754→[?25h
+  1755→error: script "dev" exited with code 1
+  1756→$ next dev -p 3000
+  1757→⨯ Failed to start server
+  1758→Error: listen EADDRINUSE: address already in use :::3000
+  1759→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1760→    at new Promise (<anonymous>) {
+  1761→  code: 'EADDRINUSE',
+  1762→  errno: -98,
+  1763→  syscall: 'listen',
+  1764→  address: '::',
+  1765→  port: 3000
+  1766→}
+  1767→[?25h
+  1768→error: script "dev" exited with code 1
+  1769→$ next dev -p 3000
+  1770→⨯ Failed to start server
+  1771→Error: listen EADDRINUSE: address already in use :::3000
+  1772→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1773→    at new Promise (<anonymous>) {
+  1774→  code: 'EADDRINUSE',
+  1775→  errno: -98,
+  1776→  syscall: 'listen',
+  1777→  address: '::',
+  1778→  port: 3000
+  1779→}
+  1780→[?25h
+  1781→error: script "dev" exited with code 1
+  1782→$ next dev -p 3000
+  1783→⨯ Failed to start server
+  1784→Error: listen EADDRINUSE: address already in use :::3000
+  1785→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1786→    at new Promise (<anonymous>) {
+  1787→  code: 'EADDRINUSE',
+  1788→  errno: -98,
+  1789→  syscall: 'listen',
+  1790→  address: '::',
+  1791→  port: 3000
+  1792→}
+  1793→[?25h
+  1794→error: script "dev" exited with code 1
+  1795→$ next dev -p 3000
+  1796→⨯ Failed to start server
+  1797→Error: listen EADDRINUSE: address already in use :::3000
+  1798→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1799→    at new Promise (<anonymous>) {
+  1800→  code: 'EADDRINUSE',
+  1801→  errno: -98,
+  1802→  syscall: 'listen',
+  1803→  address: '::',
+  1804→  port: 3000
+  1805→}
+  1806→[?25h
+  1807→error: script "dev" exited with code 1
+  1808→$ next dev -p 3000
+  1809→⨯ Failed to start server
+  1810→Error: listen EADDRINUSE: address already in use :::3000
+  1811→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1812→    at new Promise (<anonymous>) {
+  1813→  code: 'EADDRINUSE',
+  1814→  errno: -98,
+  1815→  syscall: 'listen',
+  1816→  address: '::',
+  1817→  port: 3000
+  1818→}
+  1819→[?25h
+  1820→error: script "dev" exited with code 1
+  1821→$ next dev -p 3000
+  1822→⨯ Failed to start server
+  1823→Error: listen EADDRINUSE: address already in use :::3000
+  1824→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1825→    at new Promise (<anonymous>) {
+  1826→  code: 'EADDRINUSE',
+  1827→  errno: -98,
+  1828→  syscall: 'listen',
+  1829→  address: '::',
+  1830→  port: 3000
+  1831→}
+  1832→[?25h
+  1833→error: script "dev" exited with code 1
+  1834→$ next dev -p 3000
+  1835→⨯ Failed to start server
+  1836→Error: listen EADDRINUSE: address already in use :::3000
+  1837→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1838→    at new Promise (<anonymous>) {
+  1839→  code: 'EADDRINUSE',
+  1840→  errno: -98,
+  1841→  syscall: 'listen',
+  1842→  address: '::',
+  1843→  port: 3000
+  1844→}
+  1845→[?25h
+  1846→error: script "dev" exited with code 1
+  1847→$ next dev -p 3000
+  1848→⨯ Failed to start server
+  1849→Error: listen EADDRINUSE: address already in use :::3000
+  1850→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1851→    at new Promise (<anonymous>) {
+  1852→  code: 'EADDRINUSE',
+  1853→  errno: -98,
+  1854→  syscall: 'listen',
+  1855→  address: '::',
+  1856→  port: 3000
+  1857→}
+  1858→[?25h
+  1859→error: script "dev" exited with code 1
+  1860→$ next dev -p 3000
+  1861→⨯ Failed to start server
+  1862→Error: listen EADDRINUSE: address already in use :::3000
+  1863→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1864→    at new Promise (<anonymous>) {
+  1865→  code: 'EADDRINUSE',
+  1866→  errno: -98,
+  1867→  syscall: 'listen',
+  1868→  address: '::',
+  1869→  port: 3000
+  1870→}
+  1871→[?25h
+  1872→error: script "dev" exited with code 1
+  1873→$ next dev -p 3000
+  1874→⨯ Failed to start server
+  1875→Error: listen EADDRINUSE: address already in use :::3000
+  1876→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1877→    at new Promise (<anonymous>) {
+  1878→  code: 'EADDRINUSE',
+  1879→  errno: -98,
+  1880→  syscall: 'listen',
+  1881→  address: '::',
+  1882→  port: 3000
+  1883→}
+  1884→[?25h
+  1885→error: script "dev" exited with code 1
+  1886→$ next dev -p 3000
+  1887→⨯ Failed to start server
+  1888→Error: listen EADDRINUSE: address already in use :::3000
+  1889→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1890→    at new Promise (<anonymous>) {
+  1891→  code: 'EADDRINUSE',
+  1892→  errno: -98,
+  1893→  syscall: 'listen',
+  1894→  address: '::',
+  1895→  port: 3000
+  1896→}
+  1897→[?25h
+  1898→error: script "dev" exited with code 1
+  1899→$ next dev -p 3000
+  1900→⨯ Failed to start server
+  1901→Error: listen EADDRINUSE: address already in use :::3000
+  1902→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1903→    at new Promise (<anonymous>) {
+  1904→  code: 'EADDRINUSE',
+  1905→  errno: -98,
+  1906→  syscall: 'listen',
+  1907→  address: '::',
+  1908→  port: 3000
+  1909→}
+  1910→[?25h
+  1911→error: script "dev" exited with code 1
+  1912→$ next dev -p 3000
+  1913→⨯ Failed to start server
+  1914→Error: listen EADDRINUSE: address already in use :::3000
+  1915→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1916→    at new Promise (<anonymous>) {
+  1917→  code: 'EADDRINUSE',
+  1918→  errno: -98,
+  1919→  syscall: 'listen',
+  1920→  address: '::',
+  1921→  port: 3000
+  1922→}
+  1923→[?25h
+  1924→error: script "dev" exited with code 1
+  1925→$ next dev -p 3000
+  1926→⨯ Failed to start server
+  1927→Error: listen EADDRINUSE: address already in use :::3000
+  1928→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1929→    at new Promise (<anonymous>) {
+  1930→  code: 'EADDRINUSE',
+  1931→  errno: -98,
+  1932→  syscall: 'listen',
+  1933→  address: '::',
+  1934→  port: 3000
+  1935→}
+  1936→[?25h
+  1937→error: script "dev" exited with code 1
+  1938→$ next dev -p 3000
+  1939→⨯ Failed to start server
+  1940→Error: listen EADDRINUSE: address already in use :::3000
+  1941→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1942→    at new Promise (<anonymous>) {
+  1943→  code: 'EADDRINUSE',
+  1944→  errno: -98,
+  1945→  syscall: 'listen',
+  1946→  address: '::',
+  1947→  port: 3000
+  1948→}
+  1949→[?25h
+  1950→error: script "dev" exited with code 1
+  1951→$ next dev -p 3000
+  1952→⨯ Failed to start server
+  1953→Error: listen EADDRINUSE: address already in use :::3000
+  1954→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1955→    at new Promise (<anonymous>) {
+  1956→  code: 'EADDRINUSE',
+  1957→  errno: -98,
+  1958→  syscall: 'listen',
+  1959→  address: '::',
+  1960→  port: 3000
+  1961→}
+  1962→[?25h
+  1963→error: script "dev" exited with code 1
+  1964→$ next dev -p 3000
+  1965→⨯ Failed to start server
+  1966→Error: listen EADDRINUSE: address already in use :::3000
+  1967→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1968→    at new Promise (<anonymous>) {
+  1969→  code: 'EADDRINUSE',
+  1970→  errno: -98,
+  1971→  syscall: 'listen',
+  1972→  address: '::',
+  1973→  port: 3000
+  1974→}
+  1975→[?25h
+  1976→error: script "dev" exited with code 1
+  1977→$ next dev -p 3000
+  1978→⨯ Failed to start server
+  1979→Error: listen EADDRINUSE: address already in use :::3000
+  1980→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1981→    at new Promise (<anonymous>) {
+  1982→  code: 'EADDRINUSE',
+  1983→  errno: -98,
+  1984→  syscall: 'listen',
+  1985→  address: '::',
+  1986→  port: 3000
+  1987→}
+  1988→[?25h
+  1989→error: script "dev" exited with code 1
+  1990→$ next dev -p 3000
+  1991→⨯ Failed to start server
+  1992→Error: listen EADDRINUSE: address already in use :::3000
+  1993→    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+  1994→    at new Promise (<anonymous>) {
+  1995→  code: 'EADDRINUSE',
+  1996→  errno: -98,
+  1997→  syscall: 'listen',
+  1998→  address: '::',
+  1999→  port: 3000
+  2000→}
+
+[showing lines 1-2000 of 10075; use offset=2001 with limit to continue reading]
