@@ -15,6 +15,7 @@ import { QUOTATION_STATUS_LABELS } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn, formatCurrency } from '@/lib/utils'
+import { exportToCSV } from '@/lib/export-csv'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
@@ -129,7 +130,7 @@ export function QuotationListView() {
           </SelectContent>
         </Select>
         <div className="ml-auto flex items-center gap-2">
-          <ToggleGroup type="single" value={viewMode} onValueChange={setViewMode} className="bg-muted p-0.5 h-9">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => { if (v) setViewMode(v as 'list' | 'kanban') }} className="bg-muted p-0.5 h-9">
             <ToggleGroupItem value="list" className="h-8 text-xs px-3 gap-1.5" aria-label="列表视图"><List className="h-3.5 w-3.5" /></ToggleGroupItem>
             <ToggleGroupItem value="kanban" className="h-8 text-xs px-3 gap-1.5" aria-label="看板视图"><LayoutGrid className="h-3.5 w-3.5" /></ToggleGroupItem>
           </ToggleGroup>

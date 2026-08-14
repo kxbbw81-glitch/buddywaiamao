@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search } from 'lucide-react'
+import { Search, Check, ChevronsUpDown } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
 import { INQUIRY_SOURCE_LABELS } from '@/lib/types'
 import type { Priority } from '@/lib/types'
@@ -19,12 +19,11 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Check, ChevronsUpDown } from 'lucide-react'
-import { Product, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_FORM = {
   customerId: '',
+  productId: '',
   subject: '',
   content: '',
   source: 'email',
@@ -39,6 +38,8 @@ export function InquiryFormDialog() {
   const [form, setForm] = useState(DEFAULT_FORM)
   const [customerSearch, setCustomerSearch] = useState('')
   const [customerOpen, setCustomerOpen] = useState(false)
+  const [productSearch, setProductSearch] = useState('')
+  const [productOpen, setProductOpen] = useState(false)
 
   const { data: customersData } = useQuery({
     queryKey: ['customers-select', customerSearch],
@@ -52,9 +53,23 @@ export function InquiryFormDialog() {
     enabled: inquiryFormOpen,
   })
 
+  const { data: productsData } = useQuery({
+    queryKey: ['products-select', productSearch],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (productSearch) params.set('search', productSearch)
+      params.set('page', '1')
+      params.set('pageSize', '20')
+      return fetch(`/api/products?${params}`).then((r) => r.json())
+    },
+    enabled: inquiryFormOpen,
+  })
+
   const customers = customersData?.data || []
+  const products = productsData?.data || []
 
   const selectedCustomer = customers.find((c: Record<string, unknown>) => c.id === form.customerId)
+  const selectedProduct = products.find((p: Record<string, unknown>) => p.id === form.productId)
 
   useEffect(() => {
     if (!inquiryFormOpen) {
@@ -96,6 +111,7 @@ export function InquiryFormDialog() {
           <DialogTitle>新建询盘</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
+          {/* 关联客户 */}
           <div className="space-y-1.5">
             <Label className="text-xs">关联客户</Label>
             <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
@@ -143,6 +159,8 @@ export function InquiryFormDialog() {
               </PopoverContent>
             </Popover>
           </div>
+
+          {/* 来源 & 优先级 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs">来源</Label>
@@ -168,12 +186,27 @@ export function InquiryFormDialog() {
               </Select>
             </div>
           </div>
+
+          {/* 主题 */}
           <div className="space-y-1.5">
             <Label className="text-xs">主题 *</Label>
             <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="询盘主题" />
           </div>
+
+          {/* 内容 */}
           <div className="space-y-1.5">
-            <Label className="text-xs">关联产品</Label>
+            <Label className="text-xs">询盘内容</Label>
+            <Textarea
+              value={form.content}
+              onChange={(e) => setForm({ ...form, content: e.target.value })}
+              placeholder="请输入询盘详细内容..."
+              rows={4}
+            />
+          </div>
+
+          {/* 关联产品 */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">关联产品（可选）</Label>
             <Popover open={productOpen} onOpenChange={setProductOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -183,7 +216,8 @@ export function InquiryFormDialog() {
                   className="w-full justify-between h-9 text-sm"
                 >
                   {selectedProduct
-                    ? `${selectedProduct.name}${selectedProduct.nameEn ? ` (${selectedProduct.productCode})` : '搜索并选择产品...'}
+                    ? `${selectedProduct.name as string} (${selectedProduct.productCode as string})`
+                    : '搜索并选择产品...'}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -196,24 +230,30 @@ export function InquiryFormDialog() {
                       {products.map((p: Record<string, unknown>) => (
                         <CommandItem
                           key={p.id as string}
-                          value={p.productCode as string}
-                          onSelect={() => handleProductSelect(p.id)}
+                          value={`${p.name as string} ${p.productCode as string}`}
+                          onSelect={() => {
+                            setForm((prev) => ({ ...prev, productId: p.id as string }))
+                            setProductOpen(false)
+                          }}
                         >
                           <Check
                             className={cn(
-                            'mr-2 h-4 w-4',
-                            form.productId === p.id ? 'opacity-100' : 'opacity-0'
-                          )}
-                          <span className="text-sm">{p.name}</span>
-                          <span className="ml-1 text-xs text-muted-foreground">{p.productCode}</span>
+                              'mr-2 h-4 w-4',
+                              form.productId === p.id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <span className="text-sm">{p.name as string}</span>
+                          <span className="ml-1 text-xs text-muted-foreground">{p.productCode as string}</span>
                         </CommandItem>
                       ))}
                     </CommandGroup>
                   </CommandList>
-                </PopoverContent>
-              </Popover>
-            </div>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
+
+          {/* 操作按钮 */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={closeInquiryForm}>取消</Button>
             <Button onClick={handleSubmit} disabled={loading}>{loading ? '提交中...' : '创建'}</Button>

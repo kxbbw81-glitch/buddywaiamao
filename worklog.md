@@ -1713,3 +1713,27 @@ Task: 报价详情抽屉增强
 - 使用emerald/teal/amber/rose配色，无蓝紫色
 - 使用shadcn/ui组件(Sheet, Tabs, Badge, Card, Table, AlertDialog等)
 - TypeScript严格类型定义(QuotationItem/QuotationData/ActivityData接口)
+---
+Task ID: 9
+Agent: Main Orchestrator
+Task: 修复页面打不开问题 - 多个编译/运行时错误修复
+
+Work Log:
+- 发现 inquiry-form-dialog.tsx JSX 语法严重损坏（未闭合标签、缺少状态变量），完全重写
+- 修复 quotation-detail-drawer.tsx 中 Phone 组件在声明前使用（temporal dead zone）
+- 修复 customer-detail-drawer.tsx: 缺失 Textarea 导入、ContactInlineForm 缺失 queryClient、未定义 startEditContact/handleDeleteContact
+- 修复 page.tsx: User 类型从错误的 @/lib/types 导入，改为 @prisma/client
+- 修复 inquiry-detail-drawer.tsx: 缺失 cn 导入
+- 修复 quotation-list-view.tsx: 缺失 exportToCSV 导入、ToggleGroup onValueChange 类型不匹配
+- 修复 quotation-kanban-view.tsx: ScrollArea 不支持 horizontal 属性
+- 修复 payment-kanban-view.tsx: 2处 unused expression 警告
+- 修复 status-badge.tsx: 添加 customer 类型支持（active/inactive/lost）
+- 修复 next.config.ts: 添加 allowedDevOrigins 配置
+- 修复 package.json: dev 脚本移除 tee 管道（导致后台运行时崩溃）
+
+Stage Summary:
+- 修复了 11 个文件中的多个编译和运行时错误
+- 页面从完全不可用（500/白屏）恢复到完全正常
+- agent-browser QA 验证通过: 角色选择页✅ 工作台仪表盘✅ 客户列表✅
+- 服务器稳定性问题: bun run dev 中的 tee 管道导致后台进程崩溃，已修复
+- dev server: `bash -c '(while true; do bun run dev; sleep 2; done) > dev.log 2>&1 &'`

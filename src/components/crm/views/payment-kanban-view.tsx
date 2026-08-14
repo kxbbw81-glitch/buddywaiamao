@@ -137,7 +137,7 @@ export function PaymentKanbanView() {
                                   isOverdue && 'border-l-[3px] border-l-rose-500',
                                 )}
                                 onClick={() => item.order?.id && selectOrder(item.order.id)}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') item.order?.id && selectOrder(item.order.id) }}
+                                onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && item.order?.id) selectOrder(item.order.id) }}
                                 aria-label={`查看付款 ${item.order?.orderNo || ''} 的详情`}
                               >
                                 <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -211,7 +211,7 @@ export function PaymentKanbanView() {
                             isOverdue && 'border-l-[3px] border-l-rose-500',
                           )}
                           onClick={() => item.order?.id && selectOrder(item.order.id)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') item.order?.id && selectOrder(item.order.id) }}
+                          onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && item.order?.id) selectOrder(item.order.id) }}
                         >
                           <div className="flex items-start justify-between gap-2 mb-1">
                             <span className="font-mono text-xs font-medium">{item.order?.orderNo || '-'}</span>

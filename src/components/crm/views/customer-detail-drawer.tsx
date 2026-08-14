@@ -7,7 +7,7 @@ import { zhCN } from 'date-fns/locale'
 import {
   Globe, MapPin, Building2, ExternalLink, Edit, ShoppingCart,
   Phone, Mail, UserCircle, Star, ChevronRight, FileText, Plus,
-  MessageCircle, Loader2, UserPlus, Pencil, Trash2,
+  MessageCircle, Loader2, UserPlus, Trash2,
 } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
 import { StatusBadge } from '@/components/crm/status-badge'
@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -38,6 +39,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
 }
 
 function ContactInlineForm({ customerId }: { customerId: string }) {
+  const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
@@ -111,7 +113,7 @@ function ContactInlineForm({ customerId }: { customerId: string }) {
 
 export function CustomerDetailDrawer() {
   const { selectedCustomerId, selectCustomer, selectQuotation, openCustomerForm, openInquiryForm, openQuotationForm, currentUser } = useCRMStore()
-  
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['customer', selectedCustomerId],
@@ -284,10 +286,12 @@ export function CustomerDetailDrawer() {
                       {contact.isDecisionMaker && <Badge className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">决策者</Badge>}
                     </div>
                     <div className="mt-2 flex items-center gap-2">
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-emerald-600" onClick={() => startEditContact(contact)} aria-label="编辑联系人">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-rose-600" onClick={() => handleDeleteContact(contact.id!)} aria-label="删除联系人">
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-rose-600" onClick={() => {
+                        if (!contact.id) return
+                        fetch(`/api/contacts/${contact.id}`, { method: 'DELETE' })
+                          .then(() => { toast.success('联系人已删除'); queryClient.invalidateQueries({ queryKey: ['customer', selectedCustomerId] }) })
+                          .catch(() => toast.error('删除失败'))
+                      }} aria-label="删除联系人">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

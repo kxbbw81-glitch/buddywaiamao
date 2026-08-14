@@ -13,7 +13,7 @@ import {
 } from '@/lib/types'
 import type { InquiryStatus, QuotationStatus, OrderStatus, PaymentStatus, SampleStatus, CustomerLevel, Priority } from '@/lib/types'
 
-type StatusType = 'inquiry' | 'quotation' | 'order' | 'payment' | 'sample' | 'customer_level' | 'priority'
+type StatusType = 'inquiry' | 'quotation' | 'order' | 'payment' | 'sample' | 'customer_level' | 'customer' | 'priority'
 
 const statusBadgeMap: Record<StatusType, Record<string, string>> = {
   inquiry: {
@@ -72,6 +72,11 @@ const statusBadgeMap: Record<StatusType, Record<string, string>> = {
     high: 'badge-priority-high',
     urgent: 'badge-priority-urgent',
   },
+  customer: {
+    active: 'badge-accepted',
+    inactive: 'badge-pooled',
+    lost: 'badge-rejected',
+  },
 }
 
 const labelMaps: Record<StatusType, Record<string, string>> = {
@@ -81,6 +86,7 @@ const labelMaps: Record<StatusType, Record<string, string>> = {
   payment: PAYMENT_STATUS_LABELS,
   sample: SAMPLE_STATUS_LABELS,
   customer_level: CUSTOMER_LEVEL_LABELS,
+  customer: { active: '活跃', inactive: '非活跃', lost: '已流失' },
   priority: PRIORITY_LABELS,
 }
 

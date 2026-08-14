@@ -204,7 +204,7 @@ export function QuotationKanbanView() {
                   {col.items.length}
                 </Badge>
               </div>
-              <ScrollArea className="max-h-64" horizontal>
+              <ScrollArea className="max-h-64">
                 <div className="flex gap-2 pb-2">
                   {col.items.map((item: QuotationRow) => (
                     <motion.div

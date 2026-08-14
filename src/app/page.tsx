@@ -9,7 +9,8 @@ import {
   ArrowRight, Zap,
 } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
-import type { User, ModuleKey } from '@/lib/types'
+import type { User } from '@prisma/client'
+import type { ModuleKey } from '@/lib/types'
 import { ROLE_LABELS } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
