@@ -1737,3 +1737,24 @@ Stage Summary:
 - agent-browser QA 验证通过: 角色选择页✅ 工作台仪表盘✅ 客户列表✅
 - 服务器稳定性问题: bun run dev 中的 tee 管道导致后台进程崩溃，已修复
 - dev server: `bash -c '(while true; do bun run dev; sleep 2; done) > dev.log 2>&1 &'`
+---
+Task ID: 10
+Agent: Main Orchestrator
+Task: 部署准备 - 生产构建、Docker配置、Nginx反向代理
+
+Work Log:
+- 清理 next.config.ts，移除开发专用 allowedDevOrigins
+- 创建 .env.production 生产环境配置模板
+- 创建多阶段 Dockerfile（deps→builder→runner，154MB 优化镜像）
+- 创建 docker-compose.yml（CRM 服务 + 可选 Nginx 反向代理）
+- 创建 deploy/nginx.conf（带静态资源缓存、WebSocket 支持、HTTPS 预配置）
+- 创建 deploy/deploy.sh 一键部署脚本（自动检测/安装 Docker）
+- 创建 .dockerignore
+- 优化 package.json scripts（build 含 Prisma generate + 静态资源 + Prisma 引擎复制）
+- 生产构建验证：next build 编译成功，27 路由全部通过
+- 生产运行验证：页面 200 (21KB HTML)，API /dashboard 返回完整 KPI/图表/风险预警数据
+
+Stage Summary:
+- 产出文件：Dockerfile, docker-compose.yml, .dockerignore, .env.production, deploy/nginx.conf, deploy/deploy.sh
+- 构建产物：.next/standalone/ (154MB)，启动时间 99ms
+- 验证：页面渲染✅ Dashboard API✅ Prisma 数据库查询✅
