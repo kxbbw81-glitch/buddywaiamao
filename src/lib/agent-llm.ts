@@ -14,12 +14,47 @@ export interface ChatMessage {
   content: string
 }
 
+// ============ Skills 上下文 ============
+
+/**
+ * 把已启用的 Agent skills（含分类、描述、参数要点）注入 system prompt。
+ * 仅取 on=true 的技能；params 为 JSON 字符串，解析失败时静默忽略。
+ */
+async function buildSkillsSection(): Promise<string> {
+  const cats = await db.agentSkillCategory.findMany({
+    orderBy: { sortOrder: 'asc' },
+    include: { skills: { where: { on: true }, orderBy: { sortOrder: 'asc' } } },
+  })
+
+  const lines: string[] = []
+  for (const cat of cats) {
+    if (!cat.skills.length) continue
+    lines.push(`【${cat.name}】`)
+    for (const skill of cat.skills) {
+      let detail = skill.desc
+      try {
+        const params = JSON.parse(skill.params || '{}') as Record<string, string>
+        const keyPoints = Object.entries(params)
+          .slice(0, 4)
+          .map(([k, v]) => `${k}=${v}`)
+          .join('；')
+        if (keyPoints) detail += `（${keyPoints}）`
+      } catch {
+        // params 非法 JSON 时仅使用 desc
+      }
+      lines.push(`- ${skill.name}：${detail}`)
+    }
+  }
+  return lines.join('\n')
+}
+
 // ============ CRM 上下文 ============
 
 export async function buildCrmContext(user: PublicUser): Promise<string> {
   const customerScope = customerScopeWhere(user)
   const assignedScope = assignedScopeWhere(user)
   const opportunityScope = opportunityScopeWhere(user)
+  const skillsSection = await buildSkillsSection()
 
   const [customerCount, customers, opportunityCount, opportunities, inquiryCount, openInquiryCount] =
     await Promise.all([
@@ -74,6 +109,9 @@ export async function buildCrmContext(user: PublicUser): Promise<string> {
     '',
     '进行中的重点商机：',
     oppLines || '（暂无）',
+    '',
+    '已启用的 Agent skills（回答销售打法、跟进、报价类问题时必须遵循这些规则与打法要点）：',
+    skillsSection || '（无）',
   ].join('\n')
 }
 
