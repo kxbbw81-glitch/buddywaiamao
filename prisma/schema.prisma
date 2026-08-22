@@ -33,6 +33,8 @@ model User {
   createdSocialPosts SocialPost[] @relation("SocialCreator")
   agentConversations AgentConversation[]
   followupTasks FollowupTask[] @relation("FollowupAssignee")
+  companyProfileUpdates CompanyProfile[] @relation("CompanyProfileUpdater")
+  systemMirrorUpdates   SystemMirror[]   @relation("SystemMirrorUpdater")
 }
 
 // ============ AI 设置（key-value） ============
@@ -425,4 +427,30 @@ model SocialPost {
   customer  Customer? @relation(fields: [customerId], references: [id])
   product   Product?  @relation(fields: [productId], references: [id])
   creator   User?     @relation("SocialCreator", fields: [createdById], references: [id])
+}
+
+// ============ 系统设置：单行表 (id 固定为 "1") ============
+// 仅超级管理员可读可写；与外部单证抬头 + 邮件签名直接挂钩。
+model CompanyProfile {
+  id              String   @id @default("1")
+  companyName     String   @default("")
+  website         String   @default("")
+  email           String   @default("")
+  mainProducts    String   @default("")  // 主营业务（一行简短说明）
+  phone           String   @default("")
+  address         String   @default("")
+  updatedAt       DateTime @updatedAt
+  updatedById     String?
+  updatedBy       User?    @relation("CompanyProfileUpdater", fields: [updatedById], references: [id])
+}
+
+// 系统更新 — 镜像源 URL + 上次检查时间
+model SystemMirror {
+  id              String   @id @default("1")
+  url             String   @default("")
+  lastCheckedAt   DateTime?
+  lastKnownVersion String  @default("")   // 上次检查返回的最新版本
+  updatedAt       DateTime @updatedAt
+  updatedById     String?
+  updatedBy       User?    @relation("SystemMirrorUpdater", fields: [updatedById], references: [id])
 }

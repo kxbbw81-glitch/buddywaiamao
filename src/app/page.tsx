@@ -61,6 +61,7 @@ import { MorningView } from '@/components/crm/views/morning-view'
 import { RagQaView } from '@/components/crm/views/rag-qa-view'
 import { BusinessCardOcrView } from '@/components/crm/views/business-card-ocr-view'
 import { DatabaseMaintenanceView } from '@/components/crm/views/database-maintenance-view'
+import { SystemSettingsView } from '@/components/crm/views/system-settings-view'
 import { NavigationPlaceholderView } from '@/components/crm/views/navigation-placeholder-view'
 import { getNavigationModule, getNavigationSubItem } from '@/lib/navigation'
 
@@ -314,6 +315,7 @@ function ModuleView() {
       case 'rag_qa': return <RagQaView />
       case 'business_card_ocr': return <BusinessCardOcrView />
       case 'database_maintenance': return <DatabaseMaintenanceView />
+      case 'system_settings': return <SystemSettingsView />
       default: return <WorkbenchView />
     }
   }

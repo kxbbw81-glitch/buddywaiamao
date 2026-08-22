@@ -45,6 +45,7 @@ export type ModuleKey =
   | 'rag_qa'
   | 'business_card_ocr'
   | 'database_maintenance'
+  | 'system_settings'
 
 export interface NavItem {
   key: ModuleKey

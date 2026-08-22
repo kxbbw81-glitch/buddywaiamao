@@ -162,7 +162,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     items: [
       { key: 'accounts-permissions', label: '账号与权限', description: '复用既有权限管理页面。', existingView: 'user_management' },
       { key: 'ai-configuration', label: 'AI 配置', description: '配置 Agent 对话使用的 OpenAI 兼容 AI 服务。', existingView: 'ai_config', ai: true, demo: true },
-      { key: 'system-settings', label: '系统设置', description: '复用既有系统设置页面。', existingView: 'settings', demo: true },
+      { key: 'system-settings', label: '系统设置', description: '公司资料与系统更新：组织架构/流程配置/模板管理/外部集成等扩展设置，仅超级管理员。', existingView: 'system_settings', demo: true },
       { key: 'database-maintenance', label: '数据库维护', description: '迁移数据与本地备份双模式，操作需授权码，仅超级管理员。', existingView: 'database_maintenance', demo: true },
     ],
   },
