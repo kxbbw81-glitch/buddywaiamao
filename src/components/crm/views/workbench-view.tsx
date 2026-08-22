@@ -19,6 +19,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { useCRMStore } from '@/store/use-crm-store'
@@ -277,6 +278,158 @@ const PRI_COLOR: Record<TodoSpec['pri'], string> = {
   red: 'bg-[#E24B4A]',
   amber: 'bg-[#EFA01F]',
   blue: 'bg-[#185FA5]',
+}
+
+/* ---- 管道健康度：各阶段商机平均停留时长（阈值 7 天） ---- */
+const stageStay = [
+  { name: '询盘', days: 2.1, pct: 25 },
+  { name: '报价', days: 4.6, pct: 55 },
+  { name: '样品', days: 12.4, pct: 100, warn: '卡点' },
+  { name: '谈判', days: 6.2, pct: 74 },
+]
+
+/* ---- 全球业务地图：气泡 = 本月成交额（风险市场橙色） ---- */
+const mapBubbles = [
+  { name: '美国', amt: '$384K', x: 18, y: 38, size: 46, cust: 42, mom: '+6.2%', risk: true },
+  { name: '巴西', amt: '$86K', x: 30, y: 72, size: 30, cust: 11, mom: '+11.4%', risk: false },
+  { name: '德国', amt: '$210K', x: 50, y: 30, size: 38, cust: 28, mom: '+9.1%', risk: false },
+  { name: '印度', amt: '$95K', x: 66, y: 52, size: 30, cust: 15, mom: '-2.3%', risk: false },
+  { name: '东南亚', amt: '$205K', x: 74, y: 58, size: 37, cust: 23, mom: '+38.2%', risk: false },
+  { name: '澳大利亚', amt: '$54K', x: 84, y: 78, size: 27, cust: 9, mom: '+4.8%', risk: false },
+]
+
+/* ---- 多币种汇率看板（对 USD · 演示快照） ---- */
+const wbFxRates: [string, string, 'up' | 'down', string][] = [
+  ['EUR', '1.084', 'up', '▲ 0.3%'],
+  ['GBP', '1.271', 'down', '▼ 0.2%'],
+  ['JPY', '149.2', 'up', '▲ 0.5%'],
+  ['INR', '83.9', 'down', '▼ 0.1%'],
+  ['BRL', '5.42', 'up', '▲ 0.8%'],
+  ['AUD', '0.665', 'down', '▼ 0.4%'],
+]
+
+/* ---- AI 经营建议（按角色生成，演示口径） ---- */
+const adviceData: Record<WbRole, { pri: TodoSpec['pri']; name: string; meta: string }[]> = {
+  sales: [
+    { pri: 'red', name: '9 条询盘卡在「等我方确认」超 3 天，今天清掉', meta: '个人行动建议 · 影响金额约 $86K（按加权预测）' },
+    { pri: 'amber', name: 'TechNova 样品签收 7 天未反馈', meta: 'AI 已生成询问邮件草稿，引用已审核产品资料，发送前需你确认' },
+  ],
+  manager: [
+    { pri: 'red', name: '组内样品阶段转化率低于团队均值 4pt，建议复盘张三的成功案例', meta: '团队管理建议 · 样品阶段平均停留 12.4 天为最大卡点' },
+    { pri: 'amber', name: '美国关税预警影响商机 12 个，建议今日晨会同步并排查在途报价', meta: '竞品调价 + 受影响商机名单已生成，可一键导出晨会材料' },
+  ],
+  finance: [
+    { pri: 'red', name: 'EUR 敞口 $42K，建议本周锁汇', meta: '财务建议 · EUR/USD 单日波动 1.8%，创近 3 个月新高' },
+    { pri: 'amber', name: '2 笔应收账龄超 90 天，建议启动催收流程', meta: '涉及 Nordic AB $210K、Pacific Steel $110K · 已通知对应销售' },
+  ],
+  exec: [
+    { pri: 'red', name: '东南亚市场环比 +38%，建议增加备货并评估专线物流', meta: '战略建议 · 全球 3D 打印市场 2027 年预计达 $45B，头部厂商已布局东南亚' },
+    { pri: 'amber', name: '大客户集中度 Top3 占 41%，接近预警线', meta: '建议培育中部客户 · AI 已圈定 12 家高潜力成长客户名单' },
+  ],
+  admin: [
+    { pri: 'amber', name: '3 个账号 90 天未登录，建议清理', meta: '系统建议 · 含 1 个仍持有导出权限的账号' },
+    { pri: 'blue', name: '昨日 AI 调用 1,284 次，建议采纳率 76%', meta: '成本 $12.6，在月度预算内 · 资讯采集任务 8/8 在线' },
+  ],
+}
+
+/* ---- 外贸资讯推送（每日 8:30 · 按角色定制；biz = 一键动作） ---- */
+type NewsTag = 'policy' | 'industry' | 'biz' | 'fx' | 'sys'
+const NEWS_TAG_LABEL: Record<NewsTag, string> = {
+  policy: '政策', industry: '行业', biz: '商机', fx: '汇率', sys: '系统',
+}
+const NEWS_TAG_TONE: Record<NewsTag, string> = {
+  policy: 'text-[#A32D2D] bg-[#FCEBEB]',
+  industry: 'text-[#854F0B] bg-[#FAEEDA]',
+  biz: 'text-[#0F6E56] bg-[#DFF2EC]',
+  fx: 'text-[#0C447C] bg-[#E6F1FB]',
+  sys: 'text-[#4B5563] bg-muted',
+}
+const newsData: Record<WbRole, { tag: NewsTag; title: string; meta: string; biz?: [string, string] }[]> = {
+  sales: [
+    { tag: 'biz', title: '欧洲教育市场招标：桌面级 3D 打印机 200 台，9 月 15 日截止', meta: 'AI 识别为高匹配商机 · 匹配度 87%', biz: ['一键转线索', '已转入线索池并生成跟进任务（演示）'] },
+    { tag: 'industry', title: 'PLA 原料价格本周上涨 4.2%，ABS/树脂持稳', meta: '影响你 2 张未发送报价的成本构成', biz: ['关联报价提醒', '已推送成本刷新提醒（演示）'] },
+    { tag: 'policy', title: '美国拟对华 3D 打印机关税上调，征求意见期 30 天', meta: '影响你在途商机 3 个 · 客户 2 家', biz: ['一键转商机', '已生成商机预警并关联客户（演示）'] },
+  ],
+  manager: [
+    { tag: 'policy', title: '美国拟对华 3D 打印机关税上调，征求意见期 30 天', meta: '团队受影响商机 12 个 · 已生成晨会同步项', biz: ['生成晨会同步项', '已加入今日晨会待同步事项（演示）'] },
+    { tag: 'industry', title: '竞品 Hatchbox 宣布欧洲区耗材调价 +6%', meta: '受影响商机 5 个 · 建议排查在途报价竞争力', biz: ['查看受影响商机', '已筛选 5 个受影响商机（演示）'] },
+    { tag: 'biz', title: '东南亚 3D 打印教育采购需求环比 +38%', meta: '团队区域市场情报 · AI 已生成解读', biz: ['一键转线索', '已转入公海池待分配（演示）'] },
+  ],
+  finance: [
+    { tag: 'fx', title: 'EUR/USD 单日波动 1.8%，创近 3 个月新高', meta: '未锁汇敞口 $42K', biz: ['评估锁汇', '已打开汇率版本台账（演示）'] },
+    { tag: 'policy', title: '出口退税率调整征求意见：部分塑料制品拟下调', meta: '影响耗材类订单毛利测算 · 涉及在途订单 14 单', biz: ['查看影响订单', '已筛选 14 个受影响订单（演示）'] },
+    { tag: 'policy', title: '欧盟海关申报新规 10 月生效：低值货物申报字段变更', meta: '影响形式发票与商业发票模板', biz: ['查看新规解读', '已生成新规解读与模板变更清单（演示）'] },
+  ],
+  exec: [
+    { tag: 'industry', title: '全球 3D 打印市场规模 2027 年预计达 $45B（CAGR 19.3%）', meta: 'AI 已生成解读：桌面级设备与教育市场为增量主力', biz: ['查看解读', '已生成战略解读报告（演示）'] },
+    { tag: 'policy', title: '美国拟对华 3D 打印机关税上调，征求意见期 30 天', meta: '在美收入占比 38% · 关税敞口已纳入战略风险', biz: ['查看敞口分析', '已打开战略风险预警（演示）'] },
+    { tag: 'industry', title: '头部厂商加速东南亚布局：本地化组装 + 关税规避 2.3%', meta: '竞争情报 · 建议评估东南亚区域政策红利', biz: ['查看解读', '已生成竞争解读（演示）'] },
+  ],
+  admin: [
+    { tag: 'sys', title: '资讯采集任务：8 个信源全部在线，今日已抓取 214 条', meta: '按行业词库（3D 打印机 / PLA 耗材）过滤后分发 41 条' },
+    { tag: 'sys', title: '行业订阅词库：「树脂耗材」「教育市场」待审核词 2 个', meta: '词库配置 · 审核后生效于每日 8:30 简报', biz: ['配置词库', '已打开资讯源配置（演示）'] },
+    { tag: 'sys', title: '每日一句一言 API：近 7 日成功率 99.2%', meta: '失败自动降级为本地 10 句轮换 · 无需处理' },
+  ],
+}
+
+/* ---- 角色专属模块区（25 个专属模块：销售 6 / 经理 6 / 财务 8 / 高管 6 / 管理员 6） ---- */
+const roleModules: Record<WbRole, [string, string][]> = {
+  sales: [
+    ['跟进优先级队列', 'AI 按意向度 × 时效排序的今日跟进名单，含建议动作和话术'],
+    ['我的业绩进度', '目标完成率进度条、月度趋势、与团队均值对比'],
+    ['样品协同', '寄样申请、物流跟踪、客户测试反馈跟进'],
+    ['开发信 & 客户沟通工具', 'AI 生成开发信、邮件模板、跟进话术库'],
+    ['备忘录 & 个人知识', '仅本人可见（绝对隐私）'],
+    ['计划任务 & 训练清单', '个人计划、产品知识训练'],
+  ],
+  manager: [
+    ['晨会视图', '团队昨日战报 + 今日重点 + 待同步事项，一屏投屏'],
+    ['团队业绩排行', '成员业绩榜（销售可看自己排名，高管看全局）'],
+    ['团队风险预警', '超期跟进、卡点商机、低活跃成员预警'],
+    ['团队日报管理', '销售提交日报 / 经理批阅管理'],
+    ['商机干预 & 分配', '公海池、商机改派、介入协助'],
+    ['团队漏斗分析', '团队漏斗 vs 行业均值（高管可看全局口径）'],
+  ],
+  finance: [
+    ['应收账款账龄分析', '账龄分段表（0-30/31-60/61-90/90+），红黄绿分级'],
+    ['收款确认队列', '销售登记水单 → 财务确认核销'],
+    ['提成与对账', '销售提成计算、月度对账单（销售可查本人）'],
+    ['汇率管理', '汇率版本维护、锁汇、敞口监控'],
+    ['合同管理', '合同台账、归档、法务条款'],
+    ['财务报表', '现金流、利润、退税报表'],
+    ['履约交付监控', '订单履约进度与收款联动'],
+    ['发票与税务', '形式发票、商业发票、退税申报'],
+  ],
+  exec: [
+    ['全球市场分布', '全球热力图（销售/经理看自己区域，高管看全球）'],
+    ['经营趋势分析', '12 个月销售额/毛利趋势、同比环比'],
+    ['战略风险预警', '关税敞口、大客户集中度、汇率敞口'],
+    ['客户结构分析', '客户分层（大客户/成长/长尾）、行业分布、集中度'],
+    ['产品线贡献度', '3D 打印机 vs 耗材各产品线销售额/毛利贡献'],
+    ['销售预测', '基于管道加权 + AI 预测下季度/年度业绩'],
+  ],
+  admin: [
+    ['账号与权限管理', '账号生命周期、角色分配、字段级权限'],
+    ['系统配置', '业务参数、审批流、氛围条 API/国家/假期数据配置'],
+    ['审计日志', '敏感操作全量审计'],
+    ['数据库维护', '备份、归档、性能监控'],
+    ['导入导出管控', '数据导入导出审批与水印'],
+    ['集成与 API 管理', '邮件/WhatsApp/资讯源/一言 API 等集成配置'],
+  ],
+}
+
+const roleBadgeName: Record<WbRole, string> = {
+  sales: '销售', manager: '经理', finance: '财务', exec: '高管', admin: '管理员',
+}
+const RM_TONE: Record<WbRole, string> = {
+  sales: 'text-[#9A5B00] bg-[#FAEEDA]',
+  manager: 'text-[#534AB7] bg-[#EEEDFE]',
+  finance: 'text-[#0F6E56] bg-[#DFF2EC]',
+  exec: 'text-[#A32D2D] bg-[#FCEBEB]',
+  admin: 'text-[#4B5563] bg-muted',
+}
+const MAP_SCOPE: Record<WbRole, string> = {
+  sales: '本人区域', manager: '团队区域', finance: '财务视角', exec: '全球', admin: '全球',
 }
 
 export function WorkbenchView() {
@@ -568,6 +721,225 @@ export function WorkbenchView() {
           </Card>
         </motion.div>
       </div>
+
+      {/* ===== 管道健康度 + AI 经营建议 ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                管道健康度
+                <span className="text-[10px] font-normal text-muted-foreground bg-muted rounded px-1.5 py-px">通用</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-[11px] text-muted-foreground mb-2">各阶段商机平均停留时长（阈值 7 天）</div>
+              {stageStay.map((s) => (
+                <div key={s.name} className="grid grid-cols-[44px_1fr_120px] gap-2.5 items-center py-[5px] text-xs text-foreground/80">
+                  <span>{s.name}</span>
+                  <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn('h-full rounded-full', s.warn ? 'bg-[#EF9F27]' : 'bg-[#A8C5E8]')}
+                      style={{ width: `${s.pct}%` }}
+                    />
+                  </div>
+                  <span className="text-right text-muted-foreground whitespace-nowrap">
+                    {s.days} 天{' '}
+                    {s.warn && <span className="text-[#B45309] font-semibold">⚠️ {s.warn}</span>}
+                  </span>
+                </div>
+              ))}
+              <div className="flex justify-between items-baseline mt-3 text-xs text-foreground/80">
+                <span>
+                  加权预测金额 <b className="text-base text-foreground">$86,200</b>
+                </span>
+                <span className="text-[11px] text-muted-foreground">按各阶段历史转化率计算</span>
+              </div>
+              <div className="mt-2.5 px-3 py-[9px] bg-[#EEEDFE] rounded-lg text-[11px] text-[#534AB7] leading-relaxed">
+                AI 提示：TechNova Ltd（英国）样品寄出 12 天未反馈，今天电话确认；样品阶段停留 12.4 天为最大卡点
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                AI 经营建议
+                <span className="text-[10px] font-normal text-muted-foreground bg-muted rounded px-1.5 py-px">
+                  通用 · 按「{ROLE_NAME[roleKey]}」生成
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {adviceData[roleKey].map((a) => (
+                <div key={a.name} className="flex items-start gap-3 py-2.5 border-b border-border last:border-0">
+                  <span className={cn('w-1.5 h-1.5 rounded-full shrink-0 mt-[7px]', PRI_COLOR[a.pri])} />
+                  <div className="min-w-0">
+                    <div className="text-[13px] text-foreground">{a.name}</div>
+                    <div className="text-[11px] text-muted-foreground mt-[3px] leading-relaxed">{a.meta}</div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* ===== 全球业务地图 + 外贸资讯 ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}>
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                全球业务地图
+                <span className="text-[10px] font-normal text-muted-foreground bg-muted rounded px-1.5 py-px">
+                  通用 · {MAP_SCOPE[roleKey]}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative h-[230px] bg-gradient-to-b from-[#F7FAFD] to-[#F0F5FA] dark:from-muted/40 dark:to-muted/20 border border-border rounded-[10px] overflow-hidden">
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundImage: 'radial-gradient(#d6dfe9 1px, transparent 1px)', backgroundSize: '22px 22px', opacity: 0.6 }}
+                />
+                {mapBubbles.map((b) => (
+                  <div
+                    key={b.name}
+                    className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer"
+                    style={{ left: `${b.x}%`, top: `${b.y}%` }}
+                    onClick={() =>
+                      toast(
+                        `${b.name}：本月成交 ${b.amt} · 客户 ${b.cust} 家 · 环比 ${b.mom} · ${
+                          b.risk ? '受关税影响市场，注意报价与交期' : '增长健康'
+                        }`
+                      )
+                    }
+                  >
+                    <div
+                      className={cn(
+                        'rounded-full flex items-center justify-center text-white text-[10px] font-semibold',
+                        b.risk
+                          ? 'bg-[#EF9F27]/90 shadow-[0_0_0_5px_rgba(239,159,39,.16)]'
+                          : 'bg-[#185FA5]/85 shadow-[0_0_0_5px_rgba(24,95,165,.14)]'
+                      )}
+                      style={{ width: b.size, height: b.size }}
+                    >
+                      {b.amt}
+                    </div>
+                    <div className="text-[10px] text-foreground/80 mt-[5px] bg-card/90 px-1.5 py-px rounded-md whitespace-nowrap">
+                      {b.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-4 text-[11px] text-muted-foreground mt-2.5 items-center flex-wrap">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#185FA5]/85 inline-block" />
+                  增长健康
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#EF9F27] inline-block" />
+                  关税/风险市场
+                </span>
+                <span>气泡大小 = 本月成交额 · 点击查看详情</span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                外贸资讯 · 行业资讯推送
+                <span className="text-[10px] font-normal text-muted-foreground bg-muted rounded px-1.5 py-px">
+                  每日 8:30 · 按「{ROLE_NAME[roleKey]}」定制
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {newsData[roleKey].map((n) => (
+                <div key={n.title} className="py-2.5 border-b border-border last:border-0">
+                  <span className={cn('text-[10px] px-[7px] py-px rounded font-medium mr-2 align-[1px]', NEWS_TAG_TONE[n.tag])}>
+                    {NEWS_TAG_LABEL[n.tag]}
+                  </span>
+                  <span className="text-[13px] text-foreground">{n.title}</span>
+                  <div className="text-[11px] text-muted-foreground mt-[3px]">
+                    {n.meta}
+                    {n.biz && (
+                      <>
+                        {' · '}
+                        <button className="text-[#0F6E56] hover:underline" onClick={() => toast(n.biz![1])}>
+                          {n.biz![0]} →
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* ===== 多币种汇率看板 ===== */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center justify-between">
+              多币种汇率看板
+              <span className="text-[10px] font-normal text-muted-foreground bg-muted rounded px-1.5 py-px">
+                对 USD · 快照 {String(today.getHours()).padStart(2, '0')}:{String(today.getMinutes()).padStart(2, '0')}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {wbFxRates.map((f) => (
+                <div key={f[0]} className="border border-border rounded-[10px] px-3 py-2.5">
+                  <div className="text-[11px] text-muted-foreground flex justify-between">
+                    <span>USD/{f[0]}</span>
+                  </div>
+                  <div className="text-base font-semibold mt-1 flex items-baseline justify-between text-foreground">
+                    <span>{f[1]}</span>
+                    <span className="text-[11px] font-semibold" style={{ color: f[2] === 'up' ? UP_COLOR : DOWN_COLOR }}>
+                      {f[3]}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* ===== 角色专属模块区（25 个专属模块按角色显示） ===== */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
+        <div className="text-sm font-semibold mb-2.5 flex items-center gap-2">
+          角色专属模块
+          <span className="text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-px font-normal">
+            {ROLE_NAME[roleKey]}可见 · {roleModules[roleKey].length} 个
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          {roleModules[roleKey].map((m) => (
+            <div
+              key={m[0]}
+              className="bg-card border border-border rounded-[10px] px-3.5 py-3 cursor-pointer hover:border-[#85B7EB] transition-colors"
+              onClick={() => toast(`演示原型：${m[0]} 页面`)}
+            >
+              <span className={cn('text-[10px] px-[7px] py-px rounded font-medium inline-block mb-1.5', RM_TONE[roleKey])}>
+                {roleBadgeName[roleKey]}专属
+              </span>
+              <div className="text-[13px] font-medium text-foreground">{m[0]}</div>
+              <div className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{m[1]}</div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
 
       {/* ===== 收款概览 ===== */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
