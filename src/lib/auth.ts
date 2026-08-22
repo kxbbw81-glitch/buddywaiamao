@@ -177,6 +177,44 @@ export function opportunityScopeWhere(user: PublicUser): Record<string, unknown>
   return {}
 }
 
+// ============ 数据权限范围（dataScope 驱动，V3.12 第九章） ============
+
+/**
+ * 基于 user.dataScope 的数据范围过滤（async，team 分支需查团队成员）。
+ * - personal：仅本人名下
+ * - team：团队成员名下（含自己）
+ * - global / super：全部
+ * 调用方：const scope = await dataScopeWhere(user, 'ownerId'); 合并进 where
+ */
+export async function dataScopeWhere(
+  user: PublicUser,
+  ownerField = 'ownerId'
+): Promise<Record<string, unknown>> {
+  const scope = user.dataScope || 'personal'
+  if (scope === 'personal') {
+    return { [ownerField]: user.id }
+  }
+  if (scope === 'team' && user.teamId) {
+    const members = await db.user.findMany({
+      where: { teamId: user.teamId },
+      select: { id: true },
+    })
+    const ids = members.map((m) => m.id)
+    if (ids.length === 0) return { [ownerField]: user.id }
+    return { [ownerField]: { in: ids } }
+  }
+  // global / super → 全部
+  return {}
+}
+
+/**
+ * 个人数据硬边界：待办/备忘/Agent 会话任何角色仅本人可见（文档安全边界，无视 dataScope）。
+ * 同步，直接返回本人过滤。
+ */
+export function personalOnlyWhere(user: PublicUser, ownerField = 'userId'): Record<string, unknown> {
+  return { [ownerField]: user.id }
+}
+
 // ============ 密码工具（scrypt，无外部依赖） ============
 
 export function hashPassword(password: string): string {

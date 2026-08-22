@@ -3,27 +3,19 @@ import { requireAuth } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { promises as fs } from 'fs'
 import path from 'path'
+import { beginBackup, listMaintenanceLogs, checkDbMaintToken, KEEP_BACKUPS } from '@/lib/db-maintenance'
 
-const DB_PATH = path.join(process.cwd(), 'db', 'custom.db')
 const BACKUP_DIR = path.join(process.cwd(), 'db', 'backups')
-const KEEP_BACKUPS = 7 // 保留最近 7 份，超期自动清理
-
-/** 授权码：环境变量 DB_MAINT_TOKEN 配置后强制校验；未配置时接受任意非空授权码 */
-function checkToken(token: unknown): boolean {
-  const envToken = process.env.DB_MAINT_TOKEN
-  if (envToken) return token === envToken
-  return typeof token === 'string' && token.trim().length > 0
-}
 
 /**
  * GET /api/admin/db/maintenance
- * 数据库状态：核心表行数 + 备份列表（仅超级管理员）
+ * 数据库状态：核心表行数 + 备份列表 + 维护历史（仅超管）
  */
 export async function GET() {
   const auth = await requireAuth(['super_admin'])
   if (!auth.ok) return auth.response
 
-  const tables = ['User', 'Customer', 'Inquiry', 'Quotation', 'Order', 'Payment', 'Product', 'Sample', 'Activity', 'Approval']
+  const tables = ['User', 'Customer', 'Inquiry', 'Quotation', 'Order', 'Payment', 'Product', 'Sample', 'Activity', 'Approval', 'Team', 'PermissionTemplate', 'MaintenanceLog']
   const counts: Record<string, number> = {}
   for (const t of tables) {
     try {
@@ -48,12 +40,14 @@ export async function GET() {
     backups = []
   }
 
-  return NextResponse.json({ success: true, data: { counts, backups, keepBackups: KEEP_BACKUPS } })
+  const maintenanceLogs = await listMaintenanceLogs(30)
+
+  return NextResponse.json({ success: true, data: { counts, backups, keepBackups: KEEP_BACKUPS, maintenanceLogs } })
 }
 
 /**
  * POST /api/admin/db/maintenance  body: { action: 'backup', token: string }
- * 创建 SQLite 备份（文件级复制），保留策略：最近 7 份，超期自动清理
+ * 创建 SQLite 备份（文件级复制 + SHA256 + 保留 7 份），写 MaintenanceLog
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(['super_admin'])
@@ -61,34 +55,15 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null)
   if (body?.action !== 'backup') {
-    return NextResponse.json({ success: false, error: '未知的维护操作' }, { status: 400 })
+    return NextResponse.json({ success: false, error: '未知的维护操作（当前仅支持 backup）' }, { status: 400 })
   }
-  if (!checkToken(body.token)) {
-    return NextResponse.json({ success: false, error: '数据库维护授权码不正确' }, { status: 403 })
+  if (!checkDbMaintToken(body.token)) {
+    return NextResponse.json({ success: false, error: '数据库维护授权码不正确或未配置 DB_MAINT_TOKEN' }, { status: 403 })
   }
 
   try {
-    await fs.mkdir(BACKUP_DIR, { recursive: true })
-    const now = new Date()
-    const stamp = `${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(
-      now.getHours()
-    ).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
-    const name = `nexfab-backup-${stamp}.db`
-    await fs.copyFile(DB_PATH, path.join(BACKUP_DIR, name))
-
-    // 保留策略：只保留最近 KEEP_BACKUPS 份
-    const files = (await fs.readdir(BACKUP_DIR)).filter((f) => f.endsWith('.db'))
-    if (files.length > KEEP_BACKUPS) {
-      const stats = await Promise.all(files.map(async (f) => ({ f, t: (await fs.stat(path.join(BACKUP_DIR, f))).mtimeMs })))
-      const toDelete = stats.sort((a, b) => b.t - a.t).slice(KEEP_BACKUPS)
-      await Promise.all(toDelete.map((s) => fs.unlink(path.join(BACKUP_DIR, s.f))))
-    }
-
-    const st = await fs.stat(path.join(BACKUP_DIR, name))
-    return NextResponse.json({
-      success: true,
-      data: { name, size: st.size, kept: Math.min(files.length + 1, KEEP_BACKUPS) },
-    })
+    const { id, fileName } = await beginBackup({ actorId: auth.user.id })
+    return NextResponse.json({ success: true, data: { jobId: id, fileName } })
   } catch (error) {
     console.error('DB backup error:', error)
     return NextResponse.json({ success: false, error: '创建备份失败' }, { status: 500 })

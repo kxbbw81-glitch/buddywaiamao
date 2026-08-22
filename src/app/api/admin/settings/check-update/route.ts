@@ -1,51 +1,86 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { getVersion, loadVerifiedManifest, compareVersions } from '@/lib/update-manager'
+import { beginBackup } from '@/lib/db-maintenance'
 
 /**
  * POST /api/admin/settings/check-update
- *   - 读取镜像源 URL，尝试拉取 manifest.json 读取 latestVersion
- *   - 写入 SystemMirror.lastCheckedAt + lastKnownVersion
- *   - 兜底：未配置镜像或网络失败时返回已知版本（演示可观察时间刷新）
+ *   - 拉取镜像源 manifest.json，解析 latestVersion + changelog
+ *   - SHA256 + 可选 RSA 签名校验
+ *   - 有更新时触发更新前自动备份
+ *   - 写入 SystemMirror（lastCheckedAt/lastKnownVersion/lastManifestSha256/lastSignatureValid/lastChangelog/lastBackupFile/lastBackupAt）
  *   - 仅超管
  */
-
-const APP_VERSION = process.env.APP_VERSION || 'v3.6.0'
-
-async function readLatestVersion(mirrorUrl: string): Promise<string | null> {
-  try {
-    const base = mirrorUrl.replace(/\/+$/, '')
-    // 真实场景下会去拉 manifest.json / latest.json；演示中直接 HEAD
-    const res = await fetch(`${base}/manifest.json`, { method: 'HEAD', signal: AbortSignal.timeout(3000) })
-    if (res.ok || (res.status >= 200 && res.status < 400)) return APP_VERSION
-    return null
-  } catch {
-    return null
-  }
-}
-
 export async function POST() {
   const auth = await requireAuth(['super_admin'])
   if (!auth.ok) return auth.response
   try {
     const mirror = await db.systemMirror.findUnique({ where: { id: '1' } })
     const mirrorUrl = mirror?.url || ''
-    let latest: string | null = null
-    if (mirrorUrl) latest = await readLatestVersion(mirrorUrl)
-    if (!latest) latest = APP_VERSION // 演示：同当前版本号，实际部署可读 manifest.version
+    const currentVersion = getVersion()
+    const loaded = await loadVerifiedManifest(mirrorUrl)
+
+    let latest = currentVersion
+    let changelog = ''
+    let sha256 = ''
+    let signatureValid: boolean | null = null
+    let status: 'up_to_date' | 'update_available' | 'check_failed' = 'up_to_date'
+    let errorMsg = ''
+
+    if (loaded.ok && loaded.manifest) {
+      latest = loaded.manifest.latestVersion
+      changelog = loaded.manifest.changelog || ''
+      sha256 = loaded.sha256 || ''
+      signatureValid = loaded.signatureValid
+      status = compareVersions(latest, currentVersion) > 0 ? 'update_available' : 'up_to_date'
+    } else {
+      errorMsg = loaded.error || '未配置镜像源，无法检查'
+      status = 'check_failed'
+    }
+
     const now = new Date()
+    let backupFile = mirror?.lastBackupFile || ''
+    let backupAt = mirror?.lastBackupAt
+
+    // 有更新时触发更新前自动备份
+    if (status === 'update_available') {
+      try {
+        const backup = await beginBackup({ actorId: auth.user.id })
+        backupFile = backup.fileName
+        backupAt = new Date()
+      } catch (e) {
+        console.error('[check-update] auto backup failed:', e)
+      }
+    }
+
     await db.systemMirror.upsert({
       where: { id: '1' },
-      create: { id: '1', url: mirrorUrl, lastCheckedAt: now, lastKnownVersion: latest, updatedById: auth.user.id },
-      update: { lastCheckedAt: now, lastKnownVersion: latest, updatedById: auth.user.id },
+      create: {
+        id: '1', url: mirrorUrl, lastCheckedAt: now, lastKnownVersion: latest,
+        lastManifestSha256: sha256, lastSignatureValid: signatureValid,
+        lastChangelog: changelog, lastBackupFile: backupFile, lastBackupAt: backupAt,
+        updatedById: auth.user.id,
+      },
+      update: {
+        lastCheckedAt: now, lastKnownVersion: latest,
+        lastManifestSha256: sha256, lastSignatureValid: signatureValid,
+        lastChangelog: changelog, lastBackupFile: backupFile, lastBackupAt: backupAt,
+        updatedById: auth.user.id,
+      },
     })
+
     return NextResponse.json({
       success: true,
       data: {
-        currentVersion: APP_VERSION,
+        currentVersion,
         latestVersion: latest,
         lastCheckedAt: now.toISOString(),
-        status: latest === APP_VERSION ? 'up_to_date' : 'update_available',
+        status,
+        changelog,
+        signatureValid,
+        backupFile,
+        ...(errorMsg ? { error: errorMsg } : {}),
       },
     })
   } catch (error) {

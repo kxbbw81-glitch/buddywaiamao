@@ -19,10 +19,15 @@ model User {
   primaryRole   String   @default("sales") // super_admin / management / sales_manager / sales / finance
   additionalRoles String  @default("[]") // JSON array
   department    String?
+  dataScope     String   @default("personal") // personal / team / global / super
+  teamId        String?
+  permissionTemplateId String?
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  team                 Team?               @relation("TeamMembers", fields: [teamId], references: [id])
+  permissionTemplate   PermissionTemplate? @relation(fields: [permissionTemplateId], references: [id])
   assignedInquiries  Inquiry[]
   approvedQuotations Quotation[]  @relation("Approver")
   activities         Activity[]
@@ -35,6 +40,33 @@ model User {
   followupTasks FollowupTask[] @relation("FollowupAssignee")
   companyProfileUpdates CompanyProfile[] @relation("CompanyProfileUpdater")
   systemMirrorUpdates   SystemMirror[]   @relation("SystemMirrorUpdater")
+  maintenanceActions MaintenanceLog[] @relation("MaintenanceActor")
+  aiProviderConfigs AiProviderConfig[]
+}
+
+// ============ 团队 ============
+model Team {
+  id        String   @id @default(cuid())
+  tenantId  Int      @default(1)
+  name      String   @unique
+  leaderId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  members   User[]   @relation("TeamMembers")
+}
+
+// ============ 权限模板 ============
+model PermissionTemplate {
+  id              String   @id @default(cuid())
+  tenantId        Int      @default(1)
+  name            String   @unique
+  code            String   @unique
+  description     String   @default("")
+  permissionsJson String   @default("{}") // { resource: [actions] }
+  isBuiltin       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  users           User[]
 }
 
 // ============ AI 设置（key-value） ============
@@ -43,6 +75,40 @@ model AiSetting {
   id        String   @id @default(cuid())
   key       String   @unique // ai.provider / ai.baseUrl / ai.model / ai.apiKey
   value     String
+  updatedAt DateTime @updatedAt
+}
+
+// ============ AI 供应商配置（多实例，Key 加密按账号隔离，V3.12 第九章） ============
+model AiProviderConfig {
+  id              String   @id @default(cuid())
+  tenantId        Int      @default(1)
+  ownerId         String
+  owner           User     @relation(fields: [ownerId], references: [id])
+  name            String   // "主 OpenAI" 等自定义名称
+  provider        String   @default("openai-compatible") // openai-compatible / anthropic / gemini
+  baseUrl         String   @default("")
+  model           String   @default("")
+  apiKeyEncrypted String   @default("") // AES-256-GCM: base64(iv):base64(ct):base64(tag)
+  temperature     Float    @default(0.4)
+  enabled         Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  lastTestedAt    DateTime?
+  lastTestOk      Boolean?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  moduleSwitches  AiModuleSwitch[]
+
+  @@unique([ownerId, name])
+}
+
+// ============ AI 模块开关 ============
+model AiModuleSwitch {
+  id        String   @id @default(cuid())
+  tenantId  Int      @default(1)
+  module    String   @unique // inquiry_analysis / quotation_suggestion / customer_wakeup / agent_chat
+  enabled   Boolean  @default(true)
+  configId  String?
+  config    AiProviderConfig? @relation(fields: [configId], references: [id])
   updatedAt DateTime @updatedAt
 }
 
@@ -450,7 +516,38 @@ model SystemMirror {
   url             String   @default("")
   lastCheckedAt   DateTime?
   lastKnownVersion String  @default("")   // 上次检查返回的最新版本
+  lastManifestSha256 String @default("")  // manifest.json SHA256
+  lastSignatureValid Boolean?              // 签名校验结果（null=未校验）
+  lastChangelog   String   @default("")   // 上次 changelog
+  lastBackupFile  String   @default("")    // 更新前自动备份文件名
+  lastBackupAt    DateTime?
   updatedAt       DateTime @updatedAt
   updatedById     String?
   updatedBy       User?    @relation("SystemMirrorUpdater", fields: [updatedById], references: [id])
+}
+
+// ============ 数据库维护日志 ============
+model MaintenanceLog {
+  id              String   @id @default(cuid())
+  tenantId        Int      @default(1)
+  type            String   // backup / migrate / restore / cleanup
+  status          String   @default("queued") // queued / running / completed / failed / cancelled
+  phase           String   @default("") // inventory / schema / data / completed
+  currentTable    String   @default("")
+  totalTables     Int      @default(0)
+  processedTables Int      @default(0)
+  estimatedRows   Int      @default(0)
+  fileName        String   @default("")
+  fileSize        Int      @default(0)
+  fileSha256      String   @default("")
+  errorMessage    String   @default("")
+  tableStatsJson  String   @default("{}") // { table: { rows, ok } }
+  eventsJson      String   @default("[]") // DatabaseMaintenanceEvent[]
+  actorId         String?
+  actor           User?    @relation("MaintenanceActor", fields: [actorId], references: [id])
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  @@index([type, status])
+  @@index([createdAt])
 }

@@ -1,64 +1,43 @@
-import { requireAuth, MANAGER_ROLES } from '@/lib/auth'
-import { getAiConfig, saveAiConfig, maskApiKey } from '@/lib/ai-settings'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth, MANAGER_ROLES } from '@/lib/auth'
+import { listAiProviderConfigs, createAiProviderConfig, toPublicProviderConfig } from '@/lib/ai-settings'
 
-/** GET /api/ai-config — 读取 AI 配置（apiKey 脱敏；普通用户仅见连通状态） */
+/**
+ * GET /api/ai-config — 当前用户的 AI 供应商配置列表（apiKey 脱敏）
+ * POST /api/ai-config — 新建配置实例（仅管理角色；apiKey 加密存储）
+ */
 export async function GET() {
   const auth = await requireAuth()
   if (!auth.ok) return auth.response
-
-  const config = await getAiConfig()
-  const isManager = MANAGER_ROLES.includes(auth.user.primaryRole)
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      provider: config.provider,
-      baseUrl: isManager ? config.baseUrl : '',
-      model: config.model,
-      apiKeyMasked: isManager ? maskApiKey(config.apiKey) : '',
-      configured: config.configured,
-    },
-  })
+  const list = await listAiProviderConfigs(auth.user.id)
+  return NextResponse.json({ success: true, data: list })
 }
 
-/** PUT /api/ai-config — 保存 AI 配置（仅管理角色；apiKey 传空字符串表示不变更） */
-export async function PUT(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const auth = await requireAuth(MANAGER_ROLES)
   if (!auth.ok) return auth.response
 
-  let body: {
-    provider?: string
-    baseUrl?: string
-    model?: string
-    apiKey?: string
+  const body = await request.json().catch(() => null)
+  if (!body?.name) {
+    return NextResponse.json({ success: false, error: 'name 必填' }, { status: 400 })
   }
+  if (body.baseUrl && !/^https?:\/\//.test(body.baseUrl)) {
+    return NextResponse.json({ success: false, error: 'baseUrl 必须以 http(s):// 开头' }, { status: 400 })
+  }
+
   try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ success: false, error: '请求体格式错误' }, { status: 400 })
+    const created = await createAiProviderConfig(auth.user.id, {
+      name: body.name,
+      provider: body.provider,
+      baseUrl: body.baseUrl,
+      model: body.model,
+      apiKey: body.apiKey,
+      temperature: body.temperature,
+      isDefault: body.isDefault,
+    })
+    return NextResponse.json({ success: true, data: toPublicProviderConfig(created) }, { status: 201 })
+  } catch (error) {
+    console.error('AiConfig POST error:', error)
+    return NextResponse.json({ success: false, error: '创建配置失败' }, { status: 500 })
   }
-
-  if (body.baseUrl !== undefined && body.baseUrl && !/^https?:\/\//.test(body.baseUrl)) {
-    return NextResponse.json({ success: false, error: 'Base URL 必须以 http(s):// 开头' }, { status: 400 })
-  }
-
-  await saveAiConfig({
-    provider: body.provider,
-    baseUrl: body.baseUrl,
-    model: body.model,
-    apiKey: body.apiKey,
-  })
-
-  const config = await getAiConfig()
-  return NextResponse.json({
-    success: true,
-    data: {
-      provider: config.provider,
-      baseUrl: config.baseUrl,
-      model: config.model,
-      apiKeyMasked: maskApiKey(config.apiKey),
-      configured: config.configured,
-    },
-  })
 }

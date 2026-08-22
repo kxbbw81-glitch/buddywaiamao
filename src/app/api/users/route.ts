@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response
 
     const body = await request.json()
-    const { name, email, primaryRole, department } = body
+    const { name, email, primaryRole, department, dataScope, teamId, permissionTemplateId } = body
 
     if (!name || !email || !primaryRole) {
       return NextResponse.json(
@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
         department: department || null,
         additionalRoles: '[]',
         isActive: true,
+        ...(dataScope ? { dataScope } : {}),
+        ...(teamId ? { teamId } : {}),
+        ...(permissionTemplateId ? { permissionTemplateId } : {}),
       },
     })
 
