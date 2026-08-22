@@ -32,6 +32,7 @@ model User {
   createdOrders      Order[]      @relation("Creator")
   createdSocialPosts SocialPost[] @relation("SocialCreator")
   agentConversations AgentConversation[]
+  followupTasks FollowupTask[] @relation("FollowupAssignee")
 }
 
 // ============ AI 设置（key-value） ============
@@ -127,6 +128,7 @@ model Customer {
   orders      Order[]
   samples     Sample[]
   socialPosts SocialPost[]
+  followupTasks FollowupTask[]
 }
 
 model Contact {
@@ -221,6 +223,30 @@ model Opportunity {
   customer Customer? @relation(fields: [customerId], references: [id])
   inquiry  Inquiry?  @relation(fields: [inquiryId], references: [id])
   owner    User?     @relation("OpportunityOwner", fields: [ownerId], references: [id])
+  followupTasks FollowupTask[]
+}
+
+// ============ 跟进任务 ============
+
+model FollowupTask {
+  id            String    @id @default(cuid())
+  tenantId      Int       @default(1)
+  title         String
+  customerId    String?
+  opportunityId String?
+  type          String    @default("follow_up") // follow_up/call/email/meeting/aftersales/other
+  status        String    @default("pending")   // pending/in_progress/done/cancelled
+  priority      String    @default("normal")    // low/normal/high/urgent
+  dueDate       DateTime?
+  notes         String?
+  assigneeId    String?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customer    Customer?    @relation(fields: [customerId], references: [id])
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+  assignee    User?        @relation("FollowupAssignee", fields: [assigneeId], references: [id])
 }
 
 // ============ Quotation ============

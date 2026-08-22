@@ -44,6 +44,8 @@ import { SocialMediaView } from '@/components/crm/views/social-media-view'
 import { AIAssistantDrawer } from '@/components/crm/views/ai-assistant-drawer'
 import { AgentHubView } from '@/components/crm/views/agent-hub-view'
 import { AiConfigView } from '@/components/crm/views/ai-config-view'
+import { FollowupTaskView } from '@/components/crm/views/followup-task-view'
+import { AftersalesRetentionView } from '@/components/crm/views/aftersales-retention-view'
 import { SettingsView } from '@/components/crm/views/settings-view'
 import { UserManagementView } from '@/components/crm/views/user-management-view'
 import { ActivityListView } from '@/components/crm/views/activity-list-view'
@@ -273,6 +275,8 @@ function ModuleView() {
       case 'customers': return <CustomerListView />
       case 'inquiries': return <InquiryListView />
       case 'opportunities': return <OpportunityKanbanView />
+      case 'followup_tasks': return <FollowupTaskView />
+      case 'aftersales': return <AftersalesRetentionView />
       case 'products': return <ProductListView />
       case 'quotations': return <QuotationListView />
       case 'orders': return <OrderListView />

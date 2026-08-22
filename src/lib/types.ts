@@ -32,6 +32,8 @@ export type ModuleKey =
   | 'user_management'
   | 'opportunities'
   | 'ai_config'
+  | 'followup_tasks'
+  | 'aftersales'
 
 export interface NavItem {
   key: ModuleKey
@@ -171,6 +173,8 @@ export const MODULE_LABELS: Record<string, string> = {
   inquiries: '目标线索',
   opportunities: '销售管道',
   ai_config: 'AI 配置',
+  followup_tasks: '跟进任务',
+  aftersales: '售后与复购',
   customers: '客户档案',
   customer_map: '客户地图',
   products: '产品资料库',
