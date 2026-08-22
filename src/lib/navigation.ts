@@ -109,10 +109,10 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     items: [
       { key: 'business-card-ocr', label: '名片 OCR 识别', description: '名片 OCR 工具页面待接入。' },
       { key: 'website-registration', label: '官网链接登记', description: '官网链接登记工具页面待接入。' },
-      { key: 'exchange-converter', label: '汇率换算', description: '汇率换算工具页面待接入。' },
+      { key: 'exchange-converter', label: '汇率换算', description: '常用外贸币种实时汇率换算（USD/CNY/EUR/GBP/JPY/HKD）。', existingView: 'exchange_converter' },
       { key: 'customer-deduplication', label: '客户去重', description: '客户去重工具页面待接入。' },
-      { key: 'followup-copy', label: '跟进话术生成', description: '跟进话术生成页面待接入。' },
-      { key: 'hs-lookup', label: 'HS 编码速查', description: 'HS 编码速查页面待接入。' },
+      { key: 'followup-copy', label: '跟进话术生成', description: '按场景（首封/催复/唤醒/节日）AI 生成多语言跟进话术。', existingView: 'followup_copy' },
+      { key: 'hs-lookup', label: 'HS 编码速查', description: '外贸常用 HS 编码分类速查与退税率参考。', existingView: 'hs_lookup' },
     ],
   },
   {

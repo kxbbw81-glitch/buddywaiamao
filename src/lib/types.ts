@@ -37,6 +37,9 @@ export type ModuleKey =
   | 'customer_profile'
   | 'commission'
   | 'operating_brief'
+  | 'exchange_converter'
+  | 'hs_lookup'
+  | 'followup_copy'
 
 export interface NavItem {
   key: ModuleKey
@@ -194,6 +197,9 @@ export const MODULE_LABELS: Record<string, string> = {
   customer_profile: '客户画像',
   commission: '提成与对账',
   operating_brief: '经营简报',
+  exchange_converter: '汇率换算',
+  hs_lookup: 'HS编码速查',
+  followup_copy: '跟进话术生成',
 }
 
 // ============ Dashboard Types ============

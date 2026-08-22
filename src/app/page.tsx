@@ -49,6 +49,9 @@ import { AftersalesRetentionView } from '@/components/crm/views/aftersales-reten
 import { CustomerProfileView } from '@/components/crm/views/customer-profile-view'
 import { CommissionView } from '@/components/crm/views/commission-view'
 import { OperatingBriefView } from '@/components/crm/views/operating-brief-view'
+import { ExchangeConverterView } from '@/components/crm/views/exchange-converter-view'
+import { HsLookupView } from '@/components/crm/views/hs-lookup-view'
+import { FollowupCopyView } from '@/components/crm/views/followup-copy-view'
 import { SettingsView } from '@/components/crm/views/settings-view'
 import { UserManagementView } from '@/components/crm/views/user-management-view'
 import { ActivityListView } from '@/components/crm/views/activity-list-view'
@@ -283,6 +286,9 @@ function ModuleView() {
       case 'customer_profile': return <CustomerProfileView />
       case 'commission': return <CommissionView />
       case 'operating_brief': return <OperatingBriefView />
+      case 'exchange_converter': return <ExchangeConverterView />
+      case 'hs_lookup': return <HsLookupView />
+      case 'followup_copy': return <FollowupCopyView />
       case 'products': return <ProductListView />
       case 'quotations': return <QuotationListView />
       case 'orders': return <OrderListView />
