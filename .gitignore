@@ -57,3 +57,7 @@ server.log
 
 # runtime
 *.pid
+
+# local sqlite database (contains AI API keys, sessions, business data — never commit)
+db/*.db
+db/*.db-journal
