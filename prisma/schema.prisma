@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -28,6 +29,7 @@ model User {
   createdCustomers   Customer[]  @relation("Owner")
   createdQuotations  Quotation[]  @relation("Creator")
   createdOrders      Order[]      @relation("Creator")
+  createdSocialPosts SocialPost[] @relation("SocialCreator")
 }
 
 // ============ Customer ============
@@ -58,6 +60,7 @@ model Customer {
   quotations  Quotation[]
   orders      Order[]
   samples     Sample[]
+  socialPosts SocialPost[]
 }
 
 model Contact {
@@ -97,6 +100,7 @@ model Product {
   updatedAt     DateTime @updatedAt
 
   quotationItems QuotationItem[]
+  socialPosts    SocialPost[]
 }
 
 // ============ Inquiry ============
@@ -261,4 +265,31 @@ model Sample {
 
   customer Customer? @relation(fields: [customerId], references: [id])
   inquiry  Inquiry?  @relation(fields: [inquiryId], references: [id])
+}
+
+// ============ SocialPost ============
+model SocialPost {
+  id            String   @id @default(cuid())
+  tenantId      Int      @default(1)
+  title         String
+  content       String
+  platform      String   // linkedin/facebook/twitter/instagram/alibaba
+  status        String   @default("draft") // draft/scheduled/published/failed
+  scheduledAt   DateTime?
+  publishedAt   DateTime?
+  customerId    String?
+  productId     String?
+  mediaUrls     String   @default("[]") // JSON array
+  tags          String   @default("[]") // JSON array
+  likes         Int      @default(0)
+  comments      Int      @default(0)
+  shares        Int      @default(0)
+  clicks        Int      @default(0)
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer  Customer? @relation(fields: [customerId], references: [id])
+  product   Product?  @relation(fields: [productId], references: [id])
+  creator   User?     @relation("SocialCreator", fields: [createdById], references: [id])
 }

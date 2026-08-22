@@ -2061,3 +2061,191 @@ Task: 本轮集成开发 - 看板拖拽 + 权限中心 + 收款表单 + 种子�
 4. **P3**: 客户地图视图(基于国家分布)
 5. **P3**: WebSocket实时通知推送
 6. **P3**: 多语言i18n
+
+---
+Task ID: 12
+Agent: Main Developer
+Task: 社媒运营模块（P2）
+
+## 项目当前状态描述/判断
+
+### 已完成
+- ✅ 社媒运营模块完整实现，包含内容管理、发布日历、数据统计三大功能
+- ✅ 数据库 SocialPost 模型已添加，关联 Customer/Product/User
+- ✅ 侧边栏已添加「社媒运营」导航（Share2 图标，所有角色可见）
+- ✅ API 路由完整（CRUD + 统计）
+- ✅ 10条种子数据（6已发布、2已排期、2草稿，覆盖5个平台）
+- ✅ ESLint 无错误
+
+### 系统变更
+
+#### 数据库模型
+- 新增 `SocialPost` 模型，含平台、状态、排期时间、互动数据(likes/comments/shares/clicks)等字段
+- `Customer` 模型新增 `socialPosts SocialPost[]` 关联
+- `Product` 模型新增 `socialPosts SocialPost[]` 关联
+- `User` 模型新增 `createdSocialPosts SocialPost[] @relation("SocialCreator")` 关联
+
+#### 类型系统
+- `ModuleKey` 新增 `'social_media'`
+- `MODULE_LABELS` 新增 `{ social_media: '社媒运营' }`
+- 新增 `SocialPlatform` 类型: linkedin/facebook/twitter/instagram/alibaba
+- 新增 `SocialPostStatus` 类型: draft/scheduled/published/failed
+- 新增 `SOCIAL_PLATFORM_LABELS` / `SOCIAL_POST_STATUS_LABELS` 常量
+
+#### API 路由
+- `GET/POST /api/social-posts` - 列表(筛选+分页) + 创建
+- `GET/PUT/DELETE /api/social-posts/[id]` - 详情 + 更新 + 删除
+- `GET /api/social-posts/stats` - 统计数据(KPI/平台分布/月度趋势)
+
+#### 前端组件
+- `social-media-view.tsx` - 主视图，包含:
+  - 顶部工具栏（标题 + 新建按钮）
+  - 三Tab切换（内容管理/发布日历/数据统计）
+  - 内容管理Tab: 筛选栏(平台+状态) + 帖子卡片列表(平台色条、状态Badge、互动数据、关联信息、操作按钮)
+  - 发布日历Tab: CSS Grid月历视图 + 日期排期帖子详情面板
+  - 数据统计Tab: 4个KPI卡片 + 平台分布饼图(PieChart) + 互动趋势面积图(AreaChart)
+  - 新建/编辑帖子Dialog(标题/平台/内容/标签/关联客户Combobox/关联产品Combobox/状态/排期时间)
+
+#### 种子数据
+- 10条社媒帖子，分布在 LinkedIn(4)/Facebook(2)/Instagram(2)/Twitter(1)/阿里巴巴(1)
+- 6条已发布(含互动数据)、2条已排期(未来日期)、2条草稿
+- 关联了现有客户和产品数据
+
+## 新增/修改文件清单
+- **新增**: src/app/api/social-posts/route.ts, src/app/api/social-posts/[id]/route.ts, src/app/api/social-posts/stats/route.ts, src/components/crm/views/social-media-view.tsx, prisma/seed-social.ts
+- **修改**: prisma/schema.prisma(SocialPost模型+关联), src/lib/types.ts(social_media模块+社媒类型), src/components/crm/crm-sidebar.tsx(社媒导航项), src/app/page.tsx(SocialMediaView路由)
+
+## 未解决问题或风险
+
+### 建议下一阶段优先事项
+1. **P1**: AI聊天真实LLM端到端测试
+2. **P2**: 数据看板大屏(管理层)
+3. **P3**: 客户地图视图(基于国家分布) ✅ 已完成(Task 14)
+4. **P3**: WebSocket实时通知推送
+5. **P3**: 多语言i18n
+
+---
+Task ID: 14
+Agent: Main Developer
+Task: 客户地图视图 - P3功能，基于国家分布的客户可视化地图
+
+## 项目当前状态描述/判断
+
+### 已完成
+- ✅ 客户地图视图（customer_map）模块完整实现
+- ✅ 纯CSS+SVG区域卡片网格方案（无地图库依赖）
+- ✅ Dev server编译成功，`bun run lint` 无错误
+
+## 当前目标/已完成的修改/验证结果
+
+### 路由与导航
+1. **types.ts** - ModuleKey 添加 `'customer_map'`，MODULE_LABELS 添加 `{ customer_map: '客户地图' }`
+2. **crm-sidebar.tsx** - 在「客户档案」下方添加「客户地图」导航项，使用 Globe2 图标，所有角色可见
+3. **page.tsx** - ModuleView switch 添加 `case 'customer_map': return <CustomerMapView />`
+
+### API 路由
+- **`/api/customers/map-data`** (GET) - 查询所有活跃/非活跃客户的 country 字段，按国家分组，计算每个国家的客户数和关联订单总金额，返回 countryDistribution、regionSummary、totalCustomers、totalRevenue、countryCount
+- 内置国家→区域映射（9大区域：东亚/东南亚/南亚/欧洲/北美/南美/中东/非洲/大洋洲）
+- 内置国家→ISO代码映射
+
+### 客户地图视图 (customer-map-view.tsx)
+
+#### 顶部
+- 标题「客户地图」+ 描述「全球客户分布与业务覆盖概览」
+- 4个KPI小卡片：总客户数、覆盖国家数、总营收、平均单客户价值
+
+#### 主体区域（两栏布局，左2/3右1/3）
+
+**左侧 - 区域分布总览**
+- CSS Grid 3列布局的区域卡片网格
+- 9大区域各有独立配色方案（emerald/teal/amber/sky/violet/rose/orange/stone/cyan）
+- 每个卡片显示：区域名、客户数量Badge、营收金额、背景色深浅根据客户数量渐变
+- 卡片大小动态调整（col-span-2/row-span-2、col-span-2、col-span-1）
+- 悬浮显示Top客户列表（含ABCD级别徽章）
+- 点击可跳转到客户列表
+
+**右侧**
+- **国家排行榜**（按客户数量排序）：国旗emoji + 国家名 + 客户数Badge + 营收金额 + 进度条占比
+- **区域营收分布**（Recharts横向BarChart，每区域独立颜色）
+
+#### 底部
+- **客户级别分布（按区域）** - 堆叠横向BarChart（ABCD四色堆叠）+ 图例
+- 每个区域显示各级别客户数量
+
+#### 交互与动画
+- Framer Motion stagger动画入场
+- 区域卡片hover放大、背景渐变
+- 国家排行进度条动画
+- Loading Skeleton状态
+- 点击跳转到客户档案模块
+
+## 新增/修改文件清单
+- **新增**: src/app/api/customers/map-data/route.ts, src/components/crm/views/customer-map-view.tsx
+- **修改**: src/lib/types.ts(customer_map模块), src/components/crm/crm-sidebar.tsx(Globe2导航项), src/app/page.tsx(CustomerMapView路由)
+
+## 未解决问题或风险
+- 无
+
+---
+Task ID: 15
+Agent: Main Orchestrator
+Task: v4.1 下一阶段 - 社媒运营模块 + 数据看板大屏 + 客户地图视图
+
+## 项目当前状态描述/判断
+
+### 系统状态: 🟢 稳定运行
+- Dev server HTTP 200, `bun run lint` 零错误
+- 所有15个模块视图正常运行（原12 + 社媒运营 + 数据大屏 + 客户地图）
+- Agent Browser QA 全部通过
+
+## 本轮完成内容
+
+### 1. 社媒运营模块 (Task 12) ✅
+- 新增 SocialPost Prisma 模型（关联 Customer/Product/User）
+- 3个 API: GET/POST /api/social-posts, GET/PUT/DELETE /api/social-posts/[id], GET /api/social-posts/stats
+- 3 Tab 页面: 内容管理（帖子卡片列表+平台色条）| 发布日历（CSS Grid月历）| 数据统计（KPI+饼图+趋势图）
+- 新建/编辑帖子 Dialog（标题/平台/内容/标签/关联客户产品/排期时间）
+- 10条种子数据（5平台分布，含互动数据）
+
+### 2. 数据看板大屏 (Task 13) ✅
+- 全屏沉浸式 dark 主题数据大屏（fixed inset-0 z-50）
+- 7个KPI卡片（总营收/活跃客户/询盘/订单/转化率/收款率/已完成）
+- 12个数据面板: 销售漏斗/来源饼图/客户级别/营收趋势/区域TOP10/订单状态/转化率环形图/团队排行/客户TOP5/风险预警/询盘趋势柱状图/实时动态
+- 14种聚合数据 API（/api/data-screen）
+- 每60秒自动刷新 + 实时时钟
+- ESC退出 + 仅管理员/管理层可见
+- 修复: Prisma `isNot:null` → `not:null` 语法错误
+
+### 3. 客户地图视图 (Task 14) ✅
+- 区域热力卡片网格（9大区域，CSS Grid 3列布局）
+- 区域卡片大小根据客户数动态调整 + 悬浮Top客户列表
+- 4个KPI: 总客户数/覆盖国家数/总营收/平均单客户价值
+- 国家排行榜（国旗+进度条）+ 区域营收横向BarChart
+- 客户级别分布堆叠条形图（ABCD四色）
+- API: /api/customers/map-data
+- 纯CSS + Recharts实现，未安装任何地图库
+
+## 浏览器QA验证结果
+- ✅ 侧边栏: 社媒运营/数据大屏/客户地图 全部显示
+- ✅ 社媒运营: 3 Tab + 帖子卡片列表正常
+- ✅ 数据大屏: 7 KPI卡片 + 12面板渲染成功
+- ✅ 客户地图: 区域卡片 + 排行榜 + 图表正常
+- ✅ 权限控制: 销售专员看不到数据大屏 ✅
+- ✅ 管理层: 可见数据大屏 ✅
+- ✅ 浏览器零console错误
+
+## 新增/修改文件清单
+- **新增Prisma**: SocialPost模型
+- **新增API**: social-posts/route.ts, social-posts/[id]/route.ts, social-posts/stats/route.ts, data-screen/route.ts, customers/map-data/route.ts
+- **新增视图**: social-media-view.tsx, data-screen-view.tsx, customer-map-view.tsx
+- **新增种子**: prisma/seed-social.ts
+- **修改**: types.ts(3个新模块键), crm-sidebar.tsx(3个导航项), page.tsx(3个路由), globals.css(ds-*样式), schema.prisma(SocialPost)
+
+## 未解决问题或风险
+
+### 建议下一阶段优先事项
+1. **P2**: WebSocket实时通知推送
+2. **P2**: 全局搜索增强（Command Palette结果展示+导航）
+3. **P3**: 多语言i18n
+4. **P3**: 导出PDF/Excel报表
+5. **P3**: 客户生命周期时间线

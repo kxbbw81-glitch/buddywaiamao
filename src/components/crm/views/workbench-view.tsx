@@ -198,16 +198,16 @@ export function WorkbenchView() {
     })
 
   const handleQuickAction = (action: string) => {
-    const { setCurrentModule } = useCRMStore.getState()
+    const { setCurrentNavigation } = useCRMStore.getState()
     switch (action) {
       case 'customer': openCustomerForm(); break
       case 'inquiry': openInquiryForm(); break
       case 'quotation': openQuotationForm(); break
       case 'ai': toggleAiDrawer(); break
-      case 'payments': setCurrentModule('payments'); break
-      case 'orders': setCurrentModule('orders'); break
-      case 'quotations': setCurrentModule('quotations'); break
-      case 'analytics': setCurrentModule('analytics'); break
+      case 'payments': setCurrentNavigation('finance', 'orders-collections'); break
+      case 'orders': setCurrentNavigation('fulfillment', 'contract-orders'); break
+      case 'quotations': setCurrentNavigation('quote', 'quotation-management'); break
+      case 'analytics': setCurrentNavigation('insight', 'data-analysis'); break
     }
   }
 

@@ -163,12 +163,12 @@ function CustomerCard({ customer, levelConfig, isGlobalDragging, overId }: {
           transition-colors duration-150 ${levelConfig.cardBorder}
           hover:shadow-md active:scale-[0.98]
         `}
+        {...attributes}
+        {...listeners}
         role="button"
         tabIndex={0}
         aria-label={`查看客户 ${customer.companyName} 的详情`}
         onKeyDown={(e) => { if (!isGlobalDragging && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); selectCustomer(customer.id) } }}
-        {...attributes}
-        {...listeners}
       >
         <CustomerCardContent customer={customer} levelConfig={levelConfig} />
       </motion.div>
@@ -195,6 +195,7 @@ export function CustomerKanbanView() {
       const params = new URLSearchParams()
       if (searchQuery) params.set('search', searchQuery)
       if (filters.customerStatus) params.set('status', filters.customerStatus)
+      if (filters.customerCountry) params.set('country', filters.customerCountry)
       params.set('page', '1')
       params.set('pageSize', '100')
       return fetch(`/api/customers?${params}`).then((r) => r.json())

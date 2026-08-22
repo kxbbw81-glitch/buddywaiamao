@@ -1,69 +1,53 @@
 'use client'
 
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
-  LayoutDashboard,
-  Target,
-  Users,
-  Package,
-  FileText,
-  FlaskConical,
-  ShoppingCart,
-  DollarSign,
-  BarChart3,
-  Bot,
-  Settings,
-  ShieldCheck,
-  LogOut,
-  ChevronDown,
-  Zap,
+  BarChart3, Bot, ChevronDown, ChevronRight, CircleDollarSign, Funnel,
+  LayoutDashboard, LogOut, MessageSquare, PackageSearch, Settings, Tag,
+  Target, Truck, Users, Wrench, Zap, type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/use-crm-store'
 import { ROLE_LABELS } from '@/lib/types'
 import type { ModuleKey, UserRole } from '@/lib/types'
+import { NAVIGATION_MODULES, ROLE_DEFAULT_EXPANDED, canAccessModule } from '@/lib/navigation'
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
-  SidebarSeparator,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
+  SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarRail,
+  SidebarSeparator, useSidebar,
 } from '@/components/ui/sidebar'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@/components/ui/tooltip'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const navItems: Array<{ key: ModuleKey; label: string; icon: React.ElementType; roles?: UserRole[]; badgeQuery?: string }> = [
-  { key: 'workbench', label: '工作台', icon: LayoutDashboard },
-  { key: 'inquiries', label: '目标线索', icon: Target, badgeQuery: 'inquiries' },
-  { key: 'customers', label: '客户档案', icon: Users },
-  { key: 'products', label: '产品资料库', icon: Package },
-  { key: 'quotations', label: '报价管理', icon: FileText, badgeQuery: 'quotations' },
-  { key: 'samples', label: '样品管理', icon: FlaskConical, roles: ['super_admin', 'management', 'sales_manager', 'sales'], badgeQuery: 'samples' },
-  { key: 'orders', label: '合同订单', icon: ShoppingCart },
-  { key: 'payments', label: '收款管理', icon: DollarSign },
-  { key: 'analytics', label: '数据分析', icon: BarChart3, roles: ['super_admin', 'management', 'sales_manager'] },
-  { key: 'user_management', label: '权限中心', icon: ShieldCheck, roles: ['super_admin'] },
-  { key: 'settings', label: '系统设置', icon: Settings },
-]
+const MODULE_ICONS: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  Funnel,
+  Users,
+  Target,
+  MessageSquare,
+  PackageSearch,
+  Tag,
+  Truck,
+  CircleDollarSign,
+  Bot,
+  Wrench,
+  BarChart3,
+  Settings,
+}
+
+const MODULE_BADGE_QUERY: Partial<Record<ModuleKey, string>> = {
+  acquisition: 'inquiries',
+  quote: 'quotations',
+  fulfillment: 'samples',
+  finance: 'payments',
+}
 
 const avatarColors: Record<string, string> = {
   super_admin: 'bg-emerald-600 text-white',
@@ -74,61 +58,93 @@ const avatarColors: Record<string, string> = {
 }
 
 export function CRMSidebar() {
-  const { currentUser, currentModule, setCurrentModule, setAiDrawerOpen, logout } = useCRMStore()
+  const {
+    currentUser, currentModule, currentSubView, setCurrentNavigation,
+    setAiDrawerOpen, logout,
+  } = useCRMStore()
   const { state } = useSidebar()
-
-  const visibleItems = navItems.filter(
-    (item) => !item.roles || currentUser?.primaryRole === 'super_admin' || item.roles.includes(currentUser?.primaryRole as UserRole)
-  )
-
+  const [expandedModules, setExpandedModules] = useState<Set<ModuleKey>>(() => {
+    const role = currentUser?.primaryRole as UserRole | undefined
+    return new Set(role ? ROLE_DEFAULT_EXPANDED[role] : ['workbench'])
+  })
   const initials = currentUser?.name ? currentUser.name.slice(0, 2) : 'N'
   const avatarColor = avatarColors[currentUser?.primaryRole || 'sales'] || 'bg-emerald-600 text-white'
+  const visibleModules = NAVIGATION_MODULES.filter((module) => canAccessModule(currentUser?.primaryRole as UserRole | undefined, module))
+
+  const setExpanded = (moduleKey: ModuleKey, open: boolean) => {
+    setExpandedModules((previous) => {
+      const next = new Set(previous)
+      if (open) next.add(moduleKey)
+      else next.delete(moduleKey)
+      return next
+    })
+  }
+
+  const selectSubItem = (moduleKey: ModuleKey, subKey: string) => {
+    setCurrentNavigation(moduleKey, subKey)
+    setExpanded(moduleKey, true)
+  }
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 sidebar-gradient-header">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shrink-0 shadow-sm">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
             <Zap className="h-5 w-5" />
           </div>
           {state === 'expanded' && (
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-sm truncate">NexFab AI</span>
-              <span className="text-[11px] text-muted-foreground truncate">外贸智能CRM</span>
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-sm font-bold">NexFab AI</span>
+              <span className="truncate text-[11px] text-muted-foreground">外贸智能 CRM</span>
             </div>
           )}
         </div>
       </SidebarHeader>
-
       <SidebarSeparator />
 
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="py-2">
           <SidebarGroupContent>
             <SidebarMenu>
-              {visibleItems.map((item) => {
-                const isActive = currentModule === item.key
+              {visibleModules.map((module) => {
+                const Icon = MODULE_ICONS[module.icon] || LayoutDashboard
+                const isActive = currentModule === module.key
+                const isExpanded = expandedModules.has(module.key)
+                const badgeQuery = MODULE_BADGE_QUERY[module.key]
+
                 return (
-                  <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton
-                      tooltip={item.label}
-                      isActive={isActive}
-                      onClick={() => {
-                        setCurrentModule(item.key)
-                        if (item.key === 'workbench') return
-                      }}
-                      className={cn(
-                        'transition-all',
-                        isActive && 'sidebar-active-accent bg-emerald-50 dark:bg-emerald-950/30 font-medium'
-                      )}
-                    >
-                      <item.icon className={cn('size-4', isActive && 'text-emerald-600 dark:text-emerald-400')} />
-                      <span>{item.label}</span>
-                      {item.badgeQuery && (
-                        <SidebarBadgeCount query={item.badgeQuery} />
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <Collapsible key={module.key} open={isExpanded} onOpenChange={(open) => setExpanded(module.key, open)} className="group/collapsible">
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          tooltip={module.label}
+                          isActive={isActive}
+                          className={cn(
+                            'transition-all',
+                            isActive && 'sidebar-active-accent bg-emerald-50 font-medium dark:bg-emerald-950/30',
+                          )}
+                        >
+                          <Icon className={cn('size-4', isActive && 'text-emerald-600 dark:text-emerald-400')} />
+                          <span>{module.label}</span>
+                          {badgeQuery && <SidebarBadgeCount query={badgeQuery} />}
+                          {state === 'expanded' && (isExpanded ? <ChevronDown className="ml-1 size-4" /> : <ChevronRight className="ml-1 size-4" />)}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {module.items.map((item) => (
+                            <SidebarMenuSubItem key={item.key}>
+                              <SidebarMenuSubButton asChild isActive={isActive && (currentSubView ? currentSubView === item.key : item.key === module.items[0]?.key)}>
+                                <button type="button" onClick={() => selectSubItem(module.key, item.key)}>
+                                  <span>{item.label}</span>
+                                </button>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
                 )
               })}
             </SidebarMenu>
@@ -137,96 +153,64 @@ export function CRMSidebar() {
       </SidebarContent>
 
       <SidebarSeparator />
-
       <SidebarFooter className="p-2">
-        {currentUser && state === 'expanded' && (
+        {currentUser && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex w-full items-center gap-3 rounded-lg p-2 hover:bg-sidebar-accent transition-colors text-sm">
+              <button className="flex w-full items-center gap-3 rounded-lg p-2 text-sm transition-colors hover:bg-sidebar-accent">
                 <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarFallback className={cn('text-xs font-semibold', avatarColor)}>
-                    {initials}
-                  </AvatarFallback>
+                  <AvatarFallback className={cn('text-xs font-semibold', avatarColor)}>{initials}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col min-w-0 flex-1 text-left">
-                  <span className="truncate font-medium">{currentUser.name}</span>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 w-fit">
-                    {ROLE_LABELS[currentUser.primaryRole as UserRole] || currentUser.primaryRole}
-                  </Badge>
-                </div>
-                <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+                {state === 'expanded' && (
+                  <div className="flex min-w-0 flex-1 flex-col text-left">
+                    <span className="truncate font-medium">{currentUser.name}</span>
+                    <Badge variant="secondary" className="h-4 w-fit px-1.5 py-0 text-[10px]">
+                      {ROLE_LABELS[currentUser.primaryRole as UserRole] || currentUser.primaryRole}
+                    </Badge>
+                  </div>
+                )}
+                {state === 'expanded' && <ChevronDown className="size-4 shrink-0 text-muted-foreground" />}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" align="start" className="w-56">
-              <DropdownMenuItem onClick={() => setCurrentModule('settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                个人设置
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {currentUser.primaryRole === 'super_admin' && (
+                <>
+                  <DropdownMenuItem onClick={() => selectSubItem('system', 'system-settings')}>
+                    <Settings className="mr-2 h-4 w-4" />系统设置
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem onClick={logout} className="text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                退出登录
+                <LogOut className="mr-2 h-4 w-4" />退出登录
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-
-        {currentUser && state === 'collapsed' && (
-          <div className="flex justify-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Avatar
-                  className="h-8 w-8 cursor-pointer transition-transform duration-200 hover:scale-110"
-                  onClick={() => setCurrentModule('settings')}
-                >
-                  <AvatarFallback className={cn('text-xs font-semibold', avatarColor)}>
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="flex flex-col items-center gap-0.5">
-                <span className="font-medium text-sm">{currentUser.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {ROLE_LABELS[currentUser.primaryRole as UserRole] || currentUser.primaryRole}
-                </span>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="AI 助手"
-              onClick={() => setAiDrawerOpen(true)}
-            >
+            <SidebarMenuButton tooltip="AI 助手" onClick={() => setAiDrawerOpen(true)}>
               <Bot className="size-4" />
               <span>AI 助手</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-
       <SidebarRail />
     </Sidebar>
   )
 }
 
-// Badge count component for sidebar items
 function SidebarBadgeCount({ query }: { query: string }) {
-  const isSpecial = query === 'samples'
+  const isSampleBadge = query === 'samples'
   const { data } = useQuery({
     queryKey: ['sidebar-badge', query],
-    queryFn: isSpecial
-      ? () => fetch('/api/dashboard').then((r) => r.json()).then((d) => ({ total: d.data?.kpis?.pendingSamples || 0 }))
-      : () => fetch(`/api/${query}?pageSize=1`).then((r) => r.json()),
+    queryFn: isSampleBadge
+      ? () => fetch('/api/dashboard').then((response) => response.json()).then((payload) => ({ total: payload.data?.kpis?.pendingSamples || 0 }))
+      : () => fetch(`/api/${query}?pageSize=1`).then((response) => response.json()),
     staleTime: 60000,
   })
   const count = data?.total || 0
   if (count === 0) return null
-  return (
-    <span className="ml-auto text-[10px] font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 px-1.5 py-0.5 min-w-[20px] text-center crm-number badge-pulse">
-      {count > 99 ? '99+' : count}
-    </span>
-  )
+  return <span className="ml-auto min-w-[20px] rounded-full bg-emerald-100 px-1.5 py-0.5 text-center text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">{count > 99 ? '99+' : count}</span>
 }

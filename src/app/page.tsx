@@ -38,10 +38,16 @@ import { SampleListView } from '@/components/crm/views/sample-list-view'
 import { PaymentListView } from '@/components/crm/views/payment-list-view'
 import { PaymentFormDialog } from '@/components/crm/views/payment-form-dialog'
 import { AnalyticsView } from '@/components/crm/views/analytics-view'
+import { DataScreenView } from '@/components/crm/views/data-screen-view'
+import { SocialMediaView } from '@/components/crm/views/social-media-view'
 import { AIAssistantDrawer } from '@/components/crm/views/ai-assistant-drawer'
+import { AgentHubView } from '@/components/crm/views/agent-hub-view'
 import { SettingsView } from '@/components/crm/views/settings-view'
 import { UserManagementView } from '@/components/crm/views/user-management-view'
 import { ActivityListView } from '@/components/crm/views/activity-list-view'
+import { CustomerMapView } from '@/components/crm/views/customer-map-view'
+import { NavigationPlaceholderView } from '@/components/crm/views/navigation-placeholder-view'
+import { getNavigationModule, getNavigationSubItem } from '@/lib/navigation'
 
 // UI Components
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
@@ -58,6 +64,41 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+
+function installApiBasePathPatch() {
+  if (typeof window === 'undefined') return
+  const w = window as typeof window & {
+    __nexfabApiFetchPatched?: boolean
+    __nexfabOriginalFetch?: typeof window.fetch
+  }
+  if (w.__nexfabApiFetchPatched) return
+
+  const originalFetch = window.fetch.bind(window)
+  w.__nexfabOriginalFetch = originalFetch
+  w.__nexfabApiFetchPatched = true
+
+  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const basePath = window.location.pathname === '/new' || window.location.pathname.startsWith('/new/') ? '/new' : ''
+    if (basePath) {
+      if (typeof input === 'string') {
+        if (input === '/api' || input.startsWith('/api/')) {
+          input = `${basePath}${input}`
+        }
+      } else if (input instanceof URL) {
+        if (input.origin === window.location.origin && (input.pathname === '/api' || input.pathname.startsWith('/api/'))) {
+          input = new URL(`${basePath}${input.pathname}${input.search}${input.hash}`, window.location.origin)
+        }
+      } else if (input instanceof Request) {
+        const url = new URL(input.url)
+        if (url.origin === window.location.origin && (url.pathname === '/api' || url.pathname.startsWith('/api/'))) {
+          input = new Request(new URL(`${basePath}${url.pathname}${url.search}${url.hash}`, window.location.origin), input)
+        }
+      }
+    }
+    return originalFetch(input, init)
+  }) as typeof window.fetch
+}
 
 const roleCards = [
   { role: 'super_admin', email: 'admin@nexfab.com', label: '超级管理员', desc: '拥有系统全部权限，可查看所有数据和系统配置', icon: Shield, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', borderColor: 'role-card-border-emerald' },
@@ -207,10 +248,25 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
 }
 
 function ModuleView() {
-  const { currentModule } = useCRMStore()
+  const { currentModule, currentSubView } = useCRMStore()
+  const navigationModule = getNavigationModule(currentModule)
+  const navigationItem = navigationModule
+    ? getNavigationSubItem(currentModule, currentSubView || navigationModule.items[0]?.key || '')
+    : undefined
+  const resolvedModule = navigationItem?.existingView || currentModule
 
   const renderView = () => {
-    switch (currentModule) {
+    if (navigationModule && !navigationItem?.existingView) {
+      return (
+        <NavigationPlaceholderView
+          moduleLabel={navigationModule.label}
+          itemLabel={navigationItem?.label || navigationModule.label}
+          description={navigationItem?.description || '该模块页面待接入。'}
+        />
+      )
+    }
+
+    switch (resolvedModule) {
       case 'workbench': return <WorkbenchView />
       case 'customers': return <CustomerListView />
       case 'inquiries': return <InquiryListView />
@@ -220,17 +276,38 @@ function ModuleView() {
       case 'samples': return <SampleListView />
       case 'payments': return <PaymentListView />
       case 'analytics': return <AnalyticsView />
+      case 'data_screen': return <DataScreenView />
+      case 'social_media': return <SocialMediaView />
+      case 'aihub': return <AgentHubView />
       case 'settings': return <SettingsView />
       case 'activities': return <ActivityListView />
       case 'user_management': return <UserManagementView />
+      case 'customer_map': return <CustomerMapView />
       default: return <WorkbenchView />
     }
+  }
+
+  // Data screen renders as a full-screen overlay
+  if (resolvedModule === 'data_screen') {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${currentModule}-${currentSubView}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {renderView()}
+        </motion.div>
+      </AnimatePresence>
+    )
   }
 
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={currentModule}
+        key={`${currentModule}-${currentSubView}`}
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -10 }}
@@ -305,6 +382,7 @@ function CRMApp() {
 }
 
 export default function CRMPage() {
+  installApiBasePathPatch()
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>

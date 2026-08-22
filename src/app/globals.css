@@ -1176,3 +1176,78 @@ textarea:focus-visible {
 .dark .stat-card-rose {
   background: linear-gradient(135deg, oklch(0.22 0.008 10) 0%, oklch(0.15 0 0) 100%);
 }
+
+/* ============ Data Screen (Big Screen Dashboard) ============ */
+.ds-container {
+  background: linear-gradient(135deg, #0a0e1a 0%, #0d1321 30%, #0f172a 60%, #0a0e1a 100%);
+  color: #e5e7eb;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+.ds-header {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.08) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(6, 182, 212, 0.1);
+}
+.ds-panel {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.6) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.1);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.ds-panel:hover {
+  border-color: rgba(6, 182, 212, 0.2);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.04);
+}
+.ds-panel-title {
+  background: linear-gradient(90deg, #06b6d4, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.ds-border-gradient {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.3), transparent);
+  flex-shrink: 0;
+}
+.ds-kpi-card {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.7) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+.ds-kpi-card:hover {
+  border-color: rgba(6, 182, 212, 0.2);
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.08);
+  transform: translateY(-1px);
+}
+.ds-number {
+  font-variant-numeric: tabular-nums;
+}
+.ds-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.ds-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ds-scroll::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.2);
+  border-radius: 10px;
+}
+.ds-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.4);
+}
+/* Data screen animation keyframes */
+@keyframes ds-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+.ds-container .recharts-cartesian-grid line {
+  stroke: rgba(255, 255, 255, 0.04) !important;
+}
+.ds-container .recharts-text {
+  fill: #6b7280 !important;
+}
+.ds-container .recharts-tooltip-wrapper {
+  outline: none;
+}
+.ds-container .animate-pulse {
+  animation: ds-glow 2s ease-in-out infinite;
+}

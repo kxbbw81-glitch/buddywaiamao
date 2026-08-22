@@ -226,7 +226,7 @@ export function NotificationDropdown() {
             className="w-full h-8 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
             onClick={() => {
               setOpen(false)
-              useCRMStore.getState().setCurrentModule('activities')
+              useCRMStore.getState().setCurrentNavigation('workbench', 'todo-list')
             }}
           >
             查看全部

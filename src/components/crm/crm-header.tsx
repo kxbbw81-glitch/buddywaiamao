@@ -4,6 +4,7 @@ import { Bot, Sun, Moon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useCRMStore } from '@/store/use-crm-store'
 import { MODULE_LABELS } from '@/lib/types'
+import { getNavigationModule, getNavigationSubItem } from '@/lib/navigation'
 import { Button } from '@/components/ui/button'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
@@ -19,8 +20,13 @@ import {
 } from '@/components/ui/breadcrumb'
 
 export function CRMHeader() {
-  const { currentModule, setAiDrawerOpen, setCurrentModule: setModule } = useCRMStore()
+  const { currentModule, currentSubView, setAiDrawerOpen, setCurrentModule: setModule } = useCRMStore()
   const { theme, setTheme } = useTheme()
+  const navigationModule = getNavigationModule(currentModule)
+  const currentItem = navigationModule
+    ? getNavigationSubItem(currentModule, currentSubView || navigationModule.items[0]?.key || '')
+    : undefined
+  const moduleLabel = navigationModule?.label || MODULE_LABELS[currentModule] || currentModule
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6">
@@ -42,8 +48,20 @@ export function CRMHeader() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="font-medium">{MODULE_LABELS[currentModule] || currentModule}</BreadcrumbPage>
+            {currentItem ? (
+              <BreadcrumbLink className="text-muted-foreground">{moduleLabel}</BreadcrumbLink>
+            ) : (
+              <BreadcrumbPage className="font-medium">{moduleLabel}</BreadcrumbPage>
+            )}
           </BreadcrumbItem>
+          {currentItem && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className="font-medium">{currentItem.label}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </>
+          )}
         </BreadcrumbList>
       </Breadcrumb>
 

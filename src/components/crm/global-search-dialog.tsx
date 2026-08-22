@@ -31,11 +31,11 @@ interface SearchResponse {
   error?: string
 }
 
-const MODULE_MAP: Record<string, ModuleKey> = {
-  customer: 'customers',
-  inquiry: 'inquiries',
-  quotation: 'quotations',
-  order: 'orders',
+const MODULE_MAP: Record<string, { module: ModuleKey; subView: string }> = {
+  customer: { module: 'customer', subView: 'customer-records' },
+  inquiry: { module: 'acquisition', subView: 'lead-pool' },
+  quotation: { module: 'quote', subView: 'quotation-management' },
+  order: { module: 'fulfillment', subView: 'contract-orders' },
 }
 
 export function GlobalSearchDialog() {
@@ -46,7 +46,7 @@ export function GlobalSearchDialog() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const {
-    setCurrentModule,
+    setCurrentNavigation,
     selectCustomer,
     selectInquiry,
     selectQuotation,
@@ -108,7 +108,7 @@ export function GlobalSearchDialog() {
     (item: SearchResult) => {
       const targetModule = MODULE_MAP[item.type]
       if (targetModule) {
-        setCurrentModule(targetModule)
+        setCurrentNavigation(targetModule.module, targetModule.subView)
       }
       switch (item.type) {
         case 'customer':
@@ -126,7 +126,7 @@ export function GlobalSearchDialog() {
       }
       setOpen(false)
     },
-    [setCurrentModule, selectCustomer, selectInquiry, selectQuotation, selectOrder]
+    [setCurrentNavigation, selectCustomer, selectInquiry, selectQuotation, selectOrder]
   )
 
   const hasResults =

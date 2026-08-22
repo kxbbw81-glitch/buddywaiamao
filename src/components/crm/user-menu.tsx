@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
 export function UserMenu() {
-  const { currentUser, setCurrentModule, logout } = useCRMStore()
+  const { currentUser, setCurrentNavigation, logout } = useCRMStore()
 
   if (!currentUser) return null
 
@@ -77,15 +77,19 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         {/* Menu Items */}
-        <DropdownMenuItem
-          className="cursor-pointer text-sm gap-2.5 py-2.5 focus:bg-emerald-50 dark:focus:bg-emerald-950/30 focus:text-emerald-700 dark:focus:text-emerald-400"
-          onSelect={() => setCurrentModule('settings')}
-        >
-          <Settings className="h-4 w-4" />
-          <span>个人设置</span>
-        </DropdownMenuItem>
+        {role === 'super_admin' && (
+          <>
+            <DropdownMenuItem
+              className="cursor-pointer text-sm gap-2.5 py-2.5 focus:bg-emerald-50 dark:focus:bg-emerald-950/30 focus:text-emerald-700 dark:focus:text-emerald-400"
+              onSelect={() => setCurrentNavigation('system', 'system-settings')}
+            >
+              <Settings className="h-4 w-4" />
+              <span>系统设置</span>
+            </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
+            <DropdownMenuSeparator />
+          </>
+        )}
 
         <DropdownMenuItem
           className="cursor-pointer text-sm gap-2.5 py-2.5 focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-600 dark:focus:text-red-400"

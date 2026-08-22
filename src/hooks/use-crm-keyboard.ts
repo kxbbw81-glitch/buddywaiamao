@@ -8,14 +8,14 @@ const INPUT_TAGNAMES = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 
 const MODULE_SHORTCUTS: Record<string, ModuleKey> = {
   '1': 'workbench',
-  '2': 'inquiries',
-  '3': 'customers',
-  '4': 'products',
-  '5': 'quotations',
-  '6': 'samples',
-  '7': 'orders',
-  '8': 'payments',
-  '9': 'analytics',
+  '2': 'acquisition',
+  '3': 'customer',
+  '4': 'pipeline',
+  '5': 'comms',
+  '6': 'product',
+  '7': 'quote',
+  '8': 'fulfillment',
+  '9': 'finance',
 }
 
 export function useCRMKeyboard() {

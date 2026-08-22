@@ -33,6 +33,7 @@ interface CRMActions {
   setCurrentUser: (user: User | null) => void
   setCurrentModule: (module: ModuleKey) => void
   setCurrentSubView: (view: string) => void
+  setCurrentNavigation: (module: ModuleKey, view: string) => void
   setSidebarCollapsed: (collapsed: boolean) => void
   toggleSidebar: () => void
   setAiDrawerOpen: (open: boolean) => void
@@ -92,6 +93,7 @@ export const useCRMStore = create<CRMState & CRMActions>((set) => ({
   setCurrentUser: (user) => set({ currentUser: user }),
   setCurrentModule: (module) => set({ currentModule: module, currentSubView: '', searchQuery: '' }),
   setCurrentSubView: (view) => set({ currentSubView: view }),
+  setCurrentNavigation: (module, view) => set({ currentModule: module, currentSubView: view, searchQuery: '' }),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setAiDrawerOpen: (open) => set({ aiDrawerOpen: open }),

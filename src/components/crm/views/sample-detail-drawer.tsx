@@ -71,7 +71,7 @@ const SAMPLE_STEP_DAYS: Record<string, number> = {
 }
 
 export function SampleDetailDrawer() {
-  const { selectedSampleId, selectSample, setCurrentModule, selectCustomer, selectInquiry } = useCRMStore()
+  const { selectedSampleId, selectSample, setCurrentNavigation, selectCustomer, selectInquiry } = useCRMStore()
 
   const { data, isLoading } = useQuery({
     queryKey: ['sample', selectedSampleId],
@@ -136,14 +136,14 @@ export function SampleDetailDrawer() {
   // 点击客户跳转
   const handleCustomerClick = (customerId: string) => {
     selectSample(null)
-    setCurrentModule('customers')
+    setCurrentNavigation('customer', 'customer-records')
     selectCustomer(customerId)
   }
 
   // 点击询盘跳转
   const handleInquiryClick = (inquiryId: string) => {
     selectSample(null)
-    setCurrentModule('inquiries')
+    setCurrentNavigation('acquisition', 'lead-pool')
     selectInquiry(inquiryId)
   }
 

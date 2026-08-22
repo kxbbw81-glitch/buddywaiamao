@@ -1,0 +1,5 @@
+NexFab AI CRM Z.ai page update deploy
+Built at: 2026-08-15 12:06:19 CST
+Base path: /new
+Preserve server DB: yes
+Contains: current page update source + /new API fetch compatibility

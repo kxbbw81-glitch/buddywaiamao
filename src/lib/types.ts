@@ -4,14 +4,29 @@ export type UserRole = 'super_admin' | 'management' | 'sales_manager' | 'sales' 
 // ============ Navigation ============
 export type ModuleKey =
   | 'workbench'
+  | 'acquisition'
+  | 'customer'
+  | 'pipeline'
+  | 'comms'
+  | 'product'
+  | 'quote'
+  | 'fulfillment'
+  | 'finance'
+  | 'aihub'
+  | 'tools'
+  | 'insight'
+  | 'system'
   | 'inquiries'
   | 'customers'
+  | 'customer_map'
   | 'products'
   | 'quotations'
   | 'samples'
   | 'orders'
   | 'payments'
   | 'analytics'
+  | 'social_media'
+  | 'data_screen'
   | 'settings'
   | 'activities'
   | 'user_management'
@@ -35,6 +50,8 @@ export type Priority = 'low' | 'normal' | 'high' | 'urgent'
 export type InquirySource = 'email' | 'website' | 'whatsapp' | 'exhibition' | 'b2b_alibaba' | 'linkedin' | 'social_media'
 export type TradeTerm = 'FOB' | 'CIF' | 'EXW' | 'DDP'
 export type PaymentMethod = 'T/T' | 'L/C' | 'Western Union' | 'PayPal'
+export type SocialPlatform = 'linkedin' | 'facebook' | 'twitter' | 'instagram' | 'alibaba'
+export type SocialPostStatus = 'draft' | 'scheduled' | 'published' | 'failed'
 
 // ============ Status Labels (Chinese) ============
 export const INQUIRY_STATUS_LABELS: Record<InquiryStatus, string> = {
@@ -112,6 +129,21 @@ export const INQUIRY_SOURCE_LABELS: Record<string, string> = {
   referral: '客户介绍',
 }
 
+export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  linkedin: 'LinkedIn',
+  facebook: 'Facebook',
+  twitter: 'Twitter',
+  instagram: 'Instagram',
+  alibaba: '阿里巴巴',
+}
+
+export const SOCIAL_POST_STATUS_LABELS: Record<SocialPostStatus, string> = {
+  draft: '草稿',
+  scheduled: '已排期',
+  published: '已发布',
+  failed: '发布失败',
+}
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   super_admin: '超级管理员',
   management: '管理层',
@@ -122,14 +154,29 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 export const MODULE_LABELS: Record<string, string> = {
   workbench: '工作台',
+  acquisition: '获客中心',
+  customer: '客户管理',
+  pipeline: '商机中心',
+  comms: '沟通中心',
+  product: '产品知识库',
+  quote: '报价中心',
+  fulfillment: '订单履约',
+  finance: '财务经营',
+  aihub: 'AI Agent',
+  tools: '工具中心',
+  insight: '数据洞察',
+  system: '系统管理',
   inquiries: '目标线索',
   customers: '客户档案',
+  customer_map: '客户地图',
   products: '产品资料库',
   quotations: '报价管理',
   samples: '样品管理',
   orders: '合同订单',
   payments: '收款管理',
   analytics: '数据分析',
+  social_media: '社媒运营',
+  data_screen: '数据大屏',
   settings: '系统设置',
   activities: '活动记录',
   user_management: '权限中心',
@@ -281,6 +328,7 @@ export interface CRMFilters {
   orderStatus?: string
   customerLevel?: string
   customerStatus?: string
+  customerCountry?: string
   productCategory?: string
   paymentStatus?: string
   sampleStatus?: string

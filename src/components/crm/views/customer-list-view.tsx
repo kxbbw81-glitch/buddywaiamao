@@ -32,6 +32,7 @@ export function CustomerListView() {
       if (searchQuery) params.set('search', searchQuery)
       if (filters.customerLevel) params.set('level', filters.customerLevel)
       if (filters.customerStatus) params.set('status', filters.customerStatus)
+      if (filters.customerCountry) params.set('country', filters.customerCountry)
       params.set('page', '1')
       params.set('pageSize', '50')
       return fetch(`/api/customers?${params}`).then((r) => r.json())
@@ -135,6 +136,11 @@ export function CustomerListView() {
             <SelectItem value="lost">流失</SelectItem>
           </SelectContent>
         </Select>
+        {filters.customerCountry && (
+          <Button variant="outline" size="sm" onClick={() => setFilters({ customerCountry: undefined })}>
+            {getCountryFlag(filters.customerCountry)} {filters.customerCountry}
+          </Button>
+        )}
         <ToggleGroup type="single" value={viewMode} onValueChange={(v) => { if (v) setViewMode(v as 'list' | 'kanban') }}>
           <ToggleGroupItem value="list" aria-label="列表视图">
             <List className="h-4 w-4" />

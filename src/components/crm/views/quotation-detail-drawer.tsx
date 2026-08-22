@@ -96,7 +96,7 @@ interface ActivityData {
 export function QuotationDetailDrawer() {
   const {
     selectedQuotationId, selectQuotation,
-    setCurrentModule, selectCustomer,
+    setCurrentNavigation, selectCustomer,
   } = useCRMStore()
   const queryClient = useQueryClient()
 
@@ -168,7 +168,7 @@ export function QuotationDetailDrawer() {
   const handleViewCustomer = () => {
     if (!quotation?.customer?.id) return
     selectQuotation(null)
-    setCurrentModule('customers')
+    setCurrentNavigation('customer', 'customer-records')
     selectCustomer(quotation.customer.id)
   }
 
