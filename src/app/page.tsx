@@ -46,6 +46,8 @@ import { AgentHubView } from '@/components/crm/views/agent-hub-view'
 import { AiConfigView } from '@/components/crm/views/ai-config-view'
 import { FollowupTaskView } from '@/components/crm/views/followup-task-view'
 import { AftersalesRetentionView } from '@/components/crm/views/aftersales-retention-view'
+import { CustomerProfileView } from '@/components/crm/views/customer-profile-view'
+import { CommissionView } from '@/components/crm/views/commission-view'
 import { SettingsView } from '@/components/crm/views/settings-view'
 import { UserManagementView } from '@/components/crm/views/user-management-view'
 import { ActivityListView } from '@/components/crm/views/activity-list-view'
@@ -277,6 +279,8 @@ function ModuleView() {
       case 'opportunities': return <OpportunityKanbanView />
       case 'followup_tasks': return <FollowupTaskView />
       case 'aftersales': return <AftersalesRetentionView />
+      case 'customer_profile': return <CustomerProfileView />
+      case 'commission': return <CommissionView />
       case 'products': return <ProductListView />
       case 'quotations': return <QuotationListView />
       case 'orders': return <OrderListView />

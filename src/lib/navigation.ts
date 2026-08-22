@@ -43,7 +43,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     key: 'customer', label: '客户管理', icon: 'Users', roles: ['sales', 'sales_manager', 'management', 'super_admin'],
     items: [
       { key: 'customer-records', label: '客户档案', description: '复用既有客户档案与联系人页面。', existingView: 'customers' },
-      { key: 'customer-profile', label: '客户画像', description: '客户画像页面待接入。' },
+      { key: 'customer-profile', label: '客户画像', description: '客户全维度画像：商机阶段分布、订单回款、活动时间线、AI 评分。', existingView: 'customer_profile' },
     ],
   },
   {
@@ -91,7 +91,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     key: 'finance', label: '财务经营', icon: 'CircleDollarSign', roles: ['sales_manager', 'finance', 'management', 'super_admin'],
     items: [
       { key: 'orders-collections', label: '订单与回款', description: '复用既有收款管理页面。', existingView: 'payments' },
-      { key: 'commission-reconciliation', label: '提成与对账', description: '提成与对账页面待接入。' },
+      { key: 'commission-reconciliation', label: '提成与对账', description: '按销售聚合成交订单与回款，按可配置提成率核算预计提成。', existingView: 'commission' },
     ],
   },
   {

@@ -34,6 +34,8 @@ export type ModuleKey =
   | 'ai_config'
   | 'followup_tasks'
   | 'aftersales'
+  | 'customer_profile'
+  | 'commission'
 
 export interface NavItem {
   key: ModuleKey
@@ -188,6 +190,8 @@ export const MODULE_LABELS: Record<string, string> = {
   settings: '系统设置',
   activities: '活动记录',
   user_management: '权限中心',
+  customer_profile: '客户画像',
+  commission: '提成与对账',
 }
 
 // ============ Dashboard Types ============
