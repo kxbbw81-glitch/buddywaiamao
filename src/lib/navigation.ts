@@ -49,11 +49,11 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     roles: ['sales', 'sales_manager', 'finance', 'management', 'super_admin'],
     items: [
       { key: 'role-workbench', label: '角色工作台', description: '按当前角色进入既有工作台。', existingView: 'workbench', ai: true },
-      { key: 'morning-view', label: '晨会视图', description: '角色晨会内容页面待接入。', ai: true },
+      { key: 'morning-view', label: '晨会视图', description: '晨会四卡：优先级结论、高风险金额、待协同、今日动作 + 客户动态明细。', existingView: 'morning_view', ai: true },
       { key: 'operating-brief', label: '经营简报', description: '按角色聚合的经营简报：核心 KPI、销售管道、团队业绩、回款与风险、行动项。', existingView: 'operating_brief', ai: true },
       { key: 'todo-list', label: '待办清单', description: '复用既有活动记录与待办列表。', existingView: 'activities' },
       { key: 'followup-pipeline', label: '跟进与管道', description: '跟进与管道页面待接入。' },
-      { key: 'approval-center', label: '审批中心', description: '审批中心页面待接入。' },
+      { key: 'approval-center', label: '审批中心', description: '待我审批（报价/折扣/低毛利/单证/放行）与审批历史。AI 只标注风险，不做决定。', existingView: 'approvals' },
     ],
   },
   {
@@ -98,7 +98,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     roles: ['sales', 'sales_manager', 'management', 'super_admin'],
     items: [
       { key: 'product-pim', label: '产品库（PIM）', description: '复用既有产品资料库。', existingView: 'products', ai: true },
-      { key: 'rag-qa', label: 'RAG 知识库问答', description: 'RAG 问答页面待接入。', ai: true },
+      { key: 'rag-qa', label: 'RAG 知识库问答', description: '自然语言问产品问题，答案只引用已审核、未过期文档并标注来源，资料不足明确拒答。', existingView: 'rag_qa', ai: true },
     ],
   },
   {
@@ -140,7 +140,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     key: 'tools', label: '工具中心', icon: 'Wrench', phase: 'purple',
     roles: ['sales', 'sales_manager', 'finance', 'management', 'super_admin'],
     items: [
-      { key: 'business-card-ocr', label: '名片 OCR 识别', description: '名片 OCR 工具页面待接入。', ai: true },
+      { key: 'business-card-ocr', label: '名片 OCR 识别', description: '上传名片 → OCR 识别字段 → 重复检查 → 人工确认后同步到线索池。', existingView: 'business_card_ocr', ai: true },
       { key: 'website-registration', label: '官网链接登记', description: '官网链接登记工具页面待接入。' },
       { key: 'exchange-converter', label: '汇率换算', description: '常用外贸币种实时汇率换算（USD/CNY/EUR/GBP/JPY/HKD）。', existingView: 'exchange_converter' },
       { key: 'customer-deduplication', label: '客户去重', description: '客户去重工具页面待接入。' },
@@ -163,7 +163,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
       { key: 'accounts-permissions', label: '账号与权限', description: '复用既有权限管理页面。', existingView: 'user_management' },
       { key: 'ai-configuration', label: 'AI 配置', description: '配置 Agent 对话使用的 OpenAI 兼容 AI 服务。', existingView: 'ai_config', ai: true, demo: true },
       { key: 'system-settings', label: '系统设置', description: '复用既有系统设置页面。', existingView: 'settings', demo: true },
-      { key: 'database-maintenance', label: '数据库维护', description: '数据库维护页面待接入。', demo: true },
+      { key: 'database-maintenance', label: '数据库维护', description: '迁移数据与本地备份双模式，操作需授权码，仅超级管理员。', existingView: 'database_maintenance', demo: true },
     ],
   },
 ]

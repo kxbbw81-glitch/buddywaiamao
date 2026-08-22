@@ -40,6 +40,11 @@ export type ModuleKey =
   | 'exchange_converter'
   | 'hs_lookup'
   | 'followup_copy'
+  | 'approvals'
+  | 'morning_view'
+  | 'rag_qa'
+  | 'business_card_ocr'
+  | 'database_maintenance'
 
 export interface NavItem {
   key: ModuleKey

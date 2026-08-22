@@ -56,6 +56,11 @@ import { SettingsView } from '@/components/crm/views/settings-view'
 import { UserManagementView } from '@/components/crm/views/user-management-view'
 import { ActivityListView } from '@/components/crm/views/activity-list-view'
 import { CustomerMapView } from '@/components/crm/views/customer-map-view'
+import { ApprovalCenterView } from '@/components/crm/views/approval-center-view'
+import { MorningView } from '@/components/crm/views/morning-view'
+import { RagQaView } from '@/components/crm/views/rag-qa-view'
+import { BusinessCardOcrView } from '@/components/crm/views/business-card-ocr-view'
+import { DatabaseMaintenanceView } from '@/components/crm/views/database-maintenance-view'
 import { NavigationPlaceholderView } from '@/components/crm/views/navigation-placeholder-view'
 import { getNavigationModule, getNavigationSubItem } from '@/lib/navigation'
 
@@ -269,6 +274,7 @@ function ModuleView() {
     if (navigationModule && !navigationItem?.existingView) {
       return (
         <NavigationPlaceholderView
+          moduleKey={navigationModule.key}
           moduleLabel={navigationModule.label}
           itemLabel={navigationItem?.label || navigationModule.label}
           description={navigationItem?.description || '该模块页面待接入。'}
@@ -303,6 +309,11 @@ function ModuleView() {
       case 'activities': return <ActivityListView />
       case 'user_management': return <UserManagementView />
       case 'customer_map': return <CustomerMapView />
+      case 'approvals': return <ApprovalCenterView />
+      case 'morning_view': return <MorningView />
+      case 'rag_qa': return <RagQaView />
+      case 'business_card_ocr': return <BusinessCardOcrView />
+      case 'database_maintenance': return <DatabaseMaintenanceView />
       default: return <WorkbenchView />
     }
   }

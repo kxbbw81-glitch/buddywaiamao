@@ -362,6 +362,22 @@ model Activity {
   user     User?    @relation(fields: [userId], references: [id])
 }
 
+// ============ Approval（交接文档 §3.7）============
+model Approval {
+  id        String   @id @default(cuid())
+  tenantId  Int      @default(1)
+  type      String   // QUOTE | DISCOUNT | LOW_MARGIN | DOC | RELEASE
+  refId     String
+  requester String
+  approver  String?
+  status    String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  aiRisk    String?  // AI 只标注风险，不做决定
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, refId])
+}
+
 // ============ Sample ============
 model Sample {
   id            String   @id @default(cuid())
