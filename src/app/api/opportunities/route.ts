@@ -1,16 +1,8 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, opportunityScopeWhere } from '@/lib/auth'
 
 const STAGES = ['prospect', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
-
-/** 商机数据范围：sales 仅本人名下（ownerId），其余角色全量 */
-function opportunityScopeWhere(user: { id: string; primaryRole: string }): Record<string, unknown> {
-  if (user.primaryRole === 'sales') {
-    return { ownerId: user.id }
-  }
-  return {}
-}
 
 export async function GET(request: NextRequest) {
   try {

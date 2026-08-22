@@ -126,7 +126,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     key: 'system', label: '系统管理', icon: 'Settings', roles: ['super_admin'],
     items: [
       { key: 'accounts-permissions', label: '账号与权限', description: '复用既有权限管理页面。', existingView: 'user_management' },
-      { key: 'ai-configuration', label: 'AI 配置', description: 'AI 配置页面待接入。' },
+      { key: 'ai-configuration', label: 'AI 配置', description: '配置 Agent 对话使用的 OpenAI 兼容 AI 服务。', existingView: 'ai_config' },
       { key: 'system-settings', label: '系统设置', description: '复用既有系统设置页面。', existingView: 'settings' },
       { key: 'database-maintenance', label: '数据库维护', description: '数据库维护页面待接入。' },
     ],

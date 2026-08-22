@@ -31,6 +31,38 @@ model User {
   createdQuotations  Quotation[]  @relation("Creator")
   createdOrders      Order[]      @relation("Creator")
   createdSocialPosts SocialPost[] @relation("SocialCreator")
+  agentConversations AgentConversation[]
+}
+
+// ============ AI 设置（key-value） ============
+
+model AiSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique // ai.provider / ai.baseUrl / ai.model / ai.apiKey
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// ============ Agent 对话 ============
+
+model AgentConversation {
+  id        String   @id @default(cuid())
+  tenantId  Int      @default(1)
+  title     String   @default("新对话")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  messages  AgentMessage[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AgentMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   AgentConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // user / assistant
+  content        String
+  createdAt      DateTime @default(now())
 }
 
 // ============ Customer ============

@@ -167,6 +167,16 @@ export function assignedScopeWhere(user: PublicUser): Record<string, unknown> {
   return {}
 }
 
+/**
+ * 商机数据范围过滤：sales 仅看本人名下（ownerId），其余角色全量
+ */
+export function opportunityScopeWhere(user: PublicUser): Record<string, unknown> {
+  if (user.primaryRole === 'sales') {
+    return { ownerId: user.id }
+  }
+  return {}
+}
+
 // ============ 密码工具（scrypt，无外部依赖） ============
 
 export function hashPassword(password: string): string {

@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Bot, Plus, Settings2, Trash2, Pencil, BookOpen, Brain, Timer, BarChart3,
-  ShieldCheck, Zap, Package, Star,
+  ShieldCheck, Package, Star,
 } from 'lucide-react'
 import { useCRMStore } from '@/store/use-crm-store'
 import { cn } from '@/lib/utils'
+import { AgentChatPanel } from '@/components/crm/views/agent-chat-view'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -153,12 +154,11 @@ export function AgentHubView() {
 // ============ Agent 对话入口 ============
 
 function AgentChatEntry({ cats, onJump }: { cats: SkillCategory[]; onJump: (catKey: string) => void }) {
-  const [draft, setDraft] = useState('')
   const totalOn = cats.reduce((n, c) => n + c.items.filter((s) => s.on).length, 0)
   const total = cats.reduce((n, c) => n + c.items.length, 0)
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4">
+    <div className="mx-auto max-w-6xl space-y-4">
       <div className="rounded-xl border bg-card p-5">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
@@ -167,8 +167,8 @@ function AgentChatEntry({ cats, onJump }: { cats: SkillCategory[]; onJump: (catK
           <div className="flex-1">
             <h2 className="text-lg font-semibold">Agent 对话</h2>
             <p className="text-sm text-muted-foreground">
-              目标驱动的执行型助手——给它一个目标（如「把沉默客户唤醒」），它会调用已启用的 skills
-              拆解执行；所有外部动作（发邮件/改数据）100% 需人工批准。
+              目标驱动的执行型助手——给它一个目标（如「把沉默客户唤醒」），它会结合你的客户与商机数据拆解执行；
+              所有外部动作（发邮件/改数据）100% 需人工批准。
             </p>
           </div>
           <div className="text-right text-sm">
@@ -176,39 +176,10 @@ function AgentChatEntry({ cats, onJump }: { cats: SkillCategory[]; onJump: (catK
             <div className="text-xs text-muted-foreground">skills 已启用</div>
           </div>
         </div>
-
-        {/* 对话输入壳：Phase 3 接入 AI 后端后启用 */}
-        <div className="mt-4 flex gap-2">
-          <Input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="描述一个目标，例如：帮我把沉默超过 30 天的欧洲客户唤醒"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && draft.trim()) {
-                toast.info('Agent 对话将在 AI 后端接入后开放（Phase 3），当前先配置 skills')
-                setDraft('')
-              }
-            }}
-          />
-          <Button
-            disabled={!draft.trim()}
-            onClick={() => {
-              toast.info('Agent 对话将在 AI 后端接入后开放（Phase 3），当前先配置 skills')
-              setDraft('')
-            }}
-          >
-            <Zap className="mr-1 h-4 w-4" /> 执行
-          </Button>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          {['唤醒沉默客户', '起草跟进邮件', '生成本周商机复盘', '分析丢单原因'].map((s) => (
-            <span key={s} className="rounded-full border bg-muted/50 px-3 py-1 text-muted-foreground">
-              {s}
-            </span>
-          ))}
-        </div>
       </div>
+
+      {/* 对话面板（后端已接入：会话与消息持久化，未配置 AI 时本地降级） */}
+      <AgentChatPanel />
 
       {/* 能力面板：全部分类动态遍历 */}
       <div>

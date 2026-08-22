@@ -43,6 +43,7 @@ import { DataScreenView } from '@/components/crm/views/data-screen-view'
 import { SocialMediaView } from '@/components/crm/views/social-media-view'
 import { AIAssistantDrawer } from '@/components/crm/views/ai-assistant-drawer'
 import { AgentHubView } from '@/components/crm/views/agent-hub-view'
+import { AiConfigView } from '@/components/crm/views/ai-config-view'
 import { SettingsView } from '@/components/crm/views/settings-view'
 import { UserManagementView } from '@/components/crm/views/user-management-view'
 import { ActivityListView } from '@/components/crm/views/activity-list-view'
@@ -281,6 +282,7 @@ function ModuleView() {
       case 'data_screen': return <DataScreenView />
       case 'social_media': return <SocialMediaView />
       case 'aihub': return <AgentHubView />
+      case 'ai_config': return <AiConfigView />
       case 'settings': return <SettingsView />
       case 'activities': return <ActivityListView />
       case 'user_management': return <UserManagementView />
