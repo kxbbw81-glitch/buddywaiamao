@@ -38,7 +38,6 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb'
-import { useCRMStore } from '@/store/use-crm-store'
 
 type CompanyData = {
   companyName: string
@@ -102,7 +101,6 @@ const formatLastChecked = (iso: string | null | undefined) => {
 }
 
 export function SystemSettingsView() {
-  const setNav = useCRMStore((s) => s.setCurrentNavigation)
   const queryClient = useQueryClient()
 
   const [company, setCompany] = useState<CompanyData>({
@@ -116,10 +114,6 @@ export function SystemSettingsView() {
   })
   const [activeCard, setActiveCard] = useState<(typeof EXTENSION_CARDS)[number] | null>(null)
   const [mirrorUrl, setMirrorUrl] = useState('')
-
-  useEffect(() => {
-    setNav('system', 'system_settings')
-  }, [setNav])
 
   const companyQuery = useQuery({
     queryKey: ['admin-company'],
