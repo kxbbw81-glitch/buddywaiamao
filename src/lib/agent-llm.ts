@@ -90,20 +90,37 @@ export async function callLlm(
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 60_000)
   try {
-    const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${cfg.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: cfg.model,
-        messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        temperature: 0.4,
-        max_tokens: 1024,
-      }),
-      signal: controller.signal,
-    })
+    const doFetch = (withTemperature: boolean) =>
+      fetch(`${cfg.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cfg.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: cfg.model,
+          messages: [{ role: 'system', content: systemPrompt }, ...messages],
+          // 部分推理模型（如 kimi-k2.6/k3）仅允许 temperature=1，首次带 0.4 被拒时去参重试
+          ...(withTemperature ? { temperature: 0.4 } : {}),
+          max_tokens: 1024,
+        }),
+        signal: controller.signal,
+      })
+
+    let res = await doFetch(true)
+
+    // 兼容仅接受固定 temperature 的模型：400 且错误信息涉及 temperature 时，去掉参数重试一次
+    if (res.status === 400) {
+      const errText = await res.text()
+      if (errText.toLowerCase().includes('temperature')) {
+        res = await doFetch(false)
+      }
+      // 非 temperature 类 400 直接失败（由本地降级接管）
+      else {
+        return null
+      }
+    }
+
     if (!res.ok) return null
     const data = (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>
