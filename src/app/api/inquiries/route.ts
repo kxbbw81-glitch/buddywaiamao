@@ -1,8 +1,13 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth, assignedScopeWhere } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAuth()
+    if (!auth.ok) return auth.response
+    const scope = assignedScopeWhere(auth.user)
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
@@ -12,7 +17,13 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
-    const where: Record<string, unknown> = {}
+    const where: Record<string, unknown> = { ...scope }
+    // 销售只能看分配给自己的线索；管理角色可按人筛选
+    if (auth.user.primaryRole === 'sales') {
+      where.assignedTo = auth.user.id
+    } else if (assignedTo) {
+      where.assignedTo = assignedTo
+    }
     if (search) {
       where.OR = [
         { inquiryNo: { contains: search } },
@@ -23,7 +34,6 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status
     if (priority) where.priority = priority
     if (source) where.source = source
-    if (assignedTo) where.assignedTo = assignedTo
 
     const inquiries = await db.inquiry.findMany({
       where,
@@ -48,6 +58,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth()
+    if (!auth.ok) return auth.response
+
     const body = await request.json()
     const count = await db.inquiry.count()
     const inquiryNo = `INQ-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`

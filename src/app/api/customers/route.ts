@@ -1,8 +1,13 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth, customerScopeWhere } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAuth()
+    if (!auth.ok) return auth.response
+    const scope = customerScopeWhere(auth.user)
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const level = searchParams.get('level') || ''
@@ -11,7 +16,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
-    const where: Record<string, unknown> = {}
+    const where: Record<string, unknown> = { ...scope }
     if (search) {
       where.OR = [
         { companyName: { contains: search } },
@@ -46,7 +51,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth()
+    if (!auth.ok) return auth.response
+
     const body = await request.json()
+    // 数据权限：销售创建的客户自动归属自己
+    const ownerId = auth.user.primaryRole === 'sales' ? auth.user.id : body.ownerId || auth.user.id
     const customer = await db.customer.create({
       data: {
         companyName: body.companyName,
@@ -59,7 +69,7 @@ export async function POST(request: NextRequest) {
         source: body.source || 'manual',
         tags: body.tags || '[]',
         notes: body.notes,
-        ownerId: body.ownerId,
+        ownerId,
       },
     })
 

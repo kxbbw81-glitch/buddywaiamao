@@ -122,6 +122,8 @@ export const useCRMStore = create<CRMState & CRMActions>((set) => ({
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('nexfab_user')
+      // 同步清除服务端会话 Cookie（失败不阻塞本地登出）
+      fetch('/api/auth', { method: 'DELETE' }).catch(() => {})
     }
     set({
       currentUser: null,

@@ -1,8 +1,12 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth, toPublicUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAuth(['super_admin', 'management', 'sales_manager'])
+    if (!auth.ok) return auth.response
+
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
 
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ success: true, data: users, total: users.length })
+    return NextResponse.json({ success: true, data: users.map(toPublicUser), total: users.length })
   } catch (error) {
     console.error('Users GET error:', error)
     return NextResponse.json({ success: false, error: '获取用户列表失败' }, { status: 500 })
@@ -40,6 +44,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // 创建用户仅限超管与管理层
+    const auth = await requireAuth(['super_admin', 'management'])
+    if (!auth.ok) return auth.response
+
     const body = await request.json()
     const { name, email, primaryRole, department } = body
 
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, data: user }, { status: 201 })
+    return NextResponse.json({ success: true, data: toPublicUser(user) }, { status: 201 })
   } catch (error) {
     console.error('Users POST error:', error)
     return NextResponse.json({ success: false, error: '创建用户失败' }, { status: 500 })

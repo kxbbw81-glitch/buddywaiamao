@@ -327,16 +327,62 @@ function CRMApp() {
   useCRMKeyboard()
 
   useEffect(() => {
-    
-    // Check localStorage for saved user
+    // Check localStorage for saved user, then heal the server session cookie:
+    // 1. try GET /api/auth/me — if the session cookie is still valid, sync the latest user data
+    // 2. if 401, re-login silently with the saved email to re-establish the session cookie
+    // 3. if re-login fails (user removed / deactivated), fall back to role selection
     const saved = localStorage.getItem('nexfab_user')
-    if (saved) {
+    if (!saved) return
+    let savedUser: User | null = null
+    try {
+      savedUser = JSON.parse(saved) as User
+    } catch {
+      localStorage.removeItem('nexfab_user')
+      return
+    }
+    if (!savedUser?.email) {
+      localStorage.removeItem('nexfab_user')
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
       try {
-        const user = JSON.parse(saved)
-        setCurrentUser(user)
+        const meRes = await fetch('/api/auth/me')
+        if (meRes.ok) {
+          const meData = await meRes.json()
+          if (!cancelled && meData.success && meData.data) {
+            setCurrentUser(meData.data)
+            localStorage.setItem('nexfab_user', JSON.stringify(meData.data))
+          }
+          return
+        }
+        // Session expired — silently re-login to refresh the cookie
+        const loginRes = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: savedUser.email }),
+        })
+        if (loginRes.ok) {
+          const loginData = await loginRes.json()
+          if (!cancelled && loginData.success && loginData.data) {
+            setCurrentUser(loginData.data)
+            localStorage.setItem('nexfab_user', JSON.stringify(loginData.data))
+          }
+        } else if (!cancelled) {
+          // Account no longer available — back to role selection
+          localStorage.removeItem('nexfab_user')
+          setCurrentUser(null)
+        }
       } catch {
-        localStorage.removeItem('nexfab_user')
+        // Network failure: keep the cached user so the UI stays usable
       }
+    })()
+
+    // Show the cached user immediately (don't block on session healing)
+    setCurrentUser(savedUser)
+    return () => {
+      cancelled = true
     }
   }, [setCurrentUser])
 
