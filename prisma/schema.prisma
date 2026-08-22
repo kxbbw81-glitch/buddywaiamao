@@ -65,6 +65,38 @@ model AgentMessage {
   createdAt      DateTime @default(now())
 }
 
+// ============ Agent Skills ============
+
+model AgentSkillCategory {
+  id        String   @id @default(cuid())
+  tenantId  Int      @default(1)
+  key       String   @unique
+  name      String
+  icon      String   @default("🗂️")
+  builtin   Boolean  @default(false)
+  desc      String   @default("")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  skills    AgentSkill[]
+}
+
+model AgentSkill {
+  id         String   @id @default(cuid())
+  tenantId   Int      @default(1)
+  categoryId String
+  category   AgentSkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String
+  icon       String   @default("⚡")
+  src        String   @default("custom") // builtin / custom
+  on         Boolean  @default(true)
+  desc       String   @default("")
+  params     String   @default("{}") // JSON 字符串
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 // ============ Customer ============
 model Customer {
   id            String   @id @default(cuid())

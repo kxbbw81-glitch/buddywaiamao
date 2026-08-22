@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Bot, Plus, Settings2, Trash2, Pencil, BookOpen, Brain, Timer, BarChart3,
@@ -47,55 +47,6 @@ interface SkillCategory {
   items: AgentSkill[]
 }
 
-let skillSeq = 100
-const nextSkillId = () => `skill-${++skillSeq}`
-
-// V3.12 原型 skillCats 数据：4 个预置分类（各 3 内置 + 1 自定义示例）
-const DEFAULT_SKILL_CATS: SkillCategory[] = [
-  {
-    key: 'playbook', name: '销售打法', icon: '📖', builtin: true,
-    desc: '团队沉淀的销售方法论（Playbook）——Agent 对话时按老销售的打法执行。按需手动添加新打法 skill，新人 Agent 自动继承团队经验。预置分类之一，不满意可自定义新分类。',
-    items: [
-      { id: 'pb-1', name: '首因建立信任打法', icon: '🤝', src: 'builtin', on: true, params: '{"首次接触":"先价值后产品","信任锚点":"同行业案例","禁忌":"首封邮件不谈价格"}', desc: '首封开发信先亮同行案例建立信任，第二轮才引入产品价值点。' },
-      { id: 'pb-2', name: '价值锚定报价打法', icon: '⚓', src: 'builtin', on: true, params: '{"报价前置":"先锚定价值量","参考":"历史成交价区间","让步":"每次让步换取承诺"}', desc: '报价前先锚定价值（节省工时/良率提升），让步必须换取客户承诺。' },
-      { id: 'pb-3', name: '催单窗口打法', icon: '⏰', src: 'builtin', on: true, params: '{"触发":"客户国假期≤14天","动作":"补货高峰提醒","话术":"假期前后产能收紧"}', desc: '客户国家节假日窗口期主动催单，与工作台假日告警联动。' },
-      { id: 'pb-4', name: '沉默客户唤醒打法', icon: '🔔', src: 'custom', on: false, params: '{"触发":"沉默>30天","首触":"行业资讯切入","频次":"3次/月"}', desc: '对 30 天以上沉默客户用行业资讯重新切入，避免硬推销。' },
-    ],
-  },
-  {
-    key: 'memory', name: '业务记忆', icon: '🧠', builtin: true,
-    desc: 'Agent 执行时自动引用的业务记忆——客户偏好、历史决策、价格底线。手动添加记忆 skill 让 Agent 记得更多业务上下文，可查看、可关闭。预置分类之一。',
-    items: [
-      { id: 'mm-1', name: '客户偏好记忆', icon: '🎯', src: 'builtin', on: true, params: '{"记录":"沟通渠道偏好","决策":"价格敏感度","禁忌":"不记录隐私信息"}', desc: '记录客户沟通渠道偏好、价格敏感度、决策链，Agent 跟进时自动引用。' },
-      { id: 'mm-2', name: '价格底线记忆', icon: '💎', src: 'builtin', on: true, params: '{"来源":"审批通过的底价","保护":"低于底价需审批","版本":"按产品+客户"}', desc: '沉淀审批通过的底价与数量梯度，Agent 报价时自动对标且不越界。' },
-      { id: 'mm-3', name: '汇率决策记忆', icon: '💱', src: 'builtin', on: true, params: '{"来源":"财务汇率版本台账","规则":"报价/收款/提成同版本","更新":"生效日切换"}', desc: '引用财务汇率版本台账，报价折算与提成核算保持同一版本可追溯。' },
-      { id: 'mm-4', name: '售后承诺记忆', icon: '🛠️', src: 'custom', on: false, params: '{"记录":"客诉处理结论","跟进":"承诺到期提醒","权限":"仅管理员写"}', desc: '记录售后客诉处理结论与承诺事项，Agent 复购沟通时引用避免重复承诺。' },
-    ],
-  },
-  {
-    key: 'trigger', name: '自动触发', icon: '⏱️', builtin: true,
-    desc: '规则化触发 Agent 任务——符合条件即自动生成任务在后台执行（如沉默客户自动唤醒）。手动添加触发规则 skill 即可扩展自动化场景。预置分类之一。',
-    items: [
-      { id: 'tg-1', name: '沉默客户自动唤醒', icon: '📴', src: 'builtin', on: true, params: '{"条件":"沉默>30天","动作":"生成唤醒方案","频率":"每周一8:00"}', desc: '沉默超 30 天客户自动生成唤醒方案，Agent 后台执行并推送给对应销售。' },
-      { id: 'tg-2', name: '样品签收跟进', icon: '📦', src: 'builtin', on: true, params: '{"条件":"签收7天无反馈","动作":"发送反馈询问","升级":"14天转主管"}', desc: '样品签收 7 天无反馈自动发送询问邮件，14 天未回自动升级主管。' },
-      { id: 'tg-3', name: '复购窗口提醒', icon: '🔄', src: 'builtin', on: true, params: '{"条件":"消耗周期-30天","动作":"生成复购商机","渠道":"邮件+WhatsApp"}', desc: '按消耗周期预测复购窗口，临近时自动生成复购商机进入管道。' },
-      { id: 'tg-4', name: '询盘夜间响应', icon: '🌙', src: 'custom', on: false, params: '{"条件":"时区差异>8小时","动作":"首轮AI回复","升级":"人工8:00跟进"}', desc: '客户时区差异大时，夜间询盘由 Agent 首轮回复，次日人工跟进。' },
-    ],
-  },
-  {
-    key: 'quality', name: '运行质量', icon: '📊', builtin: true,
-    desc: 'Agent 执行治理——任务成功率、外部动作批准率、纠错记录。治理 skill 决定采集哪些质量指标，看板实时可视化。预置分类之一。',
-    items: [
-      { id: 'ql-1', name: '任务成功率监控', icon: '✅', src: 'builtin', on: true, params: '{"指标":"任务成功率","目标":"≥90%","维度":"按任务类型"}', desc: '按任务类型统计成功率，低于目标自动标记异常并通知管理员。' },
-      { id: 'ql-2', name: '外部动作批准率', icon: '🛂', src: 'builtin', on: true, params: '{"指标":"人工批准率","目标":"≤30%需优化","记录":"批准/拒绝原因"}', desc: '统计外部动作人工批准率与拒绝原因，识别 Agent 越权风险。' },
-      { id: 'ql-3', name: '纠错记录追溯', icon: '🔍', src: 'builtin', on: true, params: '{"记录":"用户纠错内容","回灌":"纠错进记忆库","审计":"保留90天"}', desc: '记录用户每次纠错，纠错内容回灌记忆库并保留审计轨迹。' },
-      { id: 'ql-4', name: '成本效率看板', icon: '💹', src: 'custom', on: false, params: '{"指标":"每次任务token成本","预警":"超均值2x","报告":"每周一"}', desc: '监控 Agent 任务 token 成本与耗时，异常波动自动周报。' },
-    ],
-  },
-]
-
-const STORAGE_KEY = 'nexfab-agent-skills-v1'
-
 // 侧栏二级 key → 分类 key
 const SUB_TO_CAT: Record<string, string> = {
   'agent-playbook': 'playbook',
@@ -106,33 +57,48 @@ const SUB_TO_CAT: Record<string, string> = {
 
 const CATEGORY_ICONS = [BookOpen, Brain, Timer, BarChart3, Star, Package]
 
+// ============ API 封装 ============
+
+async function api<T>(url: string, init?: RequestInit): Promise<T | null> {
+  try {
+    const res = await fetch(url, init)
+    const json = await res.json()
+    if (!json.success) {
+      toast.error(json.error || '操作失败')
+      return null
+    }
+    return json.data as T
+  } catch {
+    toast.error('网络错误，请重试')
+    return null
+  }
+}
+
+async function fetchCats(): Promise<SkillCategory[] | null> {
+  return api<SkillCategory[]>('/api/agent/skills')
+}
+
 // ============ 主视图 ============
 
 export function AgentHubView() {
   const { currentSubView, setCurrentNavigation } = useCRMStore()
-  const [cats, setCats] = useState<SkillCategory[]>(DEFAULT_SKILL_CATS)
-  const [hydrated, setHydrated] = useState(false)
+  const [cats, setCats] = useState<SkillCategory[]>([])
+  const [loaded, setLoaded] = useState(false)
 
-  // localStorage 持久化（Phase 3 接后端 API 后替换）
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY)
-      if (raw) setCats(JSON.parse(raw))
-    } catch { /* 忽略损坏数据 */ }
-    setHydrated(true)
+  const reload = useCallback(async () => {
+    const data = await fetchCats()
+    if (data) setCats(data)
+    setLoaded(true)
   }, [])
 
   useEffect(() => {
-    if (!hydrated) return
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cats))
-    } catch { /* 存储失败静默 */ }
-  }, [cats, hydrated])
+    reload()
+  }, [reload])
 
   const activeCatKey = SUB_TO_CAT[currentSubView] || ''
 
   if (!activeCatKey) {
-    return <AgentChatEntry cats={cats} onJump={(catKey) => {
+    return <AgentChatEntry cats={cats} loaded={loaded} onJump={(catKey) => {
       const sub = Object.keys(SUB_TO_CAT).find((k) => SUB_TO_CAT[k] === catKey)
       if (sub) setCurrentNavigation('aihub', sub)
     }} />
@@ -141,8 +107,9 @@ export function AgentHubView() {
   return (
     <SkillsContainer
       cats={cats}
+      loaded={loaded}
       activeCatKey={activeCatKey}
-      onChangeCats={setCats}
+      reload={reload}
       onSwitchCat={(catKey) => {
         const sub = Object.keys(SUB_TO_CAT).find((k) => SUB_TO_CAT[k] === catKey)
         if (sub) setCurrentNavigation('aihub', sub)
@@ -153,7 +120,7 @@ export function AgentHubView() {
 
 // ============ Agent 对话入口 ============
 
-function AgentChatEntry({ cats, onJump }: { cats: SkillCategory[]; onJump: (catKey: string) => void }) {
+function AgentChatEntry({ cats, loaded, onJump }: { cats: SkillCategory[]; loaded: boolean; onJump: (catKey: string) => void }) {
   const totalOn = cats.reduce((n, c) => n + c.items.filter((s) => s.on).length, 0)
   const total = cats.reduce((n, c) => n + c.items.length, 0)
 
@@ -172,7 +139,7 @@ function AgentChatEntry({ cats, onJump }: { cats: SkillCategory[]; onJump: (catK
             </p>
           </div>
           <div className="text-right text-sm">
-            <div className="font-semibold text-emerald-600">{totalOn} / {total}</div>
+            <div className="font-semibold text-emerald-600">{loaded ? `${totalOn} / ${total}` : '…'}</div>
             <div className="text-xs text-muted-foreground">skills 已启用</div>
           </div>
         </div>
@@ -229,30 +196,43 @@ function AgentChatEntry({ cats, onJump }: { cats: SkillCategory[]; onJump: (catK
 // ============ Skills 容器 ============
 
 function SkillsContainer({
-  cats, activeCatKey, onChangeCats, onSwitchCat,
+  cats, loaded, activeCatKey, reload, onSwitchCat,
 }: {
   cats: SkillCategory[]
+  loaded: boolean
   activeCatKey: string
-  onChangeCats: (cats: SkillCategory[]) => void
+  reload: () => Promise<void>
   onSwitchCat: (catKey: string) => void
 }) {
   const activeCat = cats.find((c) => c.key === activeCatKey) || cats[0]
   const [addOpen, setAddOpen] = useState(false)
   const [catMgrOpen, setCatMgrOpen] = useState(false)
 
-  const toggleSkill = (skillId: string) => {
-    onChangeCats(cats.map((c) => ({
-      ...c,
-      items: c.items.map((s) => (s.id === skillId ? { ...s, on: !s.on } : s)),
-    })))
+  const toggleSkill = async (skillId: string) => {
+    const skill = cats.flatMap((c) => c.items).find((s) => s.id === skillId)
+    if (!skill) return
+    const ok = await api('/api/agent/skills', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: skillId, on: !skill.on }),
+    })
+    if (ok !== null) await reload()
   }
 
-  const removeSkill = (skillId: string) => {
-    onChangeCats(cats.map((c) => ({
-      ...c,
-      items: c.items.filter((s) => s.id !== skillId),
-    })))
-    toast.success('已删除自定义 skill')
+  const removeSkill = async (skillId: string) => {
+    const ok = await api(`/api/agent/skills?id=${encodeURIComponent(skillId)}`, { method: 'DELETE' })
+    if (ok !== null) {
+      toast.success('已删除自定义 skill')
+      await reload()
+    }
+  }
+
+  if (!loaded || !activeCat) {
+    return (
+      <div className="mx-auto max-w-5xl">
+        <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">加载 skills…</CardContent></Card>
+      </div>
+    )
   }
 
   return (
@@ -355,9 +335,16 @@ function SkillsContainer({
         onOpenChange={setAddOpen}
         cats={cats}
         defaultCatKey={activeCat.key}
-        onSubmit={(skill, catKey) => {
-          onChangeCats(cats.map((c) => (c.key === catKey ? { ...c, items: [...c.items, skill] } : c)))
-          toast.success(`已添加 skill「${skill.name}」到「${cats.find((c) => c.key === catKey)?.name}」`)
+        onSubmit={async (skill, catKey) => {
+          const created = await api('/api/agent/skills', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ categoryKey: catKey, ...skill }),
+          })
+          if (created !== null) {
+            toast.success(`已添加 skill「${skill.name}」到「${cats.find((c) => c.key === catKey)?.name}」`)
+            await reload()
+          }
         }}
       />
 
@@ -365,7 +352,7 @@ function SkillsContainer({
         open={catMgrOpen}
         onOpenChange={setCatMgrOpen}
         cats={cats}
-        onChangeCats={onChangeCats}
+        reload={reload}
       />
     </div>
   )
@@ -380,7 +367,7 @@ function AddSkillDialog({
   onOpenChange: (v: boolean) => void
   cats: SkillCategory[]
   defaultCatKey: string
-  onSubmit: (skill: AgentSkill, catKey: string) => void
+  onSubmit: (skill: Omit<AgentSkill, 'id'>, catKey: string) => void
 }) {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('⚡')
@@ -409,7 +396,6 @@ function AddSkillDialog({
       return
     }
     onSubmit({
-      id: nextSkillId(),
       name: name.trim(),
       icon: icon.trim() || '⚡',
       src: 'custom',
@@ -476,47 +462,63 @@ function AddSkillDialog({
 // ============ 分类管理弹窗 ============
 
 function CategoryManagerDialog({
-  open, onOpenChange, cats, onChangeCats,
+  open, onOpenChange, cats, reload,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   cats: SkillCategory[]
-  onChangeCats: (cats: SkillCategory[]) => void
+  reload: () => Promise<void>
 }) {
   const [newName, setNewName] = useState('')
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
 
-  const createCat = () => {
+  const createCat = async () => {
     const name = newName.trim()
     if (!name) return
     if (cats.some((c) => c.name === name)) {
       toast.error('已存在同名分类')
       return
     }
-    const key = `cat-${Date.now()}`
-    onChangeCats([...cats, { key, name, icon: '🗂️', builtin: false, desc: '自定义分类：按团队实际业务场景归集 skills。', items: [] }])
-    setNewName('')
-    toast.success(`已创建分类「${name}」`)
+    const ok = await api('/api/agent/skills/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    })
+    if (ok !== null) {
+      setNewName('')
+      toast.success(`已创建分类「${name}」`)
+      await reload()
+    }
   }
 
-  const renameCat = (key: string) => {
+  const renameCat = async (key: string) => {
     const name = renameValue.trim()
     if (!name) return
     if (cats.some((c) => c.name === name && c.key !== key)) {
       toast.error('已存在同名分类')
       return
     }
-    onChangeCats(cats.map((c) => (c.key === key ? { ...c, name } : c)))
-    setRenaming(null)
-    toast.success('分类已重命名')
+    const ok = await api('/api/agent/skills/categories', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, name }),
+    })
+    if (ok !== null) {
+      setRenaming(null)
+      toast.success('分类已重命名')
+      await reload()
+    }
   }
 
-  const deleteCat = (key: string) => {
+  const deleteCat = async (key: string) => {
     const cat = cats.find((c) => c.key === key)
     if (!cat || cat.builtin) return
-    onChangeCats(cats.filter((c) => c.key !== key))
-    toast.success(`已删除分类「${cat.name}」及其 ${cat.items.length} 个 skill`)
+    const ok = await api(`/api/agent/skills/categories?key=${encodeURIComponent(key)}`, { method: 'DELETE' })
+    if (ok !== null) {
+      toast.success(`已删除分类「${cat.name}」`)
+      await reload()
+    }
   }
 
   return (
