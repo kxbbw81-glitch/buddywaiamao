@@ -24,7 +24,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
     items: [
       { key: 'role-workbench', label: '角色工作台', description: '按当前角色进入既有工作台。', existingView: 'workbench' },
       { key: 'morning-view', label: '晨会视图', description: '角色晨会内容页面待接入。' },
-      { key: 'operating-brief', label: '经营简报', description: '经营简报页面待接入。' },
+      { key: 'operating-brief', label: '经营简报', description: '按角色聚合的经营简报：核心 KPI、销售管道、团队业绩、回款与风险、行动项。', existingView: 'operating_brief' },
       { key: 'todo-list', label: '待办清单', description: '复用既有活动记录与待办列表。', existingView: 'activities' },
       { key: 'followup-pipeline', label: '跟进与管道', description: '跟进与管道页面待接入。' },
       { key: 'approval-center', label: '审批中心', description: '审批中心页面待接入。' },

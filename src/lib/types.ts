@@ -36,6 +36,7 @@ export type ModuleKey =
   | 'aftersales'
   | 'customer_profile'
   | 'commission'
+  | 'operating_brief'
 
 export interface NavItem {
   key: ModuleKey
@@ -192,6 +193,7 @@ export const MODULE_LABELS: Record<string, string> = {
   user_management: '权限中心',
   customer_profile: '客户画像',
   commission: '提成与对账',
+  operating_brief: '经营简报',
 }
 
 // ============ Dashboard Types ============
