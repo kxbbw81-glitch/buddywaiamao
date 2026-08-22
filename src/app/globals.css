@@ -1251,3 +1251,21 @@ textarea:focus-visible {
 .ds-container .animate-pulse {
   animation: ds-glow 2s ease-in-out infinite;
 }
+
+/* ============ 工作台 V3.8 氛围条 / 提醒胶囊动画 ============ */
+@keyframes wb-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+@keyframes wb-breath {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(226, 75, 74, 0.45); }
+  50% { opacity: 0.55; transform: scale(0.82); box-shadow: 0 0 0 5px rgba(226, 75, 74, 0); }
+}
+.wb-marquee-text {
+  position: absolute;
+  white-space: nowrap;
+  animation: wb-marquee 18s linear infinite;
+}
+.wb-breath-dot {
+  animation: wb-breath 1.6s ease-in-out infinite;
+}
