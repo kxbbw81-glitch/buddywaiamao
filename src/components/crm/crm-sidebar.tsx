@@ -11,7 +11,8 @@ import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/use-crm-store'
 import { ROLE_LABELS } from '@/lib/types'
 import type { ModuleKey, UserRole } from '@/lib/types'
-import { NAVIGATION_MODULES, ROLE_DEFAULT_EXPANDED, canAccessModule } from '@/lib/navigation'
+import { NAVIGATION_MODULES, ROLE_DEFAULT_EXPANDED, canAccessModule, PHASE_COLORS, AIHUB_MODULE_KEY } from '@/lib/navigation'
+import type { NavigationModule, NavigationSubItem } from '@/lib/navigation'
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -71,6 +72,24 @@ export function CRMSidebar() {
   const avatarColor = avatarColors[currentUser?.primaryRole || 'sales'] || 'bg-emerald-600 text-white'
   const visibleModules = NAVIGATION_MODULES.filter((module) => canAccessModule(currentUser?.primaryRole as UserRole | undefined, module))
 
+  // AI Agent 预置/自定义 skills 分类动态追加（V3.12：aihub 仅硬编码「Agent 对话」，其余分类由侧栏从 skills 表动态渲染）
+  const { data: aihubCats } = useQuery({
+    queryKey: ['aihub-skill-categories'],
+    queryFn: () => fetch('/api/agent/skills').then((r) => r.json()).then((p) => p.data || []),
+    staleTime: 60000,
+  })
+  const getModuleItems = (module: NavigationModule): NavigationSubItem[] => {
+    if (module.key === AIHUB_MODULE_KEY) {
+      const dyn: NavigationSubItem[] = (aihubCats || []).map((c: { key: string; name: string }) => ({
+        key: `agent-cat-${c.key}`,
+        label: c.name,
+        description: '动态 skills 分类（从 SkillCategory 表渲染）',
+      }))
+      return [...module.items, ...dyn]
+    }
+    return module.items
+  }
+
   const setExpanded = (moduleKey: ModuleKey, open: boolean) => {
     setExpandedModules((previous) => {
       const next = new Set(previous)
@@ -111,6 +130,8 @@ export function CRMSidebar() {
                 const isActive = currentModule === module.key
                 const isExpanded = expandedModules.has(module.key)
                 const badgeQuery = MODULE_BADGE_QUERY[module.key]
+                const phaseColor = PHASE_COLORS[module.phase]
+                const items = getModuleItems(module)
 
                 return (
                   <Collapsible key={module.key} open={isExpanded} onOpenChange={(open) => setExpanded(module.key, open)} className="group/collapsible">
@@ -119,12 +140,10 @@ export function CRMSidebar() {
                         <SidebarMenuButton
                           tooltip={module.label}
                           isActive={isActive}
-                          className={cn(
-                            'transition-all',
-                            isActive && 'sidebar-active-accent bg-emerald-50 font-medium dark:bg-emerald-950/30',
-                          )}
+                          className={cn('transition-all', isActive && 'font-medium')}
+                          style={isActive ? { backgroundColor: `${phaseColor}1F`, color: phaseColor } : undefined}
                         >
-                          <Icon className={cn('size-4', isActive && 'text-emerald-600 dark:text-emerald-400')} />
+                          <Icon className="size-4" style={{ color: phaseColor }} />
                           <span>{module.label}</span>
                           {badgeQuery && <SidebarBadgeCount query={badgeQuery} />}
                           {state === 'expanded' && (isExpanded ? <ChevronDown className="ml-1 size-4" /> : <ChevronRight className="ml-1 size-4" />)}
@@ -132,11 +151,17 @@ export function CRMSidebar() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {module.items.map((item) => (
+                          {items.map((item) => (
                             <SidebarMenuSubItem key={item.key}>
-                              <SidebarMenuSubButton asChild isActive={isActive && (currentSubView ? currentSubView === item.key : item.key === module.items[0]?.key)}>
+                              <SidebarMenuSubButton asChild isActive={isActive && (currentSubView ? currentSubView === item.key : item.key === items[0]?.key)}>
                                 <button type="button" onClick={() => selectSubItem(module.key, item.key)}>
                                   <span>{item.label}</span>
+                                  {item.ai && (
+                                    <span className="ml-1 rounded bg-purple-100 px-1 text-[9px] font-medium leading-tight text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">AI</span>
+                                  )}
+                                  {item.demo && (
+                                    <span className="ml-1 rounded bg-amber-100 px-1 text-[9px] font-medium leading-tight text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">▶</span>
+                                  )}
                                 </button>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>

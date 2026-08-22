@@ -55,6 +55,11 @@ const SUB_TO_CAT: Record<string, string> = {
   'agent-quality': 'quality',
 }
 
+// 动态分类 sub key 与 cat key 互转（侧栏动态子项 key 形如 agent-cat-<catKey>，支持自定义分类）
+const catToSub = (catKey: string) => `agent-cat-${catKey}`
+const subToCat = (sub: string) =>
+  sub.startsWith('agent-cat-') ? sub.slice('agent-cat-'.length) : (SUB_TO_CAT[sub] || '')
+
 const CATEGORY_ICONS = [BookOpen, Brain, Timer, BarChart3, Star, Package]
 
 // ============ API 封装 ============
@@ -95,12 +100,11 @@ export function AgentHubView() {
     reload()
   }, [reload])
 
-  const activeCatKey = SUB_TO_CAT[currentSubView] || ''
+  const activeCatKey = subToCat(currentSubView)
 
   if (!activeCatKey) {
     return <AgentChatEntry cats={cats} loaded={loaded} onJump={(catKey) => {
-      const sub = Object.keys(SUB_TO_CAT).find((k) => SUB_TO_CAT[k] === catKey)
-      if (sub) setCurrentNavigation('aihub', sub)
+      setCurrentNavigation('aihub', catToSub(catKey))
     }} />
   }
 
@@ -111,8 +115,7 @@ export function AgentHubView() {
       activeCatKey={activeCatKey}
       reload={reload}
       onSwitchCat={(catKey) => {
-        const sub = Object.keys(SUB_TO_CAT).find((k) => SUB_TO_CAT[k] === catKey)
-        if (sub) setCurrentNavigation('aihub', sub)
+        setCurrentNavigation('aihub', catToSub(catKey))
       }}
     />
   )
