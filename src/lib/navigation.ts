@@ -49,7 +49,7 @@ export const NAVIGATION_MODULES: NavigationModule[] = [
   {
     key: 'pipeline', label: '商机中心', icon: 'Target', roles: ['sales', 'sales_manager', 'management', 'super_admin'],
     items: [
-      { key: 'sales-pipeline', label: '销售管道', description: '销售管道页面待接入。' },
+      { key: 'sales-pipeline', label: '销售管道', description: '商机管道看板：阶段拖拽流转、金额与赢单率统计。', existingView: 'opportunities' },
       { key: 'followup-tasks', label: '跟进任务', description: '跟进任务页面待接入。' },
       { key: 'aftersales-retention', label: '售后与复购', description: '售后与复购页面待接入。' },
     ],

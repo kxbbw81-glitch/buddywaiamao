@@ -27,6 +27,7 @@ model User {
   approvedQuotations Quotation[]  @relation("Approver")
   activities         Activity[]
   createdCustomers   Customer[]  @relation("Owner")
+  ownedOpportunities Opportunity[] @relation("OpportunityOwner")
   createdQuotations  Quotation[]  @relation("Creator")
   createdOrders      Order[]      @relation("Creator")
   createdSocialPosts SocialPost[] @relation("SocialCreator")
@@ -57,6 +58,7 @@ model Customer {
   owner       User?           @relation("Owner", fields: [ownerId], references: [id])
   contacts    Contact[]
   inquiries   Inquiry[]
+  opportunities Opportunity[]
   quotations  Quotation[]
   orders      Order[]
   samples     Sample[]
@@ -130,6 +132,31 @@ model Inquiry {
   assignee   User?      @relation(fields: [assignedTo], references: [id])
   quotations Quotation[]
   samples    Sample[]
+  opportunities Opportunity[]
+}
+
+// ============ Opportunity（商机） ============
+model Opportunity {
+  id               String    @id @default(cuid())
+  tenantId         Int       @default(1)
+  title            String
+  customerId       String?
+  inquiryId        String?
+  stage            String    @default("prospect") // prospect/qualified/proposal/negotiation/won/lost
+  amount           Float     @default(0) // 商机金额（USD）
+  currency         String    @default("USD")
+  probability      Int       @default(30) // 赢单概率 0-100
+  expectedCloseDate DateTime?
+  closedAt         DateTime?
+  lostReason       String?
+  notes            String?
+  ownerId          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  inquiry  Inquiry?  @relation(fields: [inquiryId], references: [id])
+  owner    User?     @relation("OpportunityOwner", fields: [ownerId], references: [id])
 }
 
 // ============ Quotation ============

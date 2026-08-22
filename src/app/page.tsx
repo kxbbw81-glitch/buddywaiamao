@@ -23,6 +23,7 @@ import { CustomerListView } from '@/components/crm/views/customer-list-view'
 import { CustomerDetailDrawer } from '@/components/crm/views/customer-detail-drawer'
 import { CustomerFormDialog } from '@/components/crm/views/customer-form-dialog'
 import { InquiryListView } from '@/components/crm/views/inquiry-list-view'
+import { OpportunityKanbanView } from '@/components/crm/views/opportunity-kanban-view'
 import { InquiryDetailDrawer } from '@/components/crm/views/inquiry-detail-drawer'
 import { InquiryFormDialog } from '@/components/crm/views/inquiry-form-dialog'
 import { ProductListView } from '@/components/crm/views/product-list-view'
@@ -270,6 +271,7 @@ function ModuleView() {
       case 'workbench': return <WorkbenchView />
       case 'customers': return <CustomerListView />
       case 'inquiries': return <InquiryListView />
+      case 'opportunities': return <OpportunityKanbanView />
       case 'products': return <ProductListView />
       case 'quotations': return <QuotationListView />
       case 'orders': return <OrderListView />
