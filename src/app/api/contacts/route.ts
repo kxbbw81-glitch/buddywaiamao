@@ -1,5 +1,25 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
+
+/**
+ * GET /api/contacts?customerId=xxx — 联系人列表（按客户筛选）
+ */
+export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.ok) return auth.response
+  try {
+    const { searchParams } = new URL(request.url)
+    const customerId = searchParams.get('customerId')
+    const where: Record<string, unknown> = {}
+    if (customerId) where.customerId = customerId
+    const contacts = await db.contact.findMany({ where, orderBy: { createdAt: 'desc' } })
+    return NextResponse.json({ success: true, data: contacts })
+  } catch (error) {
+    console.error('Contacts GET error:', error)
+    return NextResponse.json({ success: false, error: '获取联系人失败' }, { status: 500 })
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {

@@ -231,12 +231,46 @@ model Product {
   description   String?
   imageUrl      String?
   keywords      String   @default("[]") // JSON array
+  categoryId    String?
+  specs         Json?
+  packing       Json?
+  costVersions  Json?
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  productCategory ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  docs           ProductDoc[]
   quotationItems QuotationItem[]
   socialPosts    SocialPost[]
+}
+
+// ============ 产品分类树 + 产品文档（移植自旧主线） ============
+model ProductCategory {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    ProductCategory?  @relation("ProductCategoryTree", fields: [parentId], references: [id])
+  children  ProductCategory[] @relation("ProductCategoryTree")
+  products  Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([parentId, name])
+  @@index([parentId])
+}
+
+model ProductDoc {
+  id         String    @id @default(cuid())
+  productId  String
+  type       String    // TDS / SDS / CERT
+  fileUrl    String
+  status     String    // DRAFT / REVIEWED / EXPIRED
+  validUntil DateTime?
+  createdAt  DateTime  @default(now())
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, createdAt])
 }
 
 // ============ Inquiry ============
@@ -340,6 +374,7 @@ model Quotation {
   approvedBy        String?
   approvedAt        DateTime?
   createdById       String?
+  ownerId           String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -348,6 +383,7 @@ model Quotation {
   approver   User?     @relation("Approver", fields: [approvedBy], references: [id])
   creator    User?     @relation("Creator", fields: [createdById], references: [id])
   items      QuotationItem[]
+  versions   QuoteVersion[]
   orders     Order[]
 }
 
@@ -368,6 +404,23 @@ model QuotationItem {
   product   Product?  @relation(fields: [productId], references: [id])
 }
 
+// ============ 报价版本快照（移植自旧主线） ============
+model QuoteVersion {
+  id           String   @id @default(cuid())
+  quotationId  String
+  version      Int
+  itemsJson    String   @default("[]") // 明细快照 JSON
+  notes        String?
+  totalAmount  Float    @default(0)
+  totalCost    Float    @default(0)
+  grossMargin  Float    @default(0)
+  createdById  String?
+  createdAt    DateTime @default(now())
+  quotation    Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId, version])
+}
+
 // ============ Order ============
 model Order {
   id              String   @id @default(cuid())
@@ -386,14 +439,48 @@ model Order {
   notes           String?
   trackingNo      String?
   shippingMethod  String?
+  paymentStatus   String   @default("unpaid") // unpaid/partial/paid
+  fulfillmentStatus String @default("pending") // pending/in_production/ready_to_ship/shipped/delivered/cancelled
   createdById     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now())
 
-  quotation Quotation? @relation(fields: [quotationId], references: [id])
-  customer  Customer? @relation(fields: [customerId], references: [id])
-  creator   User?    @relation("Creator", fields: [createdById], references: [id])
-  payments  Payment[]
+  quotation        Quotation? @relation(fields: [quotationId], references: [id])
+  customer         Customer? @relation(fields: [customerId], references: [id])
+  creator          User?    @relation("Creator", fields: [createdById], references: [id])
+  payments         Payment[]
+  orderItems       OrderItem[]
+  fulfillmentEvents FulfillmentEvent[]
+}
+
+// ============ 订单明细 + 履约事件（移植自旧主线） ============
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  productId   String?
+  sku         String?
+  name        String
+  quantity    Float   @default(1)
+  unitPrice   Float   @default(0)
+  unitCost    Float   @default(0)
+  amount      Float   @default(0)
+  cost        Float   @default(0)
+  snapshotJson String @default("{}")
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model FulfillmentEvent {
+  id          String   @id @default(cuid())
+  orderId     String
+  type        String   // PENDING/IN_PRODUCTION/READY_TO_SHIP/SHIPPED/DELIVERED/CANCELLED
+  note        String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
 }
 
 // ============ Payment ============
