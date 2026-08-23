@@ -1,0 +1,45 @@
+{
+  "name": "nexfab-crm-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch src/server.mjs",
+    "start": "node --env-file-if-exists=.env src/server.mjs",
+    "test": "SESSION_SECRET=phase1-test-secret-0123456789abcdef node test/phase1.mjs",
+    "test:smoke": "node test/g1-smoke.mjs",
+    "test:p2-product": "node test/p2-product-smoke.mjs",
+    "test:p2-quote": "node test/p2-quote-smoke.mjs",
+    "test:p2-quote-rules": "node test/p2-quote-rules-smoke.mjs",
+    "test:p2-excel-audit": "node test/p2-excel-audit-smoke.mjs",
+    "test:p2-quote-lock": "node test/p2-quote-lock-smoke.mjs",
+    "test:p2-quote-send": "node test/p2-quote-send-smoke.mjs",
+    "test:p2-sample": "node test/p2-sample-smoke.mjs",
+    "test:p2-trade-document": "node test/p2-trade-document-smoke.mjs",
+    "test:p2-fulfillment-shipment": "node test/p2-fulfillment-shipment-smoke.mjs",
+    "test:p2-commission": "node test/p2-commission-smoke.mjs",
+    "test:p2-order": "node test/p2-order-smoke.mjs",
+    "test:p2-payment": "node test/p2-payment-smoke.mjs",
+    "test:p2-timeline": "node test/p2-timeline-smoke.mjs",
+    "test:p2-rag": "node test/p2-rag-smoke.mjs",
+    "test:p2-ai-gateway": "node test/p2-ai-gateway-smoke.mjs",
+    "test:p2-ai-contract": "node test/p2-ai-contract-smoke.mjs",
+    "test:p2-ai-policy": "node test/p2-ai-policy-smoke.mjs",
+    "test:p2-ai-feedback": "node test/p2-ai-feedback-smoke.mjs",
+    "test:p2-ai-citation": "node test/p2-ai-citation-smoke.mjs",
+    "test:p2-tool-call": "node test/p2-tool-call-smoke.mjs",
+    "test:p2-automation": "node test/p2-automation-smoke.mjs",
+    "test:p2-integration": "node test/p2-integration-smoke.mjs",
+    "test:p2-dashboard": "node test/p2-dashboard-smoke.mjs",
+    "test:p2-acquisition": "node test/p2-acquisition-smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "prisma": "^6.11.1"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.11.1"
+  }
+}

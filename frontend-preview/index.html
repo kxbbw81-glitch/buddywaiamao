@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NexFab AI 外贸 CRM｜导航预览</title>
+  <style>
+    :root { --brand:#185fa5; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f5f6f8; --active:#e6f1fb; }
+    * { box-sizing:border-box } body { margin:0; color:var(--ink); background:var(--bg); font:14px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; }
+    header { height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#fff; border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:700 } .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:8px; color:#fff; background:var(--brand); font-size:12px; }
+    select { border:1px solid #d1d5db; background:#fff; padding:7px 10px; border-radius:7px; color:var(--ink); }
+    main { min-height:calc(100vh - 58px); display:flex; } aside { width:260px; flex:0 0 auto; padding:8px; background:#fff; border-right:1px solid var(--line); overflow:auto; }
+    .group { margin-bottom:3px } .group-btn { width:100%; display:flex; gap:9px; align-items:center; padding:10px; border:0; border-radius:8px; color:#374151; background:transparent; text-align:left; cursor:pointer; font:inherit; }
+    .group-btn:hover,.group-btn.open { background:#f5f7fa } .group-btn b { flex:1; font-weight:600 } .chevron { color:#9ca3af; transition:.16s } .open .chevron { transform:rotate(90deg) }
+    .subs { display:none; margin:1px 0 4px 29px; border-left:1px solid #edf0f3; padding-left:5px } .subs.open { display:block }
+    .sub { width:100%; display:flex; align-items:center; gap:6px; padding:7px 9px; border:0; border-radius:6px; color:var(--muted); background:transparent; font:12px inherit; text-align:left; cursor:pointer; }
+    .sub:hover { background:#f5f6f8; color:#374151 } .sub.active { background:var(--active); color:var(--brand); font-weight:600 } .ai { color:#534ab7; background:#eeedfe; border-radius:4px; padding:1px 4px; font-size:10px }
+    section { flex:1; min-width:0; padding:38px clamp(24px,5vw,72px); } .crumb { color:#9ca3af; font-size:12px; margin-bottom:8px } h1 { margin:0; font-size:28px } .desc { max-width:680px; color:var(--muted); line-height:1.7; margin:12px 0 24px }
+    .notice { max-width:760px; border:1px solid #b9dcf5; border-radius:12px; padding:16px; background:#f5fafe; color:#0c447c; line-height:1.65 } .card { max-width:760px; margin-top:14px; padding:18px; background:#fff; border:1px solid var(--line); border-radius:12px; }
+    .card strong { display:block; margin-bottom:7px } .meta { color:var(--muted); line-height:1.65 } .count { color:var(--brand); font-weight:600 }
+    .reference-preview { position:fixed; inset:0; z-index:9999; width:100vw; height:100vh; border:0; background:#f5f6f8; }
+    @media (max-width:720px) { header { padding:0 12px } aside { width:214px } section { padding:26px 18px } .brand span { display:none } }
+  </style>
+</head>
+<body>
+  <!-- 基准文件为唯一视觉与交互来源；此页不注入数据、不调用接口。 -->
+  <iframe class="reference-preview" title="NexFab AI 外贸 CRM 导航预览" src="../NexFab_导航优化预览0821版本.html" allow="clipboard-read; clipboard-write"></iframe>
+  <header><div class="brand"><div class="logo">NF</div><span>NexFab AI 外贸 CRM</span></div><label>预览角色　<select id="role"></select></label></header>
+  <main><aside id="nav" aria-label="主导航"></aside><section id="content"></section></main>
+  <script>
+    const modules = [
+      ['工作台',['角色工作台','晨会视图','经营简报','待办清单','跟进与管道','审批中心'],['sales','manager','finance','exec','admin']],
+      ['获客中心',['线索池','社媒运营','网站询盘','渠道分析'],['sales','manager','exec','admin']],
+      ['客户管理',['客户档案','客户画像'],['sales','manager','exec','admin']],
+      ['商机中心',['销售管道','跟进任务','售后与复购'],['sales','manager','exec','admin']],
+      ['沟通中心',['邮件管理','WhatsApp','社媒私信','沟通时间线'],['sales','manager','exec','admin']],
+      ['产品知识库',['产品库（PIM）','RAG 知识库问答'],['sales','manager','exec','admin']],
+      ['报价中心',['快速报价','报价管理'],['sales','manager','exec','admin']],
+      ['订单履约',['样品管理','合同订单','生产跟踪','物流管理','单证管理'],['sales','manager','finance','exec','admin']],
+      ['财务经营',['订单与回款','提成与对账'],['manager','finance','exec','admin']],
+      ['AI Agent',['Agent 对话','销售打法','业务记忆','自动触发','运行质量'],['sales','manager','finance','exec','admin']],
+      ['工具中心',['名片 OCR 识别','官网链接登记','汇率换算','客户去重','跟进话术生成','HS 编码速查'],['sales','manager','finance','exec','admin']],
+      ['数据洞察',['数据分析','数据大屏'],['manager','finance','exec','admin']],
+      ['系统管理',['账号与权限','AI 配置','系统设置','数据库维护'],['admin']]
+    ];
+    const roles = { sales:'销售业务员', manager:'销售经理', finance:'财务', exec:'管理层', admin:'超级管理员' };
+    const aiItems = new Set(['角色工作台','晨会视图','经营简报','社媒运营','网站询盘','客户档案','客户画像','销售管道','跟进任务','售后与复购','邮件管理','WhatsApp','社媒私信','沟通时间线','产品库（PIM）','RAG 知识库问答','快速报价','报价管理','样品管理','合同订单','生产跟踪','物流管理','单证管理','订单与回款','提成与对账','Agent 对话','销售打法','业务记忆','自动触发','运行质量','名片 OCR 识别','跟进话术生成','AI 配置']);
+    let currentRole = 'manager', active = ['工作台','角色工作台'], expanded = new Set(['工作台','商机中心','订单履约']);
+    const nav = document.querySelector('#nav'), content = document.querySelector('#content'), selector = document.querySelector('#role');
+    Object.entries(roles).forEach(([id,label]) => selector.add(new Option(label,id))); selector.value=currentRole;
+    function render() {
+      const visible = modules.filter(([, , allowed]) => allowed.includes(currentRole));
+      if (!visible.some(([name]) => name === active[0])) active=[visible[0][0],visible[0][1][0]];
+      nav.innerHTML=visible.map(([name,subs]) => `<div class="group"><button class="group-btn ${expanded.has(name)?'open':''}" data-group="${name}"><span>◼</span><b>${name}</b><span class="chevron">›</span></button><div class="subs ${expanded.has(name)?'open':''}">${subs.map(sub=>`<button class="sub ${active[0]===name&&active[1]===sub?'active':''}" data-module="${name}" data-sub="${sub}">${sub}${aiItems.has(sub)?'<span class="ai">AI</span>':''}</button>`).join('')}</div></div>`).join('');
+      content.innerHTML=`<div class="crumb">${active[0]} / ${active[1]}</div><h1>${active[1]}</h1><p class="desc">这是导航信息架构前端预览。菜单按角色过滤，一级模块可展开，当前为第 <span class="count">${modules.reduce((n,[,s])=>n+s.length,0)}</span> 个二级菜单定义的结构。</p><div class="notice">此预览不连接后端、不产生业务数据，也不模拟接口结果。当前页面用于确认导航名称、层级、角色可见性和交互；实际业务页面将在具备对应现有实现或后端支持后接入。</div><div class="card"><strong>实现状态</strong><div class="meta">待后端/后续模块支持。现阶段仅提供导航壳层和页面占位说明。</div></div>`;
+    }
+    selector.onchange=e=>{ currentRole=e.target.value; render() };
+    nav.onclick=e=>{ const group=e.target.closest('[data-group]'); const sub=e.target.closest('[data-sub]'); if(group){ const n=group.dataset.group; expanded.has(n)?expanded.delete(n):expanded.add(n); render() } if(sub){ active=[sub.dataset.module,sub.dataset.sub]; expanded.add(active[0]); render() } };
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+import { createServer } from 'node:http'
+import { readFile } from 'node:fs/promises'
+import { navigationFor, ROLES } from './navigation.mjs'
+import { notImplemented, plannedEndpoint } from './api-contract.mjs'
+import { HttpError, readJson, send, text } from './http.mjs'
+import { createSession, sessionCookie, sessionFromRequest, verifyPassword } from './security.mjs'
+import { prisma } from './prisma.mjs'
+import { handleCrmRoute } from './crm-routes.mjs'
+import { handleProductRoute } from './product-routes.mjs'
+import { handleQuoteRoute } from './quote-routes.mjs'
+import { handleOrderRoute } from './order-routes.mjs'
+import { handlePaymentRoute } from './payment-routes.mjs'
+import { handleTimelineRoute } from './timeline-routes.mjs'
+import { handleRagRoute } from './rag-routes.mjs'
+import { handleSampleRoute } from './sample-routes.mjs'
+import { handleTradeDocumentRoute } from './trade-document-routes.mjs'
+import { handleFulfillmentRoute } from './fulfillment-routes.mjs'
+import { handleCommissionRoute } from './commission-routes.mjs'
+import { handleKnowledgeRoute } from './knowledge-routes.mjs'
+import { handleAiGatewayRoute } from './ai-gateway-routes.mjs'
+import { handleAutomationRoute } from './automation-routes.mjs'
+import { handleIntegrationRoute } from './integration-routes.mjs'
+import { handleDashboardRoute } from './dashboard-routes.mjs'
+import { handleAcquisitionRoute } from './acquisition-routes.mjs'
+import { configurationStatus } from './config.mjs'
+
+const port = Number(process.env.PORT || 8787)
+const allowedOrigin = process.env.FRONTEND_ORIGIN || 'http://127.0.0.1:4173'
+
+function normalizeBasePath(url) {
+  if (url.pathname === '/new') return '/'
+  if (url.pathname.startsWith('/new/')) return url.pathname.slice('/new'.length) || '/'
+  return url.pathname
+}
+
+async function authenticatedActor(session, db) {
+  const user = await db.user.findUnique({ where: { id: session.sub }, select: { id: true, email: true, name: true, role: true, status: true, teamId: true } })
+  if (!user || user.status !== 'ACTIVE') throw new HttpError(401, 'UNAUTHENTICATED', '账号不存在或已停用。')
+  if (user.role !== session.role) throw new HttpError(401, 'INVALID_SESSION', '会话角色已失效，请重新登录。')
+  return user
+}
+
+const previewFile = new URL('../../frontend-preview/index.html', import.meta.url)
+
+export function createAppServer() {
+  return createServer(async (req, res) => {
+  const origin = req.headers.origin
+  if (origin === allowedOrigin) res.setHeader('Access-Control-Allow-Origin', origin)
+  res.setHeader('Vary', 'Origin')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, OPTIONS')
+  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  if (req.method === 'OPTIONS') return res.writeHead(204).end()
+
+  try {
+    const url = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`)
+    url.pathname = normalizeBasePath(url)
+    if (req.method === 'GET' && url.pathname === '/health') {
+      return send(res, 200, { ok: true, service: 'nexfab-crm-backend', phase: 1, checks: configurationStatus() })
+    }
+    if (req.method === 'GET' && url.pathname === '/ready') {
+      const checks = configurationStatus()
+      return send(res, checks.ready ? 200 : 503, { ok: checks.ready, service: 'nexfab-crm-backend', checks })
+    }
+
+    if (req.method === 'GET' && url.pathname === '/') {
+      try {
+        const preview = await readFile(previewFile)
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+        return res.end(preview)
+      } catch {
+        return send(res, 500, { error: { code: 'PREVIEW_UNAVAILABLE', message: '前端预览文件未找到。' } })
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/auth/login') {
+      const body = await readJson(req)
+      const email = text(body.email, '邮箱', { required: true, max: 160 })?.toLowerCase()
+      const password = text(body.password, '密码', { required: true, max: 512 })
+      const db = await prisma()
+      const user = await db.user.findUnique({ where: { email }, select: { id: true, email: true, name: true, role: true, status: true, teamId: true, passwordHash: true } })
+      if (!user || user.status !== 'ACTIVE' || !(await verifyPassword(password, user.passwordHash))) throw new HttpError(401, 'INVALID_CREDENTIALS', '邮箱或密码不正确。')
+      await db.auditLog.create({ data: { userId: user.id, action: 'LOGIN', resource: 'session' } })
+      const { passwordHash, ...safeUser } = user
+      res.setHeader('Set-Cookie', sessionCookie(createSession(safeUser)))
+      return send(res, 200, { data: { user: safeUser } })
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/auth/logout') {
+      res.setHeader('Set-Cookie', 'nexfab_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
+      return send(res, 204, {})
+    }
+
+    const session = sessionFromRequest(req)
+    const db = await prisma()
+    const actor = await authenticatedActor(session, db)
+    if (req.method === 'GET' && url.pathname === '/api/auth/session') return send(res, 200, { data: { user: actor } })
+    if (req.method === 'GET' && url.pathname === '/api/navigation') {
+      const data = navigationFor(actor.role.toLowerCase())
+      if (!data) return send(res, 500, { error: { code: 'ROLE_MAPPING_ERROR', allowed: Object.keys(ROLES) } })
+      return send(res, 200, { data })
+    }
+
+    const dashboardHandled = await handleDashboardRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (dashboardHandled !== false) return dashboardHandled
+    const acquisitionHandled = await handleAcquisitionRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (acquisitionHandled !== false) return acquisitionHandled
+    const handled = await handleCrmRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (handled !== false) return handled
+    const productHandled = await handleProductRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (productHandled !== false) return productHandled
+    const quoteHandled = await handleQuoteRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (quoteHandled !== false) return quoteHandled
+    const orderHandled = await handleOrderRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (orderHandled !== false) return orderHandled
+    const paymentHandled = await handlePaymentRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (paymentHandled !== false) return paymentHandled
+    const timelineHandled = await handleTimelineRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (timelineHandled !== false) return timelineHandled
+    const sampleHandled = await handleSampleRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (sampleHandled !== false) return sampleHandled
+    const tradeDocumentHandled = await handleTradeDocumentRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (tradeDocumentHandled !== false) return tradeDocumentHandled
+    const fulfillmentHandled = await handleFulfillmentRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (fulfillmentHandled !== false) return fulfillmentHandled
+    const commissionHandled = await handleCommissionRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (commissionHandled !== false) return commissionHandled
+    const knowledgeHandled = await handleKnowledgeRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (knowledgeHandled !== false) return knowledgeHandled
+    const aiGatewayHandled = await handleAiGatewayRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (aiGatewayHandled !== false) return aiGatewayHandled
+    const automationHandled = await handleAutomationRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (automationHandled !== false) return automationHandled
+    const integrationHandled = await handleIntegrationRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (integrationHandled !== false) return integrationHandled
+    const ragHandled = await handleRagRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (ragHandled !== false) return ragHandled
+    const feature = plannedEndpoint(req.method, url.pathname)
+    if (feature) return notImplemented(res, feature)
+    return send(res, 404, { error: { code: 'NOT_FOUND', message: '未定义的接口。' } })
+  } catch (error) {
+    if (error instanceof HttpError) return send(res, error.status, { error: { code: error.code, message: error.message, detail: error.detail } })
+    console.error(error)
+    return send(res, 500, { error: { code: 'INTERNAL_ERROR', message: '服务器发生未预期错误。' } })
+  }
+  })
+}
+
+if (process.env.NEXFAB_NO_LISTEN !== 'true') {
+  const server = createAppServer()
+  server.listen(port, '127.0.0.1', () => {
+    console.log(`NexFab backend skeleton: http://127.0.0.1:${port}`)
+  })
+}
