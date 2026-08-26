@@ -98,7 +98,7 @@ for old_config in goodjob-crm nexfab-ai-crm; do
     mv "/etc/nginx/sites-enabled/$old_config" "$BACKUP_DIR/retired-nginx/$old_config"
   fi
 done
-ln -s /etc/nginx/sites-available/nexfab-v2-root /etc/nginx/sites-enabled/nexfab-v2-root
+ln -sfn /etc/nginx/sites-available/nexfab-v2-root /etc/nginx/sites-enabled/nexfab-v2-root
 nginx -t
 
 printf '停止已作废的根站与预览服务；保留 goodjob-crm-original。\n'
