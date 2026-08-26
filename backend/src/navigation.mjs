@@ -29,7 +29,7 @@ export const NAVIGATION = [
   { id: 'quote', name: '报价中心', icon: 'tag', phase: 'amber', roles: ['sales', 'manager', 'exec', 'admin'], subs: [['快速报价', true], ['报价管理', true]] },
   { id: 'fulfillment', name: '订单履约', icon: 'truck', phase: 'amber', roles: allRoles, subs: [['样品管理', true], ['合同订单', true], ['生产跟踪', true], ['物流管理', true], ['单证管理', true]] },
   { id: 'finance', name: '财务经营', icon: 'money', phase: 'amber', roles: ['manager', 'finance', 'exec', 'admin'], subs: [['订单与回款', true], ['提成与对账', true]] },
-  { id: 'aihub', name: 'AI Agent', icon: 'spark', phase: 'purple', roles: allRoles, subs: [['Agent 对话', true], ['销售打法'], ['业务记忆'], ['自动触发'], ['运行质量']] },
+  { id: 'aihub', name: 'AI Agent', icon: 'spark', phase: 'purple', roles: allRoles, subs: [['Agent 对话', true], ['销售打法'], ['业务记忆'], ['自动触发'], ['运行质量'], ['自定义 Skills', true]] },
   { id: 'tools', name: '工具中心', icon: 'tool', phase: 'purple', roles: allRoles, subs: [['名片 OCR 识别', true], ['官网链接登记'], ['汇率换算'], ['客户去重'], ['跟进话术生成', true], ['HS 编码速查']] },
   { id: 'insight', name: '数据洞察', icon: 'chart', phase: 'purple', roles: ['manager', 'finance', 'exec', 'admin'], subs: [['数据分析'], ['数据大屏']] },
   { id: 'system', name: '系统管理', icon: 'gear', phase: 'gray', roles: ['admin'], subs: [['账号与权限'], ['AI 配置', true], ['系统设置'], ['数据库维护']] },

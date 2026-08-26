@@ -1,3 +1,4 @@
+import { orderScopeFor, scopeFor } from './access.mjs'
 import { HttpError, listQuery, readJson, send, text } from './http.mjs'
 
 const DASHBOARD_ROLES = new Set(['SALES', 'MANAGER', 'FINANCE', 'EXEC', 'ADMIN'])
@@ -70,11 +71,34 @@ function orderPaymentWhere(actor) {
   return { status: '__NO_ACCESS__' }
 }
 
-async function count(model, where) {
+function crmReadableScope(actor) {
+  if (actor.role === 'FINANCE') return { ownerId: '__NO_ACCESS__' }
+  return scopeFor(actor)
+}
+
+function leadReadableScope(actor) {
+  if (actor.role === 'ADMIN' || actor.role === 'EXEC') return {}
+  if (actor.role === 'SALES') return { ownerId: actor.id }
+  if (actor.role === 'MANAGER') return { OR: [{ ownerId: actor.id }, { ownerId: null }, { owner: { teamId: actor.teamId } }] }
+  return { ownerId: '__NO_ACCESS__' }
+}
+
+function quoteReadableWhere(actor) {
+  const customerScope = crmReadableScope(actor)
+  return Object.keys(customerScope).length ? { customer: customerScope } : {}
+}
+
+function orderReadableWhere(actor) {
+  const customerScope = orderScopeFor(actor)
+  return Object.keys(customerScope).length ? { customer: customerScope } : {}
+}
+
+// 保留 PrismaPromise，才能作为 $transaction([...]) 的批量操作在真实 PostgreSQL 执行。
+function count(model, where) {
   return model.count({ where })
 }
 
-async function getDashboardData(db, actor, range) {
+export async function getDashboardData(db, actor, range) {
   const [
     openTodos,
     unreadNotifications,
@@ -95,6 +119,36 @@ async function getDashboardData(db, actor, range) {
     count(db.automationRun, {}),
     count(db.webhookEvent, { status: 'FAILED' }),
     count(db.memo, { userId: actor.id }),
+  ])
+
+  const [
+    leadsTotal,
+    leadsNew,
+    inquiriesTotal,
+    customersTotal,
+    opportunitiesTotal,
+    quotesTotal,
+    quotesSent,
+    ordersTotal,
+    ordersDelivered,
+    confirmedPayments,
+    registeredPayments,
+    generatedDocuments,
+    activeShipments,
+  ] = await db.$transaction([
+    count(db.lead, leadReadableScope(actor)),
+    count(db.lead, { AND: [leadReadableScope(actor), { status: 'NEW' }] }),
+    count(db.inquiry, leadReadableScope(actor)),
+    count(db.customer, crmReadableScope(actor)),
+    count(db.opportunity, crmReadableScope(actor)),
+    count(db.quote, quoteReadableWhere(actor)),
+    count(db.quote, { AND: [quoteReadableWhere(actor), { status: 'SENT' }] }),
+    count(db.salesOrder, orderReadableWhere(actor)),
+    count(db.salesOrder, { AND: [orderReadableWhere(actor), { fulfillmentStatus: 'DELIVERED' }] }),
+    count(db.orderPayment, { AND: [{ status: 'CONFIRMED' }, ...(Object.keys(orderReadableWhere(actor)).length ? [{ salesOrder: orderReadableWhere(actor) }] : [])] }),
+    count(db.orderPayment, { AND: [{ status: 'REGISTERED' }, ...(Object.keys(orderReadableWhere(actor)).length ? [{ salesOrder: orderReadableWhere(actor) }] : [])] }),
+    count(db.tradeDocument, Object.keys(orderReadableWhere(actor)).length ? { salesOrder: orderReadableWhere(actor) } : {}),
+    count(db.shipment, { AND: [Object.keys(orderReadableWhere(actor)).length ? { salesOrder: orderReadableWhere(actor) } : {}, { status: 'SHIPPED' }] }),
   ])
 
   const [todoItems, notificationItems] = await db.$transaction([
@@ -121,6 +175,36 @@ async function getDashboardData(db, actor, range) {
     { id: 'toolCalls', title: '外部动作确认', status: pendingToolCalls ? 'ACTION_REQUIRED' : 'CLEAR', count: pendingToolCalls, href: '/system/tool-calls' },
   ]
 
+  const business = {
+    mode: 'CURRENT_CUMULATIVE_OVERVIEW',
+    rangeLabel: '当前累计概览',
+    note: '当前后端按角色数据范围统计累计数据，today/7d/30d 暂不代表严格日期窗口。',
+    funnel: [
+      { id: 'leadsTotal', label: '线索总数', value: leadsTotal },
+      { id: 'leadsNew', label: '新线索', value: leadsNew },
+      { id: 'inquiriesTotal', label: '询盘', value: inquiriesTotal },
+      { id: 'customersTotal', label: '客户', value: customersTotal },
+      { id: 'opportunitiesTotal', label: '商机', value: opportunitiesTotal },
+    ],
+    revenue: [
+      { id: 'quotesTotal', label: '报价数', value: quotesTotal },
+      { id: 'quotesSent', label: '已发送报价', value: quotesSent },
+      { id: 'ordersTotal', label: '订单数', value: ordersTotal },
+      { id: 'ordersDelivered', label: '已签收订单', value: ordersDelivered },
+      { id: 'confirmedPayments', label: '已确认回款', value: confirmedPayments },
+    ],
+    operations: [
+      { id: 'registeredPayments', label: '待确认回款', value: registeredPayments },
+      { id: 'generatedDocuments', label: '单证记录', value: generatedDocuments },
+      { id: 'activeShipments', label: '运输中物流', value: activeShipments },
+    ],
+    risks: [
+      { id: 'pendingQuoteApprovals', label: '待审批报价', value: pendingQuoteApprovals, severity: pendingQuoteApprovals ? 'amber' : 'green' },
+      { id: 'registeredPayments', label: '待财务确认回款', value: registeredPayments, severity: registeredPayments ? 'red' : 'green' },
+      { id: 'failedWebhooks', label: 'Webhook 失败', value: failedWebhooks, severity: failedWebhooks ? 'red' : 'green' },
+    ],
+  }
+
   return {
     role: actor.role,
     range,
@@ -131,6 +215,7 @@ async function getDashboardData(db, actor, range) {
       notificationItems: notificationItems.map(({ body, metadata, ...item }) => ({ ...item, bodyPreview: body ? body.slice(0, 120) : null, metadataKeys: metadata && typeof metadata === 'object' ? Object.keys(metadata).slice(0, 20) : [] })),
     },
     actionCards,
+    business,
     aiMode: 'LOCAL_SUMMARY_ONLY',
     noExternalSideEffects: true,
   }

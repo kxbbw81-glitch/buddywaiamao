@@ -1,5 +1,7 @@
 import { assertAiGatewayAccess, assertAiTaskScope, aiTaskScopeFor } from './access.mjs'
 import { HttpError, listQuery, readJson, send, text } from './http.mjs'
+import { aiQueueStatus, enqueueAiTaskJob } from './ai-queue.mjs'
+import { appendAiTaskEvent, startAiTaskSse } from './ai-task-events.mjs'
 
 const LOCAL_PROVIDER = 'LOCAL_DRAFT'
 const STATUSES = new Set(['DRAFT', 'ACTIVE', 'ARCHIVED'])
@@ -17,6 +19,8 @@ function redactSecrets(value) {
   return value
     .replace(/OPENAI_API_KEY|SESSION_SECRET|DATABASE_URL|passwordHash|apiKey|secret|token/gi, '[redacted]')
     .replace(/sk-[A-Za-z0-9_-]{12,}/g, '[redacted-key]')
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]')
+    .replace(/(?:\+?\d[\d\s().-]{7,}\d)/g, '[redacted-phone]')
 }
 
 function safeSummary(value, depth = 0) {
@@ -28,6 +32,7 @@ function safeSummary(value, depth = 0) {
   if (typeof value === 'object') {
     const entries = Object.entries(value).slice(0, 30).map(([key, item]) => {
       if (/apiKey|password|secret|token|authorization|cookie/i.test(key)) return [key, '[redacted]']
+      if (/email|phone|mobile|whatsapp/i.test(key)) return [key, '[redacted-pii]']
       return [key, safeSummary(item, depth + 1)]
     })
     return Object.fromEntries(entries)
@@ -494,7 +499,10 @@ function gatewayStatus() {
       outputSchemaValidation: true,
       modulePolicyRules: true,
       costLimits: true,
+      asyncQueue: true,
+      sseStatusStream: true,
     },
+    queue: aiQueueStatus(),
   }
 }
 
@@ -523,10 +531,49 @@ async function createTask(db, actor, data) {
   return row
 }
 
+async function updateAiTask(db, taskId, data) {
+  return db.aiTask.update({ where: { id: taskId }, data })
+}
+
+async function runQueuedLocalDraft({ db, taskId, queueBackend }) {
+  const startedAt = Date.now()
+  let task = await db.aiTask.findUnique({ where: { id: taskId }, include: { createdBy: { select: { id: true, name: true, teamId: true } } } })
+  if (!task) return
+  if (['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(task.status)) return
+  task = await updateAiTask(db, taskId, { status: 'RUNNING', durationMs: 0 })
+  appendAiTaskEvent(taskId, { type: 'status', status: 'RUNNING', stage: 'policy_checked_running_local_draft', tokens: task.tokens, cost: task.cost, durationMs: 0, dataSentToCloud: false, queueBackend, summary: { module: task.module, purpose: task.purpose } })
+  await new Promise((resolve) => setTimeout(resolve, 25))
+  const latest = await db.aiTask.findUnique({ where: { id: taskId }, include: { createdBy: { select: { id: true, name: true, teamId: true } } } })
+  if (!latest || latest.status === 'CANCELLED') {
+    appendAiTaskEvent(taskId, { type: 'terminal', status: 'CANCELLED', stage: 'cancelled_before_execution', dataSentToCloud: false, queueBackend })
+    return
+  }
+  const prompt = latest.promptCode ? { code: latest.promptCode, version: latest.promptVersion || 'unknown' } : null
+  const capability = latest.capabilityCode ? { code: latest.capabilityCode, version: latest.capabilityVersion || 'unknown' } : null
+  const schema = await outputSchemaByCode(db, latest.outputSchemaCode, latest.outputSchemaVersion)
+  const output = localDraftOutput({ module: latest.module, purpose: latest.purpose, inputSummary: latest.inputSummary, prompt, capability })
+  const schemaErrors = validateOutput(schema, output)
+  const durationMs = Date.now() - startedAt
+  if (schemaErrors.length) {
+    const failed = await updateAiTask(db, taskId, { status: 'FAILED', output, errorCode: 'AI_OUTPUT_SCHEMA_FAILED', errorMessage: 'AI 输出不符合能力契约绑定的 Schema。', dataSentToCloud: false, durationMs })
+    appendAiTaskEvent(taskId, { type: 'terminal', status: 'FAILED', stage: 'schema_validation_failed', tokens: failed.tokens, cost: failed.cost, durationMs, dataSentToCloud: false, queueBackend, errorCode: 'AI_OUTPUT_SCHEMA_FAILED', summary: { errors: schemaErrors } })
+    await createAudit(db, { id: latest.createdById }, 'AI_QUEUE_COMPLETE', 'ai_task', taskId, { status: 'FAILED', dataSentToCloud: false, queueBackend })
+    return
+  }
+  const completed = await updateAiTask(db, taskId, { status: 'SUCCEEDED', output, errorCode: null, errorMessage: null, dataSentToCloud: false, durationMs })
+  appendAiTaskEvent(taskId, { type: 'terminal', status: 'SUCCEEDED', stage: 'completed_local_draft_requires_human_confirmation', tokens: completed.tokens, cost: completed.cost, durationMs, dataSentToCloud: false, queueBackend, summary: { requiresHumanConfirmation: true, outputType: output.type } })
+  await createAudit(db, { id: latest.createdById }, 'AI_QUEUE_COMPLETE', 'ai_task', taskId, { status: 'SUCCEEDED', dataSentToCloud: false, queueBackend, requiresHumanConfirmation: true })
+}
+
 export async function handleAiGatewayRoute({ req, res, url, pathname, actor, db }) {
   if (req.method === 'GET' && pathname === '/api/ai-gateway/status') {
     assertAiGatewayAccess(actor)
     return send(res, 200, { data: gatewayStatus() })
+  }
+
+  if (req.method === 'GET' && pathname === '/api/ai-queue/status') {
+    assertAiGatewayAccess(actor)
+    return send(res, 200, { data: aiQueueStatus() })
   }
 
   if (req.method === 'GET' && pathname === '/api/prompt-templates') {
@@ -812,6 +859,33 @@ export async function handleAiGatewayRoute({ req, res, url, pathname, actor, db 
       throw new HttpError(403, governance.code, governance.message, { aiTaskId: task.id, dataSentToCloud: false, policyCode: governance.policyCode, costLimitCode: governance.costLimitCode, estimatedInputTokens: governance.estimatedInputTokens })
     }
 
+    if (body.async === true) {
+      const queue = aiQueueStatus()
+      if (!queue.enabled) throw new HttpError(503, 'AI_QUEUE_NOT_CONFIGURED', 'AI 异步队列未配置；生产必须配置 Redis + BullMQ。', queue)
+      if (wantsCloud) {
+        const failed = await createTask(db, actor, {
+          module, purpose, level, status: 'FAILED', provider: requestedProvider, model,
+          promptCode: prompt?.code || promptCode, promptVersion: prompt?.version || null,
+          capabilityCode: capability?.code || capabilityCode, capabilityVersion: capability?.version || null,
+          outputSchemaCode: schema?.code || null, outputSchemaVersion: schema?.version || null,
+          inputSummary, output: null, errorCode: 'AI_GATEWAY_NOT_CONFIGURED', errorMessage: '云端 AI 未配置或未授权，本次未发送任何数据。',
+          tokens: governance.estimatedInputTokens || 0, cost: '0', dataSentToCloud: false, durationMs: Date.now() - startedAt,
+        })
+        appendAiTaskEvent(failed.id, { type: 'terminal', status: 'FAILED', stage: 'cloud_not_configured_no_data_sent', tokens: failed.tokens, cost: failed.cost, durationMs: failed.durationMs, dataSentToCloud: false, queueBackend: queue.backend, errorCode: 'AI_GATEWAY_NOT_CONFIGURED' })
+        throw new HttpError(502, 'AI_GATEWAY_NOT_CONFIGURED', '云端 AI 未配置或未授权，本次未发送任何数据。', { aiTaskId: failed.id, dataSentToCloud: false, queue })
+      }
+      const task = await createTask(db, actor, {
+        module, purpose, level, status: 'QUEUED', provider: LOCAL_PROVIDER, model: 'deterministic-local-draft',
+        promptCode: prompt?.code || promptCode, promptVersion: prompt?.version || null,
+        capabilityCode: capability?.code || capabilityCode, capabilityVersion: capability?.version || null,
+        outputSchemaCode: schema?.code || null, outputSchemaVersion: schema?.version || null,
+        inputSummary, output: null, errorCode: null, errorMessage: null,
+        tokens: governance.estimatedInputTokens || 0, cost: '0', dataSentToCloud: false, durationMs: 0,
+      })
+      const enqueue = await enqueueAiTaskJob({ taskId: task.id }, (job) => runQueuedLocalDraft({ db, taskId: job.taskId, queueBackend: job.queueBackend || queue.backend }))
+      return send(res, 202, { data: { task, queue: enqueue, eventsUrl: `/api/ai-tasks/${task.id}/events`, requiresHumanConfirmation: true } })
+    }
+
     if (wantsCloud) {
       const status = gatewayStatus()
       const durationMs = Date.now() - startedAt
@@ -857,6 +931,29 @@ export async function handleAiGatewayRoute({ req, res, url, pathname, actor, db 
     const where = { ...aiTaskScopeFor(actor), ...(module ? { module } : {}), ...(status ? { status } : {}) }
     const [items, total] = await db.$transaction([db.aiTask.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: pageSize, include: { createdBy: { select: { id: true, name: true, teamId: true } } } }), db.aiTask.count({ where })])
     return send(res, 200, { data: { items, page, pageSize, total } })
+  }
+
+  const taskEventsMatch = pathname.match(/^\/api\/ai-tasks\/([^/]+)\/events$/)
+  if (taskEventsMatch && req.method === 'GET') {
+    assertAiGatewayAccess(actor)
+    const task = await db.aiTask.findUnique({ where: { id: taskEventsMatch[1] }, include: { createdBy: { select: { id: true, name: true, teamId: true } } } })
+    if (!task) throw new HttpError(404, 'NOT_FOUND', 'AI 调用记录不存在。')
+    assertAiTaskScope(actor, task)
+    startAiTaskSse({ req, res, taskId: task.id })
+    return true
+  }
+
+  const taskCancelMatch = pathname.match(/^\/api\/ai-tasks\/([^/]+)\/cancel$/)
+  if (taskCancelMatch && req.method === 'POST') {
+    assertAiGatewayAccess(actor)
+    const task = await db.aiTask.findUnique({ where: { id: taskCancelMatch[1] }, include: { createdBy: { select: { id: true, name: true, teamId: true } } } })
+    if (!task) throw new HttpError(404, 'NOT_FOUND', 'AI 调用记录不存在。')
+    assertAiTaskScope(actor, task)
+    if (['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(task.status)) throw new HttpError(400, 'AI_TASK_TERMINAL', '终态任务不能取消。')
+    const cancelled = await updateAiTask(db, task.id, { status: 'CANCELLED', errorCode: 'CANCELLED_BY_USER', errorMessage: '用户取消异步 AI 任务。', dataSentToCloud: false })
+    appendAiTaskEvent(task.id, { type: 'terminal', status: 'CANCELLED', stage: 'cancelled_by_user', tokens: cancelled.tokens, cost: cancelled.cost, durationMs: cancelled.durationMs, dataSentToCloud: false, queueBackend: aiQueueStatus().backend, errorCode: 'CANCELLED_BY_USER' })
+    await createAudit(db, actor, 'CANCEL', 'ai_task', task.id, { dataSentToCloud: false })
+    return send(res, 200, { data: cancelled })
   }
 
   const taskMatch = pathname.match(/^\/api\/ai-tasks\/([^/]+)$/)

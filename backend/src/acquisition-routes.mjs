@@ -1,6 +1,7 @@
 import { assertCustomerScope, scopeFor } from './access.mjs'
 import { findDuplicateCustomers, fingerprintsFromLead, registerCustomerFingerprints } from './customer-fingerprint.mjs'
 import { HttpError, listQuery, readJson, send, text } from './http.mjs'
+import { prepareEncryptedContact, prepareEncryptedLead, publicPiiStorageSummary, revealEncryptedLead } from './pii.mjs'
 
 const READ_ROLES = new Set(['SALES', 'MANAGER', 'EXEC', 'ADMIN'])
 const WRITE_ROLES = new Set(['SALES', 'MANAGER', 'ADMIN'])
@@ -122,6 +123,8 @@ function leadInput(body) {
   }
 }
 
+function presentLead(row) { return revealEncryptedLead(row) }
+
 function followInput(body) {
   return {
     type: enumValue(body.type, FOLLOW_TYPES, 'NOTE', '跟进类型'),
@@ -172,13 +175,13 @@ function messageInput(body) {
 async function leadById(db, id) {
   const lead = await db.lead.findUnique({ where: { id }, include: { owner: { select: { id: true, name: true, role: true, teamId: true } }, createdBy: { select: { id: true, name: true, role: true, teamId: true } }, _count: { select: { followUps: true, inquiries: true } } } })
   if (!lead) throw new HttpError(404, 'NOT_FOUND', '线索不存在。')
-  return lead
+  return presentLead(lead)
 }
 
 async function inquiryById(db, id) {
   const inquiry = await db.inquiry.findUnique({ where: { id }, include: { owner: { select: { id: true, name: true, role: true, teamId: true } }, createdBy: { select: { id: true, name: true, role: true, teamId: true } }, lead: true, customer: true, opportunity: true, _count: { select: { items: true, messages: true } } } })
   if (!inquiry) throw new HttpError(404, 'NOT_FOUND', '询盘不存在。')
-  return inquiry
+  return { ...inquiry, lead: presentLead(inquiry.lead) }
 }
 
 async function customerById(db, id) {
@@ -204,7 +207,7 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
       db.lead.findMany({ where, orderBy: { updatedAt: 'desc' }, skip, take: pageSize, include: { owner: { select: { id: true, name: true, role: true, teamId: true } }, _count: { select: { followUps: true, inquiries: true } } } }),
       db.lead.count({ where }),
     ])
-    return send(res, 200, { data: { items, page, pageSize, total } })
+    return send(res, 200, { data: { items: items.map(presentLead), page, pageSize, total } })
   }
 
   if (req.method === 'POST' && pathname === '/api/leads') {
@@ -214,9 +217,48 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
     const ownerId = Object.prototype.hasOwnProperty.call(body, 'ownerId') ? text(body.ownerId, '负责人', { max: 120 }) : actor.id
     if (ownerId) await activeUser(db, ownerId)
     if (ownerId && actor.role === 'SALES' && ownerId !== actor.id) throw new HttpError(403, 'FORBIDDEN', '销售只能创建自己的线索。')
-    const row = await db.lead.create({ data: { ...data, code: text(body.code, '线索编号', { max: 80 }) || await nextCode(db, 'lead', 'LEAD'), ownerId, createdById: actor.id } })
-    await audit(db, actor, 'CREATE', 'lead', row.id, { source: row.source, channel: row.channel, ownerId: row.ownerId })
-    return send(res, 201, { data: row })
+    const row = await db.lead.create({ data: { ...prepareEncryptedLead(data), code: text(body.code, '线索编号', { max: 80 }) || await nextCode(db, 'lead', 'LEAD'), ownerId, createdById: actor.id } })
+    await audit(db, actor, 'CREATE', 'lead', row.id, { source: row.source, channel: row.channel, ownerId: row.ownerId, pii: publicPiiStorageSummary(row) })
+    return send(res, 201, { data: presentLead(row) })
+  }
+
+  if (req.method === 'POST' && pathname === '/api/leads/import') {
+    assertAcquisitionAccess(actor, true)
+    const body = await readJson(req)
+    if (!Array.isArray(body.rows) || !body.rows.length) throw new HttpError(400, 'VALIDATION_ERROR', '导入 rows 必须是非空数组。')
+    if (body.rows.length > 100) throw new HttpError(400, 'VALIDATION_ERROR', '单次最多导入 100 条线索。')
+    const ownerId = Object.prototype.hasOwnProperty.call(body, 'ownerId') ? text(body.ownerId, '负责人', { max: 120 }) : actor.id
+    if (ownerId) await activeUser(db, ownerId)
+    if (ownerId && actor.role === 'SALES' && ownerId !== actor.id) throw new HttpError(403, 'FORBIDDEN', '销售只能导入并归属给自己的线索。')
+    const dryRun = body.dryRun === true
+    if (!dryRun && body.confirmImport !== true) throw new HttpError(400, 'IMPORT_CONFIRMATION_REQUIRED', '请先执行 dryRun 预览，确认后传入 confirmImport=true 执行正式导入。')
+    const duplicateCheckConfirmed = body.duplicateCheckConfirmed === true
+    const created = []
+    const wouldCreate = []
+    const skipped = []
+    const errors = []
+    for (const [index, candidate] of body.rows.entries()) {
+      try {
+        const data = leadInput(candidate || {})
+        const fingerprints = fingerprintsFromLead(data, 'LEAD_IMPORT')
+        const duplicates = await findDuplicateCustomers(db, fingerprints, { customerScope: scopeFor(actor) })
+        if (duplicates.length && !duplicateCheckConfirmed) {
+          skipped.push({ row: index + 1, code: 'DUPLICATE_CHECK_REQUIRED', candidates: duplicates.map((item) => ({ customerId: item.customer.id, matchTypes: item.matches.map((match) => match.type) })) })
+          continue
+        }
+        if (dryRun) {
+          wouldCreate.push({ row: index + 1, status: data.status, ownerId })
+          continue
+        }
+        const row = await db.lead.create({ data: { ...prepareEncryptedLead(data), code: text(candidate?.code, '线索编号', { max: 80 }) || await nextCode(db, 'lead', 'LEAD'), ownerId, createdById: actor.id } })
+        await audit(db, actor, 'IMPORT_CREATE', 'lead', row.id, { row: index + 1, source: row.source, channel: row.channel, ownerId: row.ownerId, fingerprintCount: fingerprints.length, duplicateCheckConfirmed, pii: publicPiiStorageSummary(row) })
+        created.push({ row: index + 1, id: row.id, code: row.code, status: row.status })
+      } catch (error) {
+        if (error instanceof HttpError) errors.push({ row: index + 1, code: error.code, message: error.message })
+        else throw error
+      }
+    }
+    return send(res, 200, { data: { dryRun, total: body.rows.length, created, wouldCreate, skipped, errors, summary: { created: created.length, wouldCreate: wouldCreate.length, skipped: skipped.length, errors: errors.length } } })
   }
 
   const leadFollowMatch = pathname.match(/^\/api\/leads\/([^/]+)\/follow-ups$/)
@@ -250,7 +292,7 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
     const data = { status, invalidReason: status === 'INVALID' ? text(body.invalidReason, '无效原因', { required: true, max: 500 }) : null }
     const row = await db.lead.update({ where: { id: lead.id }, data })
     await audit(db, actor, 'STATUS_CHANGE', 'lead', row.id, { from: lead.status, to: row.status })
-    return send(res, 200, { data: row })
+    return send(res, 200, { data: presentLead(row) })
   }
 
   const leadAssignMatch = pathname.match(/^\/api\/leads\/([^/]+)\/assign$/)
@@ -262,7 +304,7 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
     await activeUser(db, ownerId)
     const row = await db.lead.update({ where: { id: lead.id }, data: { ownerId, status: lead.status === 'NEW' ? 'TO_CONTACT' : lead.status } })
     await audit(db, actor, 'ASSIGN', 'lead', row.id, { from: lead.ownerId, to: row.ownerId })
-    return send(res, 200, { data: row })
+    return send(res, 200, { data: presentLead(row) })
   }
 
   const leadConvertMatch = pathname.match(/^\/api\/leads\/([^/]+)\/convert$/)
@@ -273,7 +315,7 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
     const body = await readJson(req)
     const existingCustomerId = text(body.customerId, '客户 ID', { max: 120 })
     const fingerprints = fingerprintsFromLead(lead, 'LEAD_CONVERT')
-    const candidates = existingCustomerId ? [] : await findDuplicateCustomers(db, fingerprints)
+    const candidates = existingCustomerId ? [] : await findDuplicateCustomers(db, fingerprints, { customerScope: scopeFor(actor) })
     if (!existingCustomerId && candidates.length && body.duplicateCheckConfirmed !== true) {
       return send(res, 409, { error: { code: 'DUPLICATE_CHECK_REQUIRED', message: '发现客户指纹重复，转客户前需要人工确认或指定现有客户。' }, data: { fingerprints, candidates } })
     }
@@ -286,7 +328,7 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
         await registerCustomerFingerprints(tx, customer.id, fingerprints, 'LEAD_CONVERT_EXISTING')
       } else {
         customer = await tx.customer.create({ data: { name: lead.companyName, country: lead.country, ownerId: lead.ownerId || actor.id } })
-        if (lead.contactName || lead.email || lead.phone) await tx.contact.create({ data: { customerId: customer.id, name: lead.contactName || 'Unknown Contact', email: lead.email, phone: lead.phone } })
+        if (lead.contactName || lead.email || lead.phone) await tx.contact.create({ data: { ...prepareEncryptedContact({ name: lead.contactName || 'Unknown Contact', email: lead.email, phone: lead.phone }), customerId: customer.id } })
         await registerCustomerFingerprints(tx, customer.id, fingerprints, 'LEAD_CONVERT')
       }
       let opportunity = null
@@ -296,7 +338,7 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
       }
       const updated = await tx.lead.update({ where: { id: lead.id }, data: { status: 'CONVERTED', convertedCustomerId: customer.id, convertedOpportunityId: opportunity?.id || null, convertedAt: new Date() } })
       await audit(tx, actor, 'CONVERT', 'lead', lead.id, { customerId: customer.id, opportunityId: opportunity?.id || null, fingerprintCount: fingerprints.length, duplicateCheckConfirmed: body.duplicateCheckConfirmed === true || Boolean(existingCustomerId) })
-      return { lead: updated, customer, opportunity }
+      return { lead: presentLead(updated), customer, opportunity }
     })
     return send(res, 200, { data: result })
   }
@@ -305,7 +347,7 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
   if (leadDetailMatch && req.method === 'GET') {
     assertAcquisitionAccess(actor)
     const lead = await leadById(db, leadDetailMatch[1]); assertLeadScope(actor, lead)
-    return send(res, 200, { data: lead })
+    return send(res, 200, { data: presentLead(lead) })
   }
 
   if (req.method === 'GET' && pathname === '/api/inquiries') {
@@ -318,7 +360,7 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
       db.inquiry.findMany({ where, orderBy: { updatedAt: 'desc' }, skip, take: pageSize, include: { owner: { select: { id: true, name: true, role: true, teamId: true } }, lead: true, customer: true, _count: { select: { items: true, messages: true } } } }),
       db.inquiry.count({ where }),
     ])
-    return send(res, 200, { data: { items, page, pageSize, total } })
+    return send(res, 200, { data: { items: items.map((item) => ({ ...item, lead: presentLead(item.lead) })), page, pageSize, total } })
   }
 
   if (req.method === 'POST' && pathname === '/api/inquiries') {

@@ -16,12 +16,13 @@ function matches(where, row, owner) {
   return Object.entries(where).every(([key, value]) => {
     if (key === 'owner') return matches(value, owner || {}, undefined)
     if (value && typeof value === 'object' && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, 'not')) return row[key] !== value.not
+    if (value && typeof value === 'object' && !Array.isArray(value) && Array.isArray(value.in)) return value.in.includes(row[key])
     return row[key] === value
   })
 }
 
 export async function createMemoryPrisma() {
-  const state = { nextId: 1, users: [], teams: [], customers: [], customerFingerprints: [], contacts: [], opportunities: [], followUps: [], leads: [], leadFollowUps: [], inquiries: [], inquiryItems: [], channelMessages: [], todos: [], memos: [], productCategories: [], products: [], productDocs: [], quoteRuleSets: [], quotes: [], quoteVersions: [], quoteApprovals: [], salesOrders: [], orderItems: [], fulfillmentEvents: [], orderPayments: [], tradeDocuments: [], shipments: [], commissionRecords: [], knowledgeDocuments: [], knowledgeChunks: [], promptTemplates: [], aiOutputSchemas: [], aiCapabilityContracts: [], promptEvalSets: [], promptEvalCases: [], aiPolicyRules: [], aiCostLimits: [], aiTasks: [], aiCitations: [], aiFeedbacks: [], toolCalls: [], automationRules: [], automationRuns: [], notifications: [], integrationConnections: [], webhookEvents: [], communicationEvents: [], sampleRequests: [], auditLogs: [] }
+  const state = { nextId: 1, users: [], teams: [], customers: [], customerFingerprints: [], contacts: [], opportunities: [], followUps: [], leads: [], leadFollowUps: [], inquiries: [], inquiryItems: [], channelMessages: [], todos: [], memos: [], productCategories: [], products: [], productDocs: [], quoteRuleSets: [], quotes: [], quoteVersions: [], quoteApprovals: [], salesOrders: [], orderItems: [], fulfillmentEvents: [], orderPayments: [], tradeDocuments: [], shipments: [], commissionRecords: [], knowledgeDocuments: [], knowledgeChunks: [], promptTemplates: [], aiOutputSchemas: [], aiCapabilityContracts: [], promptEvalSets: [], promptEvalCases: [], aiPolicyRules: [], aiCostLimits: [], aiTasks: [], aiCitations: [], aiFeedbacks: [], toolCalls: [], automationRules: [], automationRuns: [], notifications: [], integrationConnections: [], webhookEvents: [], socialAccounts: [], socialPosts: [], socialInteractions: [], communicationEvents: [], sampleRequests: [], auditLogs: [] }
   const id = (prefix) => `${prefix}-${state.nextId++}`
   const team = { id: 'team-1', name: '销售一组', managerId: 'manager-1' }
   state.teams.push(team)
@@ -39,6 +40,15 @@ export async function createMemoryPrisma() {
   const enrichCustomerFingerprint = (fingerprint) => ({ ...clone(fingerprint), customer: enrichCustomer(state.customers.find((customer) => customer.id === fingerprint.customerId)) })
   const enrichOpportunity = (opportunity) => ({ ...clone(opportunity), owner: publicOwner(opportunity.ownerId, ['id', 'name']), customer: enrichCustomer(state.customers.find((customer) => customer.id === opportunity.customerId)) })
   const filteredCustomers = (where) => state.customers.filter((row) => matches(where, row, ownerFor(row.ownerId)))
+  const filteredCustomerFingerprints = (where) => state.customerFingerprints.filter((row) => {
+    if (!where || !Object.keys(where).length) return true
+    if (where.AND) return where.AND.every((item) => filteredCustomerFingerprints(item).some((entry) => entry.id === row.id))
+    if (where.OR) return where.OR.some((item) => filteredCustomerFingerprints(item).some((entry) => entry.id === row.id))
+    const { customer, ...fingerprintWhere } = where
+    const matchesFingerprint = matches(fingerprintWhere, row)
+    if (!matchesFingerprint) return false
+    return !customer || matches(customer, state.customers.find((item) => item.id === row.customerId), ownerFor(state.customers.find((item) => item.id === row.customerId)?.ownerId))
+  })
   const filteredOpportunities = (where) => state.opportunities.filter((row) => matches(where, row, ownerFor(row.ownerId)))
   const categoryFor = (categoryId) => state.productCategories.find((item) => item.id === categoryId)
   const enrichProduct = (product) => ({ ...clone(product), category: clone(categoryFor(product.categoryId)), _count: { docs: state.productDocs.filter((item) => item.productId === product.id).length } })
@@ -267,6 +277,9 @@ export async function createMemoryPrisma() {
   const filteredNotifications = (where) => state.notifications.filter((row) => matches(where, row))
   const filteredIntegrationConnections = (where) => state.integrationConnections.filter((row) => matches(where, row))
   const filteredWebhookEvents = (where) => state.webhookEvents.filter((row) => matches(where, row))
+  const filteredSocialAccounts = (where) => state.socialAccounts.filter((row) => matches(where, row))
+  const filteredSocialPosts = (where) => state.socialPosts.filter((row) => matches(where, row))
+  const filteredSocialInteractions = (where) => state.socialInteractions.filter((row) => matches(where, row))
   const enrichCommunicationEvent = (event) => ({
     ...clone(event),
     customer: enrichCustomer(state.customers.find((customer) => customer.id === event.customerId)),
@@ -305,8 +318,8 @@ export async function createMemoryPrisma() {
       update: async ({ where, data }) => { const row = state.customers.find((customer) => customer.id === where.id); Object.assign(row, clone(data), { updatedAt: new Date() }); return enrichCustomer(row) },
     },
     customerFingerprint: {
-      findMany: async ({ where, skip = 0, take = 100 }) => state.customerFingerprints.filter((row) => matches(where, row)).slice(skip, skip + take).map(enrichCustomerFingerprint),
-      count: async ({ where }) => state.customerFingerprints.filter((row) => matches(where, row)).length,
+      findMany: async ({ where, skip = 0, take = 100 }) => filteredCustomerFingerprints(where).slice(skip, skip + take).map(enrichCustomerFingerprint),
+      count: async ({ where }) => filteredCustomerFingerprints(where).length,
       create: async ({ data }) => {
         if (state.customerFingerprints.some((item) => item.type === data.type && item.normalized === data.normalized)) {
           const error = new Error('Unique constraint failed')
@@ -649,6 +662,12 @@ export async function createMemoryPrisma() {
       count: async ({ where }) => filteredAiTasks(where).length,
       create: async ({ data }) => { const row = { id: id('ai-task'), status: 'PENDING', tokens: 0, cost: '0', dataSentToCloud: false, ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.aiTasks.push(row); return enrichAiTask(row) },
       findUnique: async ({ where }) => { const row = state.aiTasks.find((item) => item.id === where.id); return row ? enrichAiTask(row) : null },
+      update: async ({ where, data }) => {
+        const row = state.aiTasks.find((item) => item.id === where.id)
+        if (!row) throw new Error('AiTask not found')
+        Object.assign(row, clone(data), { updatedAt: new Date() })
+        return enrichAiTask(row)
+      },
     },
     aiCitation: {
       findMany: async ({ where, skip = 0, take = 100 }) => filteredAiCitations(where).slice(skip, skip + take).map(enrichAiCitation),
@@ -802,11 +821,32 @@ export async function createMemoryPrisma() {
         return row ? enrichWebhookEvent(row) : null
       },
     },
+    socialAccount: {
+      findMany: async ({ where, skip = 0, take = 100 }) => filteredSocialAccounts(where).slice(skip, skip + take).map(clone),
+      count: async ({ where }) => filteredSocialAccounts(where).length,
+      create: async ({ data }) => { const row = { id: id('social-account'), status: 'DRAFT', fallbackMode: 'MANUAL_PUBLISH', ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.socialAccounts.push(row); return clone(row) },
+      findUnique: async ({ where }) => { const row = state.socialAccounts.find((item) => item.id === where.id); return row ? clone(row) : null },
+    },
+    socialPost: {
+      findMany: async ({ where, skip = 0, take = 100 }) => filteredSocialPosts(where).slice(skip, skip + take).map(clone),
+      count: async ({ where }) => filteredSocialPosts(where).length,
+      create: async ({ data }) => { const row = { id: id('social-post'), status: 'DRAFT', contentType: 'POST', ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.socialPosts.push(row); return clone(row) },
+      findUnique: async ({ where }) => { const row = state.socialPosts.find((item) => item.id === where.id); return row ? clone(row) : null },
+      update: async ({ where, data }) => { const row = state.socialPosts.find((item) => item.id === where.id); Object.assign(row, clone(data), { updatedAt: new Date() }); return clone(row) },
+    },
+    socialInteraction: {
+      findMany: async ({ where, skip = 0, take = 100 }) => filteredSocialInteractions(where).slice(skip, skip + take).map(clone),
+      count: async ({ where }) => filteredSocialInteractions(where).length,
+      create: async ({ data }) => { if (data.externalRef && state.socialInteractions.some((item) => item.platform === data.platform && item.externalRef === data.externalRef)) { const error = new Error('Unique constraint failed'); error.code = 'P2002'; throw error }; const row = { id: id('social-interaction'), intent: 'UNCLASSIFIED', status: 'NEW', ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.socialInteractions.push(row); return clone(row) },
+      findUnique: async ({ where }) => { const row = state.socialInteractions.find((item) => item.id === where.id); return row ? clone(row) : null },
+      update: async ({ where, data }) => { const row = state.socialInteractions.find((item) => item.id === where.id); Object.assign(row, clone(data), { updatedAt: new Date() }); return clone(row) },
+    },
     communicationEvent: {
       findMany: async ({ where, skip = 0, take = 100 }) => filteredCommunicationEvents(where).slice(skip, skip + take).map(enrichCommunicationEvent),
       count: async ({ where }) => filteredCommunicationEvents(where).length,
       create: async ({ data }) => { const row = { id: id('communication-event'), ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.communicationEvents.push(row); return enrichCommunicationEvent(row) },
       findUnique: async ({ where }) => { const row = state.communicationEvents.find((item) => item.id === where.id); return row ? enrichCommunicationEvent(row) : null },
+      update: async ({ where, data }) => { const row = state.communicationEvents.find((item) => item.id === where.id); Object.assign(row, clone(data), { updatedAt: new Date() }); return enrichCommunicationEvent(row) },
     },
     sampleRequest: {
       findMany: async ({ where, skip = 0, take = 100 }) => filteredSampleRequests(where).slice(skip, skip + take).map(enrichSampleRequest),

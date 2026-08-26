@@ -1,0 +1,13 @@
+{
+  "name": "NexFab AI 外贸 CRM",
+  "short_name": "NexFab CRM",
+  "description": "NexFab AI 外贸 CRM V2.0",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#185fa5",
+  "icons": [
+    { "src": "icons/nexfab-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

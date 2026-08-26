@@ -1,3 +1,5 @@
+import { maskEmail, maskPhone, piiHash } from './pii.mjs'
+
 const MAX_FINGERPRINTS = 12
 
 function clean(value) {
@@ -42,7 +44,16 @@ export function normalizeCompany(value) {
 }
 
 function fingerprint(type, value, normalized = value, source = 'MANUAL') {
-  return normalized ? { type, value: clean(value || normalized).slice(0, 255), normalized: clean(normalized).slice(0, 255), source } : null
+  if (!normalized) return null
+  if (type === 'EMAIL') {
+    const hashed = piiHash('EMAIL', normalized)
+    return hashed ? { type, value: maskEmail(value || normalized) || '[encrypted-email]', normalized: hashed, source } : null
+  }
+  if (type === 'PHONE') {
+    const hashed = piiHash('PHONE', normalized)
+    return hashed ? { type, value: maskPhone(value || normalized) || '[encrypted-phone]', normalized: hashed, source } : null
+  }
+  return { type, value: clean(value || normalized).slice(0, 255), normalized: clean(normalized).slice(0, 255), source }
 }
 
 function unique(entries) {
@@ -89,11 +100,11 @@ export function fingerprintsFromDedupeInput(input, source = 'DEDUPE_QUERY') {
   ])
 }
 
-export async function findDuplicateCustomers(db, entries, { take = 10 } = {}) {
+export async function findDuplicateCustomers(db, entries, { take = 10, customerScope } = {}) {
   const fingerprints = unique(entries)
   if (!fingerprints.length) return []
   const rows = await db.customerFingerprint.findMany({
-    where: { OR: fingerprints.map(({ type, normalized }) => ({ type, normalized })) },
+    where: { AND: [{ OR: fingerprints.map(({ type, normalized }) => ({ type, normalized })) }, ...(customerScope && Object.keys(customerScope).length ? [{ customer: customerScope }] : [])] },
     include: { customer: { include: { owner: { select: { id: true, name: true, teamId: true } }, _count: { select: { contacts: true, opportunities: true } } } } },
     take,
   })

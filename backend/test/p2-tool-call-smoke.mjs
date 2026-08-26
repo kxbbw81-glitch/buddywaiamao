@@ -69,6 +69,7 @@ try {
   assert.equal(created.payload.data.status, 'PENDING_CONFIRMATION')
   assert.equal(created.payload.data.requiresHumanConfirmation, true)
   assert.ok(!JSON.stringify(created.payload.data.inputSummary).includes('secret-token'))
+  assert.ok(!JSON.stringify(created.payload.data.inputSummary).includes('buyer@example.com'))
 
   const toolCallId = created.payload.data.id
   const list = await request('/api/tool-calls?module=COMMUNICATION&pageSize=1', { cookie: exec })
@@ -78,7 +79,8 @@ try {
 
   const detail = await request(`/api/tool-calls/${toolCallId}`, { cookie: sales })
   assert.equal(detail.response.status, 200)
-  assert.equal(detail.payload.data.inputSummary.to, 'buyer@example.com')
+  assert.equal(detail.payload.data.inputSummary.to, '[redacted-email]')
+  assert.equal(JSON.stringify(detail.payload.data.inputSummary).includes('buyer@example.com'), false)
   assert.equal(detail.payload.data.aiTask.id, aiTaskId)
 
   const resultBeforeConfirm = await request(`/api/tool-calls/${toolCallId}/result`, { cookie: sales, method: 'POST', body: { confirmedHumanExecution: true, executionResult: { messageId: 'manual-1' } } })

@@ -1,0 +1,45 @@
+{
+  "name": "nexfab-crm-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3000",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3000",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test:p0-ui-contract": "node test/p0-ui-contract.mjs",
+    "test:p0-platform": "node test/p0-platform-integration.mjs",
+    "test:p1-acquisition-crm": "npm run build && node test/p1-acquisition-crm-integration.mjs",
+    "test:p1-product-quote": "npm run build && node test/p1-product-quote-integration.mjs",
+    "test:p1-fulfillment-flow": "npm run build && node test/p1-fulfillment-flow-integration.mjs",
+    "test:p1-import-dashboard": "npm run build && node test/p1-import-dashboard-integration.mjs",
+    "test:p2-ai-workbench": "npm run build && node test/p2-ai-workbench-integration.mjs",
+    "test:p3-pwa-contract": "node test/p3-pwa-contract.mjs",
+    "test:p3-ops-status": "npm run build && node test/p3-ops-status-integration.mjs",
+    "test:p3-social-acquisition": "node test/p3-social-acquisition-contract.mjs"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.1.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.1.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "5.9.3"
+  }
+}

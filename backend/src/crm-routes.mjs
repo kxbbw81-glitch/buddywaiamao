@@ -1,6 +1,7 @@
 import { assertCrmAccess, assertCustomerScope, scopeFor } from './access.mjs'
 import { findDuplicateCustomers, fingerprintsFromContact, fingerprintsFromCustomer, fingerprintsFromDedupeInput, registerCustomerFingerprints } from './customer-fingerprint.mjs'
 import { HttpError, listQuery, readJson, send, text } from './http.mjs'
+import { prepareEncryptedContact, publicPiiStorageSummary, revealEncryptedContact } from './pii.mjs'
 
 const STAGES = new Set(['NEW', 'QUOTED', 'SAMPLE', 'NEGOTIATION', 'WON', 'LOST'])
 const FOLLOW_UP_TYPES = new Set(['CALL', 'EMAIL', 'WHATSAPP', 'MEETING', 'NOTE'])
@@ -57,7 +58,7 @@ export async function handleCrmRoute({ req, res, url, pathname, actor, db }) {
     const body = await readJson(req)
     const data = customerInput(body)
     const fingerprints = fingerprintsFromCustomer(data, 'CUSTOMER_CREATE')
-    const duplicates = await findDuplicateCustomers(db, fingerprints)
+    const duplicates = await findDuplicateCustomers(db, fingerprints, { customerScope: scopeFor(actor) })
     if (duplicates.length && body.duplicateCheckConfirmed !== true) {
       return send(res, 409, { error: { code: 'DUPLICATE_CHECK_REQUIRED', message: '发现客户指纹重复，创建客户前需要人工确认。' }, data: { fingerprints, candidates: duplicates } })
     }
@@ -74,7 +75,7 @@ export async function handleCrmRoute({ req, res, url, pathname, actor, db }) {
     assertCrmAccess(actor)
     const body = await readJson(req)
     const fingerprints = fingerprintsFromDedupeInput(body)
-    const candidates = await findDuplicateCustomers(db, fingerprints)
+    const candidates = await findDuplicateCustomers(db, fingerprints, { customerScope: scopeFor(actor) })
     return send(res, 200, { data: { fingerprints, candidates, hasDuplicates: candidates.length > 0 } })
   }
 
@@ -99,15 +100,15 @@ export async function handleCrmRoute({ req, res, url, pathname, actor, db }) {
     assertCrmAccess(actor); const customer = await customerById(db, contactsMatch[1]); assertCustomerScope(actor, customer); const { page, pageSize, skip } = listQuery(url)
     const where = { customerId: customer.id }
     const [items, total] = await db.$transaction([db.contact.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: pageSize }), db.contact.count({ where })])
-    return send(res, 200, { data: { items, page, pageSize, total } })
+    return send(res, 200, { data: { items: items.map(revealEncryptedContact), page, pageSize, total } })
   }
   if (contactsMatch && req.method === 'POST') {
     assertCrmAccess(actor, true); const customer = await customerById(db, contactsMatch[1]); assertCustomerScope(actor, customer); const data = contactInput(await readJson(req))
     const item = await db.$transaction(async (tx) => {
-      const created = await tx.contact.create({ data: { ...data, customerId: customer.id } })
+      const created = await tx.contact.create({ data: { ...prepareEncryptedContact(data), customerId: customer.id } })
       const createdFingerprints = await registerCustomerFingerprints(tx, customer.id, fingerprintsFromContact(data, 'CONTACT_CREATE'), 'CONTACT_CREATE')
-      await audit(tx, actor, 'CREATE', 'contact', created.id, { customerId: customer.id, fingerprintCount: createdFingerprints.length })
-      return created
+      await audit(tx, actor, 'CREATE', 'contact', created.id, { customerId: customer.id, fingerprintCount: createdFingerprints.length, pii: publicPiiStorageSummary(created) })
+      return revealEncryptedContact(created)
     })
     return send(res, 201, { data: item })
   }

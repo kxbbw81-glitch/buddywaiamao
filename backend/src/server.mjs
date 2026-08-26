@@ -17,11 +17,17 @@ import { handleTradeDocumentRoute } from './trade-document-routes.mjs'
 import { handleFulfillmentRoute } from './fulfillment-routes.mjs'
 import { handleCommissionRoute } from './commission-routes.mjs'
 import { handleKnowledgeRoute } from './knowledge-routes.mjs'
+import { handleAgentLibraryRoute } from './agent-library-routes.mjs'
 import { handleAiGatewayRoute } from './ai-gateway-routes.mjs'
 import { handleAutomationRoute } from './automation-routes.mjs'
 import { handleIntegrationRoute } from './integration-routes.mjs'
 import { handleDashboardRoute } from './dashboard-routes.mjs'
+import { handleImportTemplateRoute } from './import-template-routes.mjs'
 import { handleAcquisitionRoute } from './acquisition-routes.mjs'
+import { handleOpsRoute } from './ops-routes.mjs'
+import { handleSocialRoute } from './social-routes.mjs'
+import { handleOutboundDraftRoute } from './outbound-draft-routes.mjs'
+import { handleAnalyticsRoute } from './analytics-routes.mjs'
 import { configurationStatus } from './config.mjs'
 
 const port = Number(process.env.PORT || 8787)
@@ -101,10 +107,21 @@ export function createAppServer() {
       return send(res, 200, { data })
     }
 
+    const opsHandled = await handleOpsRoute({ req, res, pathname: url.pathname, actor, db })
+    if (opsHandled !== false) return opsHandled
+
+    const importTemplateHandled = await handleImportTemplateRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (importTemplateHandled !== false) return importTemplateHandled
     const dashboardHandled = await handleDashboardRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (dashboardHandled !== false) return dashboardHandled
+    const analyticsHandled = await handleAnalyticsRoute({ req, res, pathname: url.pathname, actor, db })
+    if (analyticsHandled !== false) return analyticsHandled
     const acquisitionHandled = await handleAcquisitionRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (acquisitionHandled !== false) return acquisitionHandled
+    const socialHandled = await handleSocialRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (socialHandled !== false) return socialHandled
+    const outboundDraftHandled = await handleOutboundDraftRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (outboundDraftHandled !== false) return outboundDraftHandled
     const handled = await handleCrmRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (handled !== false) return handled
     const productHandled = await handleProductRoute({ req, res, url, pathname: url.pathname, actor, db })
@@ -127,6 +144,8 @@ export function createAppServer() {
     if (commissionHandled !== false) return commissionHandled
     const knowledgeHandled = await handleKnowledgeRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (knowledgeHandled !== false) return knowledgeHandled
+    const agentLibraryHandled = await handleAgentLibraryRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (agentLibraryHandled !== false) return agentLibraryHandled
     const aiGatewayHandled = await handleAiGatewayRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (aiGatewayHandled !== false) return aiGatewayHandled
     const automationHandled = await handleAutomationRoute({ req, res, url, pathname: url.pathname, actor, db })

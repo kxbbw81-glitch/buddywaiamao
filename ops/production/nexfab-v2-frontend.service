@@ -1,0 +1,20 @@
+[Unit]
+Description=NexFab CRM V2 Frontend
+After=network-online.target nexfab-ai-crm.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=goodjob-crm
+Group=goodjob-crm
+WorkingDirectory=/opt/nexfab-ai-crm/current/frontend
+Environment=NODE_ENV=production
+Environment=PORT=4302
+Environment=HOSTNAME=127.0.0.1
+Environment=BACKEND_URL=http://127.0.0.1:4300
+ExecStart=/usr/bin/node /opt/nexfab-ai-crm/current/frontend/.next/standalone/server.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
