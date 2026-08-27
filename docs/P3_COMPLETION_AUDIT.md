@@ -5,6 +5,15 @@
 
 ## 结论
 
+## 2026-08-27 生产化补充证据
+
+- 生产已启用本机 Redis 7 与 `AI_QUEUE_REDIS_URL`；`/new/api/backend/ready` 返回 `backend=bullmq-redis`、`productionReady=true`、`fallback=false`。
+- 已提交一次不带业务数据、不调用云端模型的 BullMQ 发布检查任务，结果为入队接受且 Worker 消费成功。AI 仍保持 disabled，未发送任何数据到云端。
+- 已发布 `nexfab-healthcheck.timer`：每五分钟检查 Redis、后端、前端、Nginx 和 `/ready` 的队列状态；手动触发的 systemd 退出结果为 success。它只记录服务器本机日志，不会向外部渠道发送告警。
+- 性能支线对公网各 10 次只读采样：`/new` P95 80.1ms，`/new/api/backend/ready` P95 85.7ms，`/new/api/backend/health` P95 98.5ms；当前没有生产性能 P0。
+- 后端所有无需专用本地数据库的 P0/P1/P2/P3 测试与前端 lint、typecheck、production build、P0-P3 合同/集成测试均通过。`p2-postgres-e2e` 与 `p3-performance-local` 仍只允许受控的本地专用测试库，不能用生产库替代。
+- 真实移动设备验收仍需在实际设备上完成；自动 PWA 合同和移动导航前端测试已通过，浏览器自动化连接超时没有产生页面变更。
+
 P3 的本地工程化、社媒草稿、渠道草稿和受限经营分析已经实现并通过相应自动化验证。真实模型、第三方平台、生产数据库、真实设备和发布动作仍是独立授权门禁，不能被本地测试替代。
 
 本地浏览器验收已使用经理测试会话完成：`获客中心 / 社媒运营`、`沟通中心 / 邮件管理`、`数据洞察 / 数据分析` 均可由动态导航进入并成功加载对应正式前端页面。该验收使用临时内存后端，结束后已关闭。
