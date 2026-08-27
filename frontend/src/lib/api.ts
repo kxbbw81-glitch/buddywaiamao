@@ -59,8 +59,10 @@ export class ApiError extends Error {
   }
 }
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/backend${path}`, {
+  const response = await fetch(`${basePath}/api/backend${path}`, {
     ...init,
     headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
     credentials: 'include',
@@ -76,7 +78,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 }
 
 export async function apiBinary(path: string): Promise<{ blob: Blob; contentType: string | null; bytes: number }> {
-  const response = await fetch(`/api/backend${path}`, { credentials: 'include', cache: 'no-store' })
+  const response = await fetch(`${basePath}/api/backend${path}`, { credentials: 'include', cache: 'no-store' })
   const contentType = response.headers.get('content-type')
   if (!response.ok) {
     if (contentType?.includes('application/json')) {

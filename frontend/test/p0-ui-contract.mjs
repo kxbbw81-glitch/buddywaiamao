@@ -27,6 +27,8 @@ assert.match(shell, /AI 助手/, 'AI assistant footer must follow navigation ref
 
 const api = await readFile(files.api, 'utf8')
 assert.match(api, /\/api\/backend/, 'browser requests must go through the same-origin backend proxy')
+assert.match(api, /const basePath = process\.env\.NEXT_PUBLIC_BASE_PATH \|\| ''/, 'API client must read the deployment base path')
+assert.match(api, /fetch\(`\$\{basePath\}\/api\/backend\$\{path\}`/, 'API client must preserve the /new deployment prefix')
 assert.doesNotMatch(api, /passwordHash/, 'frontend API layer must not request or persist passwordHash')
 
 const proxy = await readFile(files.proxy, 'utf8')
@@ -37,4 +39,4 @@ const css = await readFile(files.globals, 'utf8')
 assert.match(css, /#185fa5/i, 'brand color must follow reference')
 assert.match(css, /overflow: hidden/, 'page shell must follow reference full-height app behavior')
 
-console.log(JSON.stringify({ result: 'passed', mode: 'p0-ui-contract', checks: 12 }))
+console.log(JSON.stringify({ result: 'passed', mode: 'p0-ui-contract', checks: 14 }))
