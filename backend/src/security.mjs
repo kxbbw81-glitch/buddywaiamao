@@ -13,6 +13,11 @@ function secret() {
 function encode(value) { return Buffer.from(JSON.stringify(value)).toString('base64url') }
 function sign(value) { return createHmac('sha256', secret()).update(value).digest('base64url') }
 
+export async function hashPassword(password) {
+  const salt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  return `${salt}:${Buffer.from(await scrypt(password, salt, 64)).toString('hex')}`
+}
+
 export async function verifyPassword(password, hash) {
   if (typeof password !== 'string' || typeof hash !== 'string') return false
   const [salt, expected] = hash.split(':')

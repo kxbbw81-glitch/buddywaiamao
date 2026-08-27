@@ -4,6 +4,7 @@ import { navigationFor, ROLES } from './navigation.mjs'
 import { notImplemented, plannedEndpoint } from './api-contract.mjs'
 import { HttpError, readJson, send, text } from './http.mjs'
 import { createSession, sessionCookie, sessionFromRequest, verifyPassword } from './security.mjs'
+import { findUserForLogin } from './auth-login.mjs'
 import { prisma } from './prisma.mjs'
 import { handleCrmRoute } from './crm-routes.mjs'
 import { handleProductRoute } from './product-routes.mjs'
@@ -81,10 +82,10 @@ export function createAppServer() {
 
     if (req.method === 'POST' && url.pathname === '/api/auth/login') {
       const body = await readJson(req)
-      const email = text(body.email, '邮箱', { required: true, max: 160 })?.toLowerCase()
+      const loginId = body.loginId ?? body.account ?? body.username ?? body.email
       const password = text(body.password, '密码', { required: true, max: 512 })
       const db = await prisma()
-      const user = await db.user.findUnique({ where: { email }, select: { id: true, email: true, name: true, role: true, status: true, teamId: true, passwordHash: true } })
+      const user = await findUserForLogin(db, loginId)
       if (!user || user.status !== 'ACTIVE' || !(await verifyPassword(password, user.passwordHash))) throw new HttpError(401, 'INVALID_CREDENTIALS', '邮箱或密码不正确。')
       await db.auditLog.create({ data: { userId: user.id, action: 'LOGIN', resource: 'session' } })
       const { passwordHash, ...safeUser } = user

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { api, ApiError } from '@/lib/api'
 
 const demoAccounts = [
+  ['admin', '默认管理员'],
   ['sales@nexfab.test', '销售业务员'],
   ['manager@nexfab.test', '销售经理'],
   ['finance@nexfab.test', '财务'],
@@ -15,7 +16,7 @@ const demoAccounts = [
 ] as const
 
 export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
-  const [email, setEmail] = useState('manager@nexfab.test')
+  const [loginId, setLoginId] = useState('admin')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -25,7 +26,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     setError(null)
     setLoading(true)
     try {
-      await api.login(email, password)
+      await api.login(loginId, password)
       onSuccess()
     } catch (err) {
       if (err instanceof ApiError) setError(`${err.code}：${err.message}`)
@@ -50,22 +51,22 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         <CardContent>
           <form className="space-y-4" onSubmit={submit}>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-slate-600">邮箱</span>
-              <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" required />
+              <span className="text-xs font-medium text-slate-600">账号 / 邮箱</span>
+              <Input type="text" value={loginId} onChange={(event) => setLoginId(event.target.value)} placeholder="admin 或 name@example.com" autoComplete="username" required />
             </label>
             <label className="block space-y-1.5">
               <span className="text-xs font-medium text-slate-600">密码</span>
-              <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="请输入密码" required />
+              <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="请输入密码" autoComplete="current-password" required />
             </label>
             {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div> : null}
             <Button className="w-full" disabled={loading}>{loading ? '登录中...' : '登录'}</Button>
           </form>
           <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs leading-6 text-blue-800">
-            <b>联调说明：</b>账号、密码与权限由现有后端控制；前端不保存明文密码、不生成演示数据。
+            <b>联调说明：</b>账号、邮箱、密码与权限由现有后端控制；默认 admin 别名由后端映射到唯一启用管理员，前端不保存明文密码、不生成演示数据。
           </div>
           <div className="mt-4 grid gap-2 text-xs text-slate-500">
             {demoAccounts.map(([account, role]) => (
-              <button key={account} type="button" className="flex justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left hover:border-brand" onClick={() => setEmail(account)}>
+              <button key={account} type="button" className="flex justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left hover:border-brand" onClick={() => setLoginId(account)}>
                 <span>{account}</span><span>{role}</span>
               </button>
             ))}

@@ -97,7 +97,7 @@ function json(method: 'POST' | 'PUT' | 'PATCH', body: Record<string, unknown>) {
 }
 
 export const api = {
-  login: (email: string, password: string) => apiFetch<{ user: UserSession }>('/api/auth/login', json('POST', { email, password })),
+  login: (loginId: string, password: string) => apiFetch<{ user: UserSession }>('/api/auth/login', json('POST', { loginId, password })),
   logout: () => apiFetch<void>('/api/auth/logout', { method: 'POST' }),
   session: () => apiFetch<{ user: UserSession }>('/api/auth/session'),
   navigation: () => apiFetch<NavigationData>('/api/navigation'),

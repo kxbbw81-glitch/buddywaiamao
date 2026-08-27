@@ -49,7 +49,9 @@
     "test:p3-outbound-draft": "node test/p3-outbound-draft-smoke.mjs",
     "test:p3-analytics-report": "node test/p3-analytics-report-smoke.mjs",
     "p3:backup-postgres": "node scripts/backup-postgres.mjs",
-    "p2:pgvector-preflight": "node scripts/verify-pgvector.mjs"
+    "p2:pgvector-preflight": "node scripts/verify-pgvector.mjs",
+    "admin:ensure-login": "node scripts/ensure-admin-login.mjs",
+    "test:p0-login": "node test/p0-login-smoke.mjs"
   },
   "engines": {
     "node": ">=20"

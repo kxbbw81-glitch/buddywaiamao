@@ -309,7 +309,15 @@ export async function createMemoryPrisma() {
     })
   })
   const client = {
-    user: { findUnique: async ({ where, select }) => { const row = state.users.find((user) => (where.id && user.id === where.id) || (where.email && user.email === where.email)); if (!row) return null; return select ? Object.fromEntries(Object.entries(select).filter(([, enabled]) => enabled).map(([field]) => [field, clone(row[field])])) : clone(row) } },
+    user: {
+      findUnique: async ({ where, select }) => { const row = state.users.find((user) => (where.id && user.id === where.id) || (where.email && user.email === where.email)); if (!row) return null; return select ? Object.fromEntries(Object.entries(select).filter(([, enabled]) => enabled).map(([field]) => [field, clone(row[field])])) : clone(row) },
+      findMany: async ({ where, select, orderBy, take = 100 } = {}) => {
+        let rows = state.users.filter((row) => matches(where, row))
+        if (orderBy?.createdAt === 'asc') rows = rows.slice().sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0))
+        rows = rows.slice(0, take)
+        return rows.map((row) => select ? Object.fromEntries(Object.entries(select).filter(([, enabled]) => enabled).map(([field]) => [field, clone(row[field])])) : clone(row))
+      },
+    },
     customer: {
       findMany: async ({ where, skip = 0, take = 100 }) => filteredCustomers(where).slice(skip, skip + take).map(enrichCustomer),
       count: async ({ where }) => filteredCustomers(where).length,
