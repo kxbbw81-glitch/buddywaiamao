@@ -109,3 +109,13 @@ app + worker + postgres + redis + minio + ollama
 
 - 每次生产变更前必须有数据库备份、release 备份、回滚命令和停止条件。
 - 报价、订单、收款、单证、审计等核心数据不得无备份直接迁移或覆盖。
+## 生产 Redis/BullMQ 与本机监控
+
+生产环境必须配置本机或受控网络可达的 Redis，并在仅服务器可读的环境文件中设置：
+
+```bash
+NODE_ENV=production
+AI_QUEUE_REDIS_URL=redis://127.0.0.1:6379
+```
+
+部署脚本会安装版本化的后端 systemd 单元，并启用 `nexfab-healthcheck.timer`。该定时器每五分钟只读检查 Redis、后端、前端、Nginx 与 `/ready` 返回的 BullMQ 状态；失败会保留在 systemd/journal 中。它不会发送邮件、社媒或任何外部告警。发布后应执行 `systemctl start nexfab-healthcheck.service`，并确认 `systemctl is-active nexfab-healthcheck.timer` 与 `systemctl --failed`。

@@ -88,7 +88,11 @@ cp -a "$RELEASE_DIR/frontend/public" "$RELEASE_DIR/frontend/.next/standalone/"
 cp -a "$RELEASE_DIR/frontend/.next/static" "$RELEASE_DIR/frontend/.next/standalone/.next/"
 chown -R "$APP_USER:$APP_USER" "$RELEASE_DIR/frontend/.next" "$RELEASE_DIR/frontend/public"
 
+install -m 0644 "$RELEASE_DIR/ops/production/nexfab-ai-crm.service" /etc/systemd/system/nexfab-ai-crm.service
 install -m 0644 "$RELEASE_DIR/ops/production/nexfab-v2-frontend.service" /etc/systemd/system/nexfab-v2-frontend.service
+install -m 0755 "$RELEASE_DIR/ops/production/nexfab-healthcheck.sh" /usr/local/lib/nexfab-healthcheck
+install -m 0644 "$RELEASE_DIR/ops/production/nexfab-healthcheck.service" /etc/systemd/system/nexfab-healthcheck.service
+install -m 0644 "$RELEASE_DIR/ops/production/nexfab-healthcheck.timer" /etc/systemd/system/nexfab-healthcheck.timer
 install -m 0644 "$RELEASE_DIR/ops/production/nexfab-v2-root.nginx.conf" /etc/nginx/sites-available/nexfab-v2-root
 ln -sfn "$RELEASE_DIR" "$APP_ROOT/current"
 
@@ -110,7 +114,7 @@ for pid in $(pgrep -f 'next-server' || true); do
 done
 
 systemctl daemon-reload
-systemctl enable --now nexfab-ai-crm nexfab-v2-frontend
+systemctl enable --now nexfab-ai-crm nexfab-v2-frontend nexfab-healthcheck.timer
 for attempt in $(seq 1 30); do
   if curl -fsS http://127.0.0.1:4300/ready > "$BACKUP_DIR/backend-ready.json" && curl -fsS http://127.0.0.1:4302/new/ > "$BACKUP_DIR/frontend.html"; then
     break
