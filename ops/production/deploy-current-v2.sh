@@ -81,7 +81,7 @@ runuser -u "$APP_USER" -- env HOME="$APP_HOME" DATABASE_URL="$DATABASE_URL" PII_
 runuser -u "$APP_USER" -- env HOME="$APP_HOME" DATABASE_URL="$DATABASE_URL" PII_ENCRYPTION_KEY="$PII_ENCRYPTION_KEY" npm --prefix "$RELEASE_DIR/backend" run p0:pii-backfill -- --apply
 
 printf '安装并构建 /new 前端。\n'
-runuser -u "$APP_USER" -- env HOME="$APP_HOME" npm --prefix "$RELEASE_DIR/frontend" ci --no-audit --no-fund
+runuser -u "$APP_USER" -- env HOME="$APP_HOME" npm --prefix "$RELEASE_DIR/frontend" ci --include=dev --no-audit --no-fund
 runuser -u "$APP_USER" -- env HOME="$APP_HOME" NEXT_PUBLIC_BASE_PATH=/new NEXT_TELEMETRY_DISABLED=1 npm --prefix "$RELEASE_DIR/frontend" run build
 mkdir -p "$RELEASE_DIR/frontend/.next/standalone/.next"
 cp -a "$RELEASE_DIR/frontend/public" "$RELEASE_DIR/frontend/.next/standalone/"

@@ -9,6 +9,7 @@ User=goodjob-crm
 Group=goodjob-crm
 WorkingDirectory=/opt/nexfab-ai-crm/current/backend
 EnvironmentFile=/opt/nexfab-ai-crm/shared/v2-backend.env
+Environment=NODE_ENV=production
 ExecStart=/usr/bin/node /opt/nexfab-ai-crm/current/backend/src/server.mjs
 Restart=on-failure
 RestartSec=5
