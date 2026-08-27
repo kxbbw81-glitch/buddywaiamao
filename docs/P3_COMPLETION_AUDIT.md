@@ -10,7 +10,8 @@
 - 生产已启用本机 Redis 7 与 `AI_QUEUE_REDIS_URL`；`/new/api/backend/ready` 返回 `backend=bullmq-redis`、`productionReady=true`、`fallback=false`。
 - 已提交一次不带业务数据、不调用云端模型的 BullMQ 发布检查任务，结果为入队接受且 Worker 消费成功。AI 仍保持 disabled，未发送任何数据到云端。
 - 已发布 `nexfab-healthcheck.timer`：每五分钟检查 Redis、后端、前端、Nginx 和 `/ready` 的队列状态；手动触发的 systemd 退出结果为 success。它只记录服务器本机日志，不会向外部渠道发送告警。
-- 性能支线对公网各 10 次只读采样：`/new` P95 80.1ms，`/new/api/backend/ready` P95 85.7ms，`/new/api/backend/health` P95 98.5ms；当前没有生产性能 P0。
+- 性能支线对公网各 10 次只读采样后，主控补充各 30 次只读采样：`/new` P95 81.1ms，`/new/api/backend/ready` P95 86.7ms，`/new/api/backend/health` P95 81.5ms；当前没有生产性能 P0。
+- 生产数据库当前只有 1 个用户与 23 条审计记录，Customer、Lead、Quote、SalesOrder 均为 0；`log_min_duration_statement=-1`，未启用 `pg_stat_statements`。因此上述仅是空库生产基线，不可替代真实业务数据量的慢查询/容量验收。
 - 后端所有无需专用本地数据库的 P0/P1/P2/P3 测试与前端 lint、typecheck、production build、P0-P3 合同/集成测试均通过。`p2-postgres-e2e` 与 `p3-performance-local` 仍只允许受控的本地专用测试库，不能用生产库替代。
 - 真实移动设备验收仍需在实际设备上完成；自动 PWA 合同和移动导航前端测试已通过，浏览器自动化连接超时没有产生页面变更。
 
