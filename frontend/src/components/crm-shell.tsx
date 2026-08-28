@@ -18,6 +18,7 @@ import { P3OpsStatusView } from '@/components/p3-ops-status-view'
 import { P3SocialAcquisitionView } from '@/components/p3-social-acquisition-view'
 import { P3OutboundDraftView } from '@/components/p3-outbound-draft-view'
 import { P3OperationsReportView } from '@/components/p3-operations-report-view'
+import { P3ToolsCenterView } from '@/components/p3-tools-center-view'
 import { cn } from '@/lib/utils'
 
 const phaseColor: Record<string, string> = {
@@ -64,6 +65,10 @@ function isP13Route(active: { moduleId: string; subName: string } | null) {
 function isP14Route(active: { moduleId: string; subName: string } | null) {
   if (!active) return false
   return (active.moduleId === 'dashboard' && ['经营简报', '跟进与管道'].includes(active.subName)) || (active.moduleId === 'acquisition' && active.subName === '渠道分析') || (active.moduleId === 'insight' && ['数据分析', '数据大屏'].includes(active.subName)) || (active.moduleId === 'tools' && ['官网链接登记', '汇率换算'].includes(active.subName))
+}
+
+function isP3ToolsRoute(active: { moduleId: string; subName: string } | null) {
+  return active?.moduleId === 'tools'
 }
 
 function isP21Route(active: { moduleId: string; subName: string } | null) {
@@ -215,6 +220,8 @@ export function CrmShell() {
             <P3OutboundDraftView />
           ) : active && isP34Route(active) ? (
             <P3OperationsReportView />
+          ) : active && isP3ToolsRoute(active) ? (
+            <P3ToolsCenterView active={active} />
           ) : active && isP31Route(active) ? (
             <P3OpsStatusView />
           ) : active && isP14Route(active) ? (

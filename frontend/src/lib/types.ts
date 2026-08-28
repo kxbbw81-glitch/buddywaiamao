@@ -221,10 +221,50 @@ export interface DedupeCandidate {
 }
 
 export interface DedupeResult {
-  fingerprints: Array<{ type: string; value?: string; hash?: string }>
+  fingerprints: Array<{ type: string; value?: string; hash?: string; normalized?: string; source?: string }>
   candidates: DedupeCandidate[]
   hiddenCount?: number
   hasDuplicates: boolean
+  mode?: string
+}
+
+export interface ToolOcrResult {
+  mode: string
+  imageName: string
+  extracted: { contactName?: string | null; companyName?: string | null; email?: string | null; phone?: string | null; website?: string | null }
+  limitations: string[]
+}
+
+export interface ToolWebsiteLinkResult {
+  customer: Customer
+  normalizedDomain: string
+  mode: string
+}
+
+export interface ToolFxResult {
+  from: string
+  to: string
+  amount: number
+  rate: number
+  convertedAmount: number
+  mode: string
+  asOf: string
+  limitations: string[]
+}
+
+export interface ToolFollowupCopyResult {
+  copy: string
+  mode: string
+  scenario: string
+  language: string
+  limitations: string[]
+}
+
+export interface ToolHsResult {
+  items: Array<{ code: string; keyword: string; zh: string; note: string }>
+  total: number
+  mode: string
+  limitations: string[]
 }
 
 export interface LeadConvertResult {

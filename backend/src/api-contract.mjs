@@ -15,7 +15,7 @@ const API_CONTRACTS = [
   ['GET', /^\/api\/outbound-drafts$/, '渠道草稿列表'], ['POST', /^\/api\/outbound-drafts$/, '创建渠道草稿'], ['POST', /^\/api\/outbound-drafts\/[^/]+\/(submit-review|approve|record-manual-send)$/, '渠道草稿人工审核与发送留痕'],
   ['GET', /^\/api\/skills$/, '技能列表'], ['POST', /^\/api\/skills$/, '创建技能'], ['PATCH', /^\/api\/skills\/[^/]+$/, '更新技能'], ['POST', /^\/api\/skill-categories$/, '创建技能分类'],
   ['POST', /^\/api\/agent\/tasks$/, '创建 Agent 任务'], ['POST', /^\/api\/agent\/tasks\/[^/]+\/approve$/, '批准 Agent 外部动作'],
-  ['POST', /^\/api\/tools\/(ocr|dedupe)$/, '工具服务'], ['GET', /^\/api\/tools\/(fx|hs)$/, '工具查询'],
+  ['POST', /^\/api\/tools\/(ocr|dedupe|website-link|followup-copy)$/, '工具服务'], ['GET', /^\/api\/tools\/(fx|hs)$/, '工具查询'],
   ['GET', /^\/api\/admin\/(accounts|ai-config)$/, '系统管理查询'], ['PUT', /^\/api\/admin\/(accounts|ai-config)$/, '系统管理更新'], ['POST', /^\/api\/admin\/db\/backup$/, '数据库维护'],
 ]
 

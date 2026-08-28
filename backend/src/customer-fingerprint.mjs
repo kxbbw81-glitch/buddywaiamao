@@ -100,6 +100,41 @@ export function fingerprintsFromDedupeInput(input, source = 'DEDUPE_QUERY') {
   ])
 }
 
+function canSeeCustomer(actor, customer) {
+  if (!actor || !customer) return true
+  if (actor.role === 'ADMIN' || actor.role === 'EXEC') return true
+  if (customer.ownerId === actor.id) return true
+  if (actor.role === 'MANAGER' && actor.teamId && customer.owner?.teamId === actor.teamId) return true
+  return false
+}
+
+function compactCandidate(entry) {
+  return {
+    customer: entry.customer,
+    matches: entry.matches,
+  }
+}
+
+export async function findDuplicateCustomerMatches(db, entries, { actor = null, take = 10 } = {}) {
+  const fingerprints = unique(entries)
+  if (!fingerprints.length) return { candidates: [], hiddenCount: 0, total: 0 }
+  const rows = await db.customerFingerprint.findMany({
+    where: { OR: fingerprints.map(({ type, normalized }) => ({ type, normalized })) },
+    include: { customer: { include: { owner: { select: { id: true, name: true, teamId: true } }, _count: { select: { contacts: true, opportunities: true } } } } },
+    take,
+  })
+  const byCustomer = new Map()
+  for (const row of rows) {
+    if (!row.customer) continue
+    const current = byCustomer.get(row.customerId) || { customer: row.customer, matches: [] }
+    current.matches.push({ type: row.type, value: row.value, normalized: row.normalized, source: row.source })
+    byCustomer.set(row.customerId, current)
+  }
+  const all = [...byCustomer.values()]
+  const visible = all.filter((entry) => canSeeCustomer(actor, entry.customer)).map(compactCandidate)
+  return { candidates: visible, hiddenCount: all.length - visible.length, total: all.length }
+}
+
 export async function findDuplicateCustomers(db, entries, { take = 10, customerScope } = {}) {
   const fingerprints = unique(entries)
   if (!fingerprints.length) return []
