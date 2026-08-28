@@ -25,6 +25,7 @@ import { handleIntegrationRoute } from './integration-routes.mjs'
 import { handleDashboardRoute } from './dashboard-routes.mjs'
 import { handleImportTemplateRoute } from './import-template-routes.mjs'
 import { handleAcquisitionRoute } from './acquisition-routes.mjs'
+import { handleToolsRoute } from './tools-routes.mjs'
 import { handleOpsRoute } from './ops-routes.mjs'
 import { handleSocialRoute } from './social-routes.mjs'
 import { handleOutboundDraftRoute } from './outbound-draft-routes.mjs'
@@ -123,6 +124,8 @@ export function createAppServer() {
     if (socialHandled !== false) return socialHandled
     const outboundDraftHandled = await handleOutboundDraftRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (outboundDraftHandled !== false) return outboundDraftHandled
+    const toolsHandled = await handleToolsRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (toolsHandled !== false) return toolsHandled
     const handled = await handleCrmRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (handled !== false) return handled
     const productHandled = await handleProductRoute({ req, res, url, pathname: url.pathname, actor, db })
