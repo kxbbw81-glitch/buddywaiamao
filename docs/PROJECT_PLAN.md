@@ -2,7 +2,7 @@
 
 > 阶段 0 版本：2026-08-25
 > 源码基线：`main` / `a01389c0d62f7c33552774cdd0f60142cf46ec86`
-> 唯一规范：`/Users/dream/Documents/NexFab_CRM交接资料/NexFab_AI外贸CRM系统_开发总提示词_V2.0_合并版.md`
+> 唯一规范：`/Users/dream/Documents/NexFab_CRM交接资料/NexFab_AI外贸CRM系统_开发总提示词_V2.0_合并版最终版本.md`
 
 ## 1. 目标
 
