@@ -17,6 +17,9 @@ import { AgentLibraryView } from '@/components/agent-library-view'
 import { P3OpsStatusView } from '@/components/p3-ops-status-view'
 import { P3SocialAcquisitionView } from '@/components/p3-social-acquisition-view'
 import { P3OutboundDraftView } from '@/components/p3-outbound-draft-view'
+import { TimelineView } from '@/components/p1-timeline-view'
+import { CommissionView } from '@/components/p1-commission-view'
+import { NotAvailableView, AccountAccessView } from '@/components/not-available-view'
 import { P3OperationsReportView } from '@/components/p3-operations-report-view'
 import { P3ToolsCenterView } from '@/components/p3-tools-center-view'
 import { cn } from '@/lib/utils'
@@ -83,8 +86,44 @@ function isP31Route(active: { moduleId: string; subName: string } | null) {
   return active?.moduleId === 'system'
 }
 
+// 修复说明：[P1-台账外]，原因：六个导航入口（客户画像/售后与复购/WhatsApp/社媒私信/沟通时间线/提成与对账）原命中通用占位提示；
+// 有真实后端的（时间线/提成）接真实视图，无后端的诚实标注"未接入"，系统管理子页按功能拆分而非统一落运维状态页。
+function isTimelineRoute(active: { moduleId: string; subName: string } | null) {
+  return active?.moduleId === 'comms' && active.subName === '沟通时间线'
+}
+function isCommissionRoute(active: { moduleId: string; subName: string } | null) {
+  return active?.moduleId === 'finance' && active.subName === '提成与对账'
+}
+function isAccountRoute(active: { moduleId: string; subName: string } | null) {
+  return active?.moduleId === 'system' && active.subName === '账号与权限'
+}
+function isP31OpsRoute(active: { moduleId: string; subName: string } | null) {
+  // 修复说明：[P1-台账外]，原因：系统管理子页原统一落运维状态页；现仅运行状态/AI 配置/系统设置/数据库维护继续展示运维状态页，账号与权限独立。
+  return active?.moduleId === 'system' && ['运行状态', 'AI 配置', '系统设置', '数据库维护'].includes(active?.subName || '')
+}
+function notAvailableInfo(active: { moduleId: string; subName: string } | null): { title: string; reason: string; needed: string } | null {
+  if (!active) return null
+  if (active.moduleId === 'customer' && active.subName === '客户画像') return {
+    title: '客户画像',
+    reason: '后端客户画像聚合接口（标签、成交画像、复购统计）尚未提供。',
+    needed: '后端画像聚合端点（基于客户、商机、订单、沟通数据聚合）+ 前端画像视图。',
+  }
+  if (active.moduleId === 'pipeline' && active.subName === '售后与复购') return {
+    title: '售后与复购',
+    reason: '售后工单与复购提醒的后端模型与端点尚未提供（当前跟进记录可部分覆盖复购动作，见商机跟进）。',
+    needed: '后端复购提醒/售后工单模型与端点，接入后可复用商机跟进交互。',
+  }
+  if (active.moduleId === 'comms' && active.subName === 'WhatsApp') return {
+    title: 'WhatsApp',
+    reason: 'WhatsApp 渠道接入与消息收发后端尚未提供（沟通时间线可记录人工发生的 WhatsApp 沟通）。',
+    needed: '后端 WhatsApp 连接器（需单独授权）+ 消息收发端点；接入前人工沟通可在沟通时间线留痕。',
+  }
+  return null
+}
+
 function isP32Route(active: { moduleId: string; subName: string } | null) {
-  return active?.moduleId === 'acquisition' && active.subName === '社媒运营'
+  // 修复说明：[P1-台账外]，原因：社媒私信后端由社媒台账（互动录入/意图）承载；私信入口复用 P3 社媒视图。
+  return active?.moduleId === 'acquisition' && ['社媒运营', '社媒私信'].includes(active.subName)
 }
 function isP33Route(active: { moduleId: string; subName: string } | null) { return active?.moduleId === 'comms' && active.subName === '邮件管理' }
 function isP34Route(active: { moduleId: string; subName: string } | null) { return active?.moduleId === 'insight' && active.subName === '数据分析' }
@@ -207,7 +246,13 @@ export function CrmShell() {
               </div>
             )
           })}
-        </div><div className="border-t border-line p-2"><button className="flex w-full items-center gap-2.5 rounded-[10px] border border-[#AFA9EC] bg-gradient-to-br from-[#EEEDFE] to-[#f6f5ff] px-3 py-2.5 text-[13px] font-medium text-[#534AB7] hover:bg-[#EEEDFE]"><Sparkles className="h-4 w-4" /><span>AI 助手</span><span className="ml-auto text-[10px] font-normal text-[#7F77DD]">人工确认</span></button></div></aside>
+        </div><div className="border-t border-line p-2"><button className="flex w-full items-center gap-2.5 rounded-[10px] border border-[#AFA9EC] bg-gradient-to-br from-[#EEEDFE] to-[#f6f5ff] px-3 py-2.5 text-[13px] font-medium text-[#534AB7] hover:bg-[#EEEDFE]" onClick={() => {
+          // 修复说明：[P2-台账外]，原因：AI 助手按钮原无任何处理器；点击导航到 AI 工作台（aihub 首个子项）。
+          const aihub = navigation?.modules.find((item) => item.id === 'aihub')
+          const sub = aihub?.subs[0]
+          if (aihub && sub) setActive({ moduleId: aihub.id, moduleName: aihub.name, subName: sub.name })
+          setMobileNavOpen(false)
+        }}><Sparkles className="h-4 w-4" /><span>AI 助手</span><span className="ml-auto text-[10px] font-normal text-[#7F77DD]">人工确认</span></button></div></aside>
         <section className="nexfab-scroll min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-7 sm:py-6">
           {loading ? <div className="text-sm text-muted">正在加载会话与导航...</div> : null}
           {error ? <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div> : null}
@@ -246,6 +291,14 @@ export function CrmShell() {
             </div>
             <DashboardView dashboard={dashboard} />
             </>
+          ) : active && isTimelineRoute(active) ? (
+            <TimelineView active={active} />
+          ) : active && isCommissionRoute(active) ? (
+            <CommissionView active={active} />
+          ) : active && isAccountRoute(active) ? (
+            <AccountAccessView user={user} />
+          ) : active && notAvailableInfo(active) ? (
+            <NotAvailableView title={notAvailableInfo(active)!.title} reason={notAvailableInfo(active)!.reason} needed={notAvailableInfo(active)!.needed} />
           ) : active && isP11Route(active) ? (
             <P1AcquisitionCrmView active={active} />
           ) : active && isP12Route(active) ? (

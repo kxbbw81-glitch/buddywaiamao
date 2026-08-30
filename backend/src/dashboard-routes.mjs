@@ -51,13 +51,15 @@ async function ownedMemo(db, actor, id) {
 function quoteApprovalWhere(actor) {
   if (actor.role === 'SALES') return { requestedById: actor.id, status: 'PENDING' }
   if (actor.role === 'MANAGER' || actor.role === 'FINANCE' || actor.role === 'ADMIN') return { status: 'PENDING' }
-  return { status: '__NO_ACCESS__' }
+  // 修复说明：[P0-登录后工作台]，原因：用非法枚举值构造空结果会被 Prisma 在查询前拒绝，导致部分角色登录后首屏返回 500；改用不可能的主键保持空范围且不触发枚举校验。
+  return { id: '__NO_ACCESS__' }
 }
 
 function toolCallWhere(actor) {
   if (actor.role === 'SALES') return { createdById: actor.id, status: 'PENDING_CONFIRMATION' }
   if (actor.role === 'MANAGER' || actor.role === 'ADMIN') return { status: 'PENDING_CONFIRMATION' }
-  return { status: '__NO_ACCESS__' }
+  // 修复说明：[P0-登录后工作台]，原因：同上，角色无权范围必须使用合法查询条件，不能把占位值写入枚举字段。
+  return { id: '__NO_ACCESS__' }
 }
 
 function sampleWhere(actor) {
@@ -68,7 +70,8 @@ function sampleWhere(actor) {
 
 function orderPaymentWhere(actor) {
   if (actor.role === 'FINANCE' || actor.role === 'ADMIN') return { status: 'REGISTERED' }
-  return { status: '__NO_ACCESS__' }
+  // 修复说明：[P0-登录后工作台]，原因：销售等角色的待确认回款为空范围原使用非法枚举，阻断仪表盘加载并表现为登录后回到登录页。
+  return { id: '__NO_ACCESS__' }
 }
 
 function crmReadableScope(actor) {

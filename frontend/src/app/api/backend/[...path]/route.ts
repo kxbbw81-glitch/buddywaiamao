@@ -30,6 +30,10 @@ const ALLOWED_PREFIXES = [
   'api/payments',
   'api/knowledge-documents',
   'api/trade-documents',
+  // 修复说明：[P1-台账外]，原因：沟通时间线与提成后端接口已存在且 smoke 通过，但 BFF 未放行导致对应导航 404；补齐白名单。
+  'api/timeline',
+  'api/commissions',
+  'api/commission-records',
   'api/shipments',
   'api/social-accounts',
   'api/social-posts',
@@ -59,10 +63,13 @@ const ALLOWED_LITERAL = new Set([
   'api/outbound-drafts',
 ])
 const ADMIN_LITERAL = new Set(['api/admin/ops/status'])
+// 修复说明：[P2-台账外]，原因：/new/api/backend/ready 健康探针被白名单 403，影响运维探测；仅放行只读探针端点。
+const PROBE_LITERAL = new Set(['ready', 'health'])
 
 function isAllowedPath(segments: string[]): boolean {
   if (segments.some((segment) => segment === '..' || segment.includes('/') || segment.includes('\\'))) return false
   const joined = segments.join('/')
+  if (PROBE_LITERAL.has(joined)) return true
   if (ADMIN_LITERAL.has(joined)) return true
   if (segments[0] === 'api' && segments[1] === 'admin') return false
   if (ALLOWED_LITERAL.has(joined)) return true
