@@ -28,7 +28,8 @@ function snapshotLines(snapshot) {
     `Total Amount: ${money(totals.totalAmount, quote.currency)}`,
     `Total Cost: ${money(totals.totalCost, quote.currency)}`,
     `Gross Margin: ${money(totals.grossMargin, quote.currency)}`,
-    `Gross Margin Rate: ${Math.round(Number(totals.grossMarginRate || 0) * 10000) / 100}%`,
+    // 修复说明：[低危-容错]，原因：grossMarginRate 非数字时输出 NaN%；补 isFinite 回退。
+    `Gross Margin Rate: ${Number.isFinite(Number(totals.grossMarginRate)) ? Math.round(Number(totals.grossMarginRate) * 10000) / 100 : 0}%`,
     '',
     snapshot.disclaimer || 'Manual confirmation required before external sending.',
   ]

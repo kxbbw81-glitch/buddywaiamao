@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronRight, LayoutDashboard, LogOut, Menu, Sparkles, X } from 'lucide-react'
-import { api, ApiError } from '@/lib/api'
+import { api, ApiError, SESSION_EXPIRED_EVENT } from '@/lib/api'
 import type { DashboardData, NavigationData, NavModule, UserSession } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -126,6 +126,17 @@ export function CrmShell() {
   }
 
   useEffect(() => { void load() }, [])
+  // 修复说明：[中危-会话体验]，原因：业务视图收到 401 只显示错误横幅，会话过期后用户停留在报错页；监听 api 层的全局过期事件统一回登录并提示。
+  useEffect(() => {
+    function onSessionExpired() {
+      setUser(null)
+      setNavigation(null)
+      setDashboard(null)
+      setError('登录已过期，请重新登录。')
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired)
+  }, [])
 
   const visibleCount = useMemo(() => navigation?.modules.reduce((sum, item) => sum + item.subs.length, 0) || 0, [navigation])
 

@@ -121,7 +121,9 @@ export async function findDuplicateCustomerMatches(db, entries, { actor = null, 
   const rows = await db.customerFingerprint.findMany({
     where: { OR: fingerprints.map(({ type, normalized }) => ({ type, normalized })) },
     include: { customer: { include: { owner: { select: { id: true, name: true, teamId: true } }, _count: { select: { contacts: true, opportunities: true } } } } },
-    take,
+    orderBy: { customerId: 'asc' },
+    // 修复说明：[中危-业务正确性]，原因：take 直接作用在指纹行而非客户数，一个客户可带多条指纹，命中客户被静默丢弃导致重复客户漏检；行数上限放大到 200，分组后再按客户截断。
+    take: 200,
   })
   const byCustomer = new Map()
   for (const row of rows) {
@@ -132,7 +134,8 @@ export async function findDuplicateCustomerMatches(db, entries, { actor = null, 
   }
   const all = [...byCustomer.values()]
   const visible = all.filter((entry) => canSeeCustomer(actor, entry.customer)).map(compactCandidate)
-  return { candidates: visible, hiddenCount: all.length - visible.length, total: all.length }
+  const candidates = visible.slice(0, take)
+  return { candidates, hiddenCount: all.length - candidates.length, total: all.length }
 }
 
 export async function findDuplicateCustomers(db, entries, { take = 10, customerScope } = {}) {
@@ -141,7 +144,9 @@ export async function findDuplicateCustomers(db, entries, { take = 10, customerS
   const rows = await db.customerFingerprint.findMany({
     where: { AND: [{ OR: fingerprints.map(({ type, normalized }) => ({ type, normalized })) }, ...(customerScope && Object.keys(customerScope).length ? [{ customer: customerScope }] : [])] },
     include: { customer: { include: { owner: { select: { id: true, name: true, teamId: true } }, _count: { select: { contacts: true, opportunities: true } } } } },
-    take,
+    orderBy: { customerId: 'asc' },
+    // 修复说明：[中危-业务正确性]，原因：take 直接作用在指纹行上，命中客户被静默丢弃导致重复客户漏检；行数上限放大到 200，分组后再按客户截断。
+    take: 200,
   })
   const byCustomer = new Map()
   for (const row of rows) {

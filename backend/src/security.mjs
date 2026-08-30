@@ -28,7 +28,8 @@ export async function verifyPassword(password, hash) {
 }
 
 export function createSession(user) {
-  const payload = { sub: user.id, role: user.role, teamId: user.teamId || null, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS }
+  // 修复说明：[低危-会话安全]，原因：会话令牌无服务端撤销手段；payload 携带 tokenVersion，登出/改密递增后旧 token 全部失效（配套 server.mjs 校验与 User.tokenVersion 列）。
+  const payload = { sub: user.id, role: user.role, teamId: user.teamId || null, ver: user.tokenVersion ?? 0, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS }
   const body = encode(payload)
   return `${body}.${sign(body)}`
 }

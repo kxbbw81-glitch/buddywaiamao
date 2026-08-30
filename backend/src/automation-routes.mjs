@@ -137,6 +137,20 @@ async function ruleById(db, id) {
   return row
 }
 
+// 修复说明：[中危-横向越权读]，原因：自动化运行记录列表/详情原无数据范围过滤，SALES 可遍历读取全公司任何人的运行记录及 inputSummary/executionResult 中的业务数据（与 AI 任务的工具调用范围口径不一致）；现按 ADMIN/EXEC/FINANCE 全量、MANAGER 本团队、SALES 本人过滤。
+function runScopeFor(actor) {
+  if (['ADMIN', 'EXEC', 'FINANCE'].includes(actor.role)) return {}
+  if (actor.role === 'MANAGER' && actor.teamId) return { OR: [{ createdById: actor.id }, { createdBy: { teamId: actor.teamId } }] }
+  return { createdById: actor.id }
+}
+
+function assertRunScope(actor, run) {
+  if (['ADMIN', 'EXEC', 'FINANCE'].includes(actor.role)) return
+  if (run.createdById === actor.id) return
+  if (actor.role === 'MANAGER' && actor.teamId && run.createdBy?.teamId === actor.teamId) return
+  throw new HttpError(403, 'FORBIDDEN', '无权访问该自动化运行记录。')
+}
+
 async function createRun({ db, actor, rule, body }) {
   const mode = upperText(body.mode || (body.dryRun === false ? 'MANUAL_OVERRIDE' : 'DRY_RUN'), '运行模式', { required: true, max: 40 })
   if (!RUN_MODES.has(mode)) throw new HttpError(400, 'VALIDATION_ERROR', '运行模式仅支持 DRY_RUN / MANUAL_OVERRIDE。')
@@ -162,7 +176,18 @@ async function createRun({ db, actor, rule, body }) {
     duplicatePrevented: false,
     createdById: actor.id,
   }
-  const row = await db.automationRun.create({ data })
+  const row = await (async () => {
+    // 修复说明：[低危-幂等]，原因：幂等去重是先查后插，并发重复请求会撞唯一约束抛 P2002 变成 500；捕获后改查并按幂等返回已有记录。
+    try {
+      return await db.automationRun.create({ data })
+    } catch (error) {
+      if (error?.code === 'P2002' && idempotencyKey) {
+        const existing = await db.automationRun.findFirst({ where: { ruleId: rule.id, idempotencyKey } })
+        if (existing) return { ...existing, duplicatePrevented: true }
+      }
+      throw error
+    }
+  })()
   await audit(db, actor, 'RUN', 'automation_run', row.id, { ruleId: rule.id, mode: row.mode, status: row.status, matchedCount, idempotencyKey, noExternalSideEffects: true })
   return row
 }
@@ -195,7 +220,8 @@ export async function handleAutomationRoute({ req, res, url, pathname, actor, db
     const ruleId = url.searchParams.get('ruleId') || null
     const mode = url.searchParams.get('mode')?.toUpperCase()
     const status = url.searchParams.get('status')?.toUpperCase()
-    const where = { ...(ruleId ? { ruleId } : {}), ...(mode ? { mode } : {}), ...(status ? { status } : {}) }
+    const base = runScopeFor(actor)
+    const where = { ...base, ...(ruleId ? { ruleId } : {}), ...(mode ? { mode } : {}), ...(status ? { status } : {}) }
     const [items, total] = await db.$transaction([
       db.automationRun.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: pageSize, include: { createdBy: { select: { id: true, name: true, role: true, teamId: true } }, rule: true } }),
       db.automationRun.count({ where }),
@@ -235,6 +261,7 @@ export async function handleAutomationRoute({ req, res, url, pathname, actor, db
     assertAutomationAccess(actor)
     const row = await db.automationRun.findUnique({ where: { id: runMatch[1] }, include: { createdBy: { select: { id: true, name: true, role: true, teamId: true } }, rule: true } })
     if (!row) throw new HttpError(404, 'NOT_FOUND', '自动化运行记录不存在。')
+    assertRunScope(actor, row)
     return send(res, 200, { data: row })
   }
 

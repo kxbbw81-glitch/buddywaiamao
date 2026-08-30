@@ -40,11 +40,11 @@ export function P3SocialAcquisitionView() {
   }, [])
   useEffect(() => { void refresh() }, [refresh])
 
-  async function createPost() {
+  async function createPostInner() {
     if (!form.body.trim()) return setNotice('请先填写内容草稿。')
     try { await api.createSocialPost({ ...form, campaignCode: form.campaignCode || undefined }); setForm((old) => ({ ...old, title: '', body: '' })); setNotice('草稿已保存，尚未向任何平台发送。'); await refresh() } catch (error) { setNotice(errorText(error)) }
   }
-  async function postAction(post: SocialPost, action: 'submit' | 'approve' | 'published') {
+  async function postActionInner(post: SocialPost, action: 'submit' | 'approve' | 'published') {
     try {
       if (action === 'submit') await api.submitSocialPost(post.id)
       if (action === 'approve') await api.approveSocialPost(post.id, '已人工审核')
@@ -52,14 +52,37 @@ export function P3SocialAcquisitionView() {
       setNotice(action === 'published' ? '已登记人工发布结果；系统未调用外部平台。' : '状态已更新。'); await refresh()
     } catch (error) { setNotice(errorText(error)) }
   }
-  async function createInteraction() {
+  async function createInteractionInner() {
     if (!interaction.content.trim()) return setNotice('请填写互动内容。')
     try { await api.createSocialInteraction(interaction); setInteraction((old) => ({ ...old, content: '', authorAlias: '' })); setNotice('互动已登记，可人工转为 CRM 线索。'); await refresh() } catch (error) { setNotice(errorText(error)) }
   }
-  async function convertInteraction(item: SocialInteraction) {
+  async function convertInteractionInner(item: SocialInteraction) {
     const companyName = window.prompt('输入线索公司名称：')
     if (!companyName?.trim()) return
     try { await api.convertSocialInteractionToLead(item.id, { companyName, contactName: item.authorAlias || undefined }); setNotice('已复用 CRM 线索能力完成转化。'); await refresh() } catch (error) { setNotice(errorText(error)) }
+  }
+
+  // 修复说明：[中危-重复提交]，原因：写操作无 loading 锁，连点会重复建草稿/重复状态流转；统一 busy 锁。
+  const [busy, setBusy] = useState(false)
+  async function createPost() {
+    if (busy || loading) return
+    setBusy(true)
+    try { await createPostInner() } finally { setBusy(false) }
+  }
+  async function postAction(post: SocialPost, action: 'submit' | 'approve' | 'published') {
+    if (busy || loading) return
+    setBusy(true)
+    try { await postActionInner(post, action) } finally { setBusy(false) }
+  }
+  async function createInteraction() {
+    if (busy || loading) return
+    setBusy(true)
+    try { await createInteractionInner() } finally { setBusy(false) }
+  }
+  async function convertInteraction(item: SocialInteraction) {
+    if (busy || loading) return
+    setBusy(true)
+    try { await convertInteractionInner(item) } finally { setBusy(false) }
   }
 
   return <div className="space-y-5" data-testid="p3-social-acquisition-view">

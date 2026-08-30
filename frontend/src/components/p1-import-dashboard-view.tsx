@@ -84,8 +84,11 @@ function downloadText(filename: string, content: string) {
   const link = document.createElement('a')
   link.href = url
   link.download = filename
+  // 修复说明：[低危-下载兼容性]，原因：未挂载 DOM 即 click 在部分浏览器不触发，同步 revoke 可能截断下载；挂载后触发并延迟释放。
+  document.body.appendChild(link)
   link.click()
-  URL.revokeObjectURL(url)
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 function csvDictionary(template: ImportTemplate | null) {
   if (!template) return ''

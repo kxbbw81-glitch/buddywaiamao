@@ -101,6 +101,8 @@ model User {
   passwordHash String
   role      Role          @default(SALES)
   status    AccountStatus @default(ACTIVE)
+  // 修复说明：[低危-会话安全]，原因：会话令牌无服务端撤销手段；登出/改密递增使旧会话全部失效。
+  tokenVersion Int       @default(0)
   teamId    String?
   team      Team?         @relation("TeamMembers", fields: [teamId], references: [id])
   manages   Team?         @relation("TeamManager")
@@ -159,6 +161,11 @@ model User {
   socialPostsCreated SocialPost[] @relation("SocialPostCreator")
   socialPostsApproved SocialPost[] @relation("SocialPostApprover")
   socialInteractionsRecorded SocialInteraction[] @relation("SocialInteractionRecorder")
+  // 修复说明：[中危-性能]，原因：MANAGER 域过滤依赖 owner.teamId 关系查询；补索引。
+  @@index([teamId])
+  // 修复说明：[中危-数据一致性] 补齐 QuoteApproval 背向关系。
+  quoteApprovalsRequested QuoteApproval[] @relation("QuoteApprovalRequester")
+  quoteApprovalsDecided   QuoteApproval[] @relation("QuoteApprovalDecider")
 }
 
 model ProductCategory {
@@ -305,6 +312,8 @@ model Quote {
   @@index([ownerId, updatedAt])
   @@index([customerId, updatedAt])
   @@index([opportunityId, updatedAt])
+  // 修复说明：[中危-数据一致性] 补齐 QuoteApproval 背向关系。
+  approvals QuoteApproval[]
 }
 
 model QuoteVersion {
@@ -327,6 +336,8 @@ model QuoteVersion {
   @@unique([quoteId, version])
   @@index([lockStatus, createdAt])
   @@index([quoteId, createdAt])
+  // 修复说明：[中危-数据一致性] 补齐 QuoteApproval 背向关系。
+  approvals QuoteApproval[]
 }
 
 model QuoteApproval {
@@ -338,6 +349,11 @@ model QuoteApproval {
   reason         String
   requestedById  String
   decidedById    String?
+  // 修复说明：[中危-数据一致性]，原因：QuoteApproval 原为无外键的裸 TEXT 列，引用被删后留下孤儿审批记录；补齐外键关系。
+  quote          Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quoteVersion   QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
+  requestedBy    User         @relation("QuoteApprovalRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  decidedBy      User?        @relation("QuoteApprovalDecider", fields: [decidedById], references: [id], onDelete: SetNull)
   decidedAt      DateTime?
   note           String?
   createdAt      DateTime @default(now())
@@ -418,6 +434,8 @@ model SalesOrder {
   @@index([ownerId, updatedAt])
   @@index([customerId, updatedAt])
   @@index([quoteId, updatedAt])
+  // 修复说明：[中危-数据一致性]，原因：并发重复转单兜底。
+  @@unique([quoteId])
 }
 
 model OrderItem {
@@ -555,6 +573,8 @@ model CommissionRecord {
   @@index([salesId, createdAt])
   @@index([status, createdAt])
   @@index([periodStart, periodEnd])
+  // 修复说明：[中危-数据一致性]，原因：并发重复结算兜底。
+  @@unique([salesId, currency, periodStart, periodEnd])
 }
 
 model KnowledgeDocument {
@@ -1170,6 +1190,8 @@ model WebhookEvent {
   @@index([integrationConnectionId, receivedAt])
   @@index([provider, eventType, status, receivedAt])
   @@index([recordedById, receivedAt])
+  // 修复说明：[低危-性能]，原因：按外部事件 ID 排障避免全表扫描。
+  @@index([externalEventId])
 }
 
 model SocialAccount {

@@ -446,3 +446,11 @@
   - `npm run test:smoke`：通过，输出 `{"result":"passed","customers":2,"contacts":1,"opportunities":1,"followUps":1,"auditLogs":10}`。
   - `npm test`：通过，输出 `Phase 1 security, navigation, and scope checks passed.`。
 
+
+## 2026-08-30 全量安全与业务审计修复（RUNNABLE-PASS）
+
+- 范围：后端全部 src 模块 + schema + 前端；修复明细与验证见仓库外《审核报告_20260829.md》《前端审核报告_20260830.md》。
+- 后端要点：登录防爆破限流与防时序枚举、登出撤销（User.tokenVersion）、报价低毛利审批服务端下限、报价金额与明细强一致、线索转客户并发守卫、报价转订单/重复转单唯一约束、回款 Serializable 聚合、提成期间唯一与分批聚合、secretRef 白名单与响应摘要、AI 成本限额周期聚合、PII 密钥强度校验、social 转线索数据范围、导入三段事务化与 P2002 行级冲突、四眼原则（知识/单证/草稿/社媒审核）、QuoteApproval 外键。
+- schema 迁移：`20260830000000_release_line_audit_fixes`（tokenVersion、teamId/externalEventId 索引、SalesOrder.quoteId 唯一、CommissionRecord 期间唯一、QuoteApproval 外键）。
+- 验证：41/41 常规测试、真实 PostgreSQL pgvector E2E（dedicated nexfab_p2_verify）、p3 性能基准（p95≤26ms）、前端 10/10 集成测试、`next lint` 0/0、`next build` 成功。
+- 前端要点：BFF 代理白名单+同源校验+getSetCookie、401 全局回登录、安全响应头、xlsx 升级 0.20.3（vendor/）、登录页账号枚举收口、SSE 竞态修复、演示数据写入确认门。

@@ -48,6 +48,13 @@ function quoteItems(value) {
     if (quantity <= 0) throw new HttpError(400, 'VALIDATION_ERROR', `第 ${index + 1} 行数量必须大于 0。`)
     const unitPrice = nonNegativeMoney(item.unitPrice, `第 ${index + 1} 行单价`, { required: true })
     const unitCost = nonNegativeMoney(item.unitCost ?? 0, `第 ${index + 1} 行成本`)
+    // 修复说明：[高危-业务逻辑]，原因：行金额/成本原允许客户端任意指定且不与 quantity×unitPrice 校验，可污染报价总额进而绕过回款与发货门禁；现强制服务端按数量×单价重算，客户端传入值不一致（误差>0.01）直接拒绝。
+    const expectedAmount = Number((quantity * unitPrice).toFixed(2))
+    const expectedCost = Number((quantity * unitCost).toFixed(2))
+    const amount = item.amount == null ? expectedAmount : nonNegativeMoney(item.amount, `第 ${index + 1} 行金额`)
+    if (Math.abs(amount - expectedAmount) > 0.01) throw new HttpError(400, 'VALIDATION_ERROR', `第 ${index + 1} 行金额必须等于数量乘以单价。`)
+    const cost = item.cost == null ? expectedCost : nonNegativeMoney(item.cost, `第 ${index + 1} 行成本金额`)
+    if (Math.abs(cost - expectedCost) > 0.01) throw new HttpError(400, 'VALIDATION_ERROR', `第 ${index + 1} 行成本金额必须等于数量乘以成本单价。`)
     return {
       productId: text(item.productId, `第 ${index + 1} 行产品`, { required: true, max: 64 }),
       sku: text(item.sku, `第 ${index + 1} 行 SKU`, { max: 80 }),
@@ -55,26 +62,39 @@ function quoteItems(value) {
       quantity,
       unitPrice,
       unitCost,
-      amount: nonNegativeMoney(item.amount ?? quantity * unitPrice, `第 ${index + 1} 行金额`),
-      cost: nonNegativeMoney(item.cost ?? quantity * unitCost, `第 ${index + 1} 行成本金额`),
+      amount,
+      cost,
     }
   })
 }
 
 async function assertProductsExist(db, items) {
+  // 修复说明：[优化-性能]，原因：原实现逐条 findUnique 造成最多 50 次 N+1 查询；改为一次 in 批量查询。
   const productIds = [...new Set(items.map((item) => item.productId))]
-  for (const productId of productIds) {
-    const product = await db.product.findUnique({ where: { id: productId }, select: { id: true } })
-    if (!product) throw new HttpError(404, 'NOT_FOUND', '报价明细中的产品不存在。')
-  }
+  const found = await db.product.findMany({ where: { id: { in: productIds } }, select: { id: true } })
+  if (found.length !== productIds.length) throw new HttpError(404, 'NOT_FOUND', '报价明细中的产品不存在。')
 }
 
 function totalsFrom(items, body) {
   const calculatedAmount = Number(items.reduce((sum, item) => sum + item.amount, 0).toFixed(2))
   const calculatedCost = Number(items.reduce((sum, item) => sum + item.cost, 0).toFixed(2))
-  const totalAmount = body.totalAmount == null ? calculatedAmount : nonNegativeMoney(body.totalAmount, '报价金额')
-  const totalCost = body.totalCost == null ? calculatedCost : nonNegativeMoney(body.totalCost, '报价成本')
-  const grossMargin = body.grossMargin == null ? Number((totalAmount - totalCost).toFixed(2)) : nonNegativeMoney(body.grossMargin, '毛利')
+  // 修复说明：[高危-业务逻辑]，原因：报价总额/成本原可直接取客户端传入值且不与明细校验，订单金额与回款/发货门禁全部沿用该值，填低总额即可"全额收款"绕过财务门禁；现强制总额与明细合计一致，毛利一律由服务端按总额-成本派生，禁止客户端指定。
+  if (body.totalAmount != null && body.totalAmount !== '' && Math.abs(nonNegativeMoney(body.totalAmount, '报价金额') - calculatedAmount) > 0.01) {
+    throw new HttpError(400, 'VALIDATION_ERROR', '报价金额必须等于明细金额合计，不能手工指定。')
+  }
+  if (body.totalCost != null && body.totalCost !== '' && Math.abs(nonNegativeMoney(body.totalCost, '报价成本') - calculatedCost) > 0.01) {
+    throw new HttpError(400, 'VALIDATION_ERROR', '报价成本必须等于明细成本合计，不能手工指定。')
+  }
+  const totalAmount = calculatedAmount
+  const totalCost = calculatedCost
+  const grossMargin = Number((totalAmount - totalCost).toFixed(2))
+  if (body.grossMargin != null && body.grossMargin !== '') {
+    // 修复说明：[低危-输入校验]，原因：亏损报价毛利为负，客户端如实回传会被 nonNegativeMoney 在一致性比较前误杀为 400；改用允许负数的解析仅做一致性判断。
+    const declaredMargin = Number(body.grossMargin)
+    if (!Number.isFinite(declaredMargin) || Math.abs(declaredMargin - grossMargin) > 0.01) {
+      throw new HttpError(400, 'VALIDATION_ERROR', '毛利由报价金额减去成本自动计算，不能手工指定。')
+    }
+  }
   return { totalAmount, totalCost, grossMargin }
 }
 
@@ -150,10 +170,15 @@ function marginInfo(version, minimumMarginRate) {
 }
 
 function minimumMarginInput(body) {
-  if (body.minimumMarginRate == null || body.minimumMarginRate === '') return 0.15
+  // 修复说明：[高危-权限绕过]，原因：锁定报价版本的最低毛利率原完全取自请求体且允许 0，销售传 minimumMarginRate=0 即可让低毛利审批永远不触发，审批门禁形同虚设；现以服务端配置（NEXFAB_MINIMUM_MARGIN_RATE，默认 0.15）为下限，客户端只允许提高门槛、不允许降低。
+  const floorRaw = process.env.NEXFAB_MINIMUM_MARGIN_RATE
+  const floor = floorRaw == null || floorRaw === '' ? 0.15 : Number(floorRaw)
+  if (!Number.isFinite(floor) || floor < 0 || floor > 1) throw new HttpError(503, 'MINIMUM_MARGIN_NOT_CONFIGURED', '最低毛利率服务端配置不合法（须在 0 到 1 之间），请检查 NEXFAB_MINIMUM_MARGIN_RATE。')
+  if (body.minimumMarginRate == null || body.minimumMarginRate === '') return floor
   const value = Number(body.minimumMarginRate)
-  if (!Number.isFinite(value) || value < 0 || value > 5) throw new HttpError(400, 'VALIDATION_ERROR', '最低毛利率必须是 0 到 5 之间的数字。')
-  return value
+  // 修复说明：[低危-输入校验]，原因：最低毛利率允许到 5（500%）语义荒谬且等于强制全量审批；收紧到 0 到 1。
+  if (!Number.isFinite(value) || value < 0 || value > 1) throw new HttpError(400, 'VALIDATION_ERROR', '最低毛利率必须是 0 到 1 之间的数字。')
+  return Math.max(floor, value)
 }
 
 function pdfSnapshotFor(quote, version, actor, body, margin) {

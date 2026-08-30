@@ -49,12 +49,13 @@ export function P3ToolsCenterView({ active }: { active: ActivePage }) {
   const [copy, setCopy] = useState<ToolFollowupCopyResult | null>(null)
   const [hs, setHs] = useState<ToolHsResult | null>(null)
 
-  const [ocrText, setOcrText] = useState('Ana Silva\nNexFab Buyer Ltd\nana@nexfab-buyer.example\n+1 202 555 0101\nnexfab-buyer.example')
-  const [websiteUrl, setWebsiteUrl] = useState('https://nexfab-buyer.example')
+  // 修复说明：[中危-演示数据混入]，原因：OCR/官网输入预填演示数据，官网登记一键把假 URL 写入真实客户档案；输入默认留空。
+  const [ocrText, setOcrText] = useState('')
+    const [websiteUrl, setWebsiteUrl] = useState('')
   const [fxAmount, setFxAmount] = useState('100')
   const [fxFrom, setFxFrom] = useState('USD')
   const [fxTo, setFxTo] = useState('CNY')
-  const [dedupeKeyword, setDedupeKeyword] = useState('NexFab Buyer')
+    const [dedupeKeyword, setDedupeKeyword] = useState('')
   const [copyScenario, setCopyScenario] = useState('follow_up')
   const [hsKeyword, setHsKeyword] = useState('filament')
 
@@ -93,6 +94,8 @@ export function P3ToolsCenterView({ active }: { active: ActivePage }) {
 
   const runWebsite = () => {
     if (!selectedCustomer) return setNotice({ tone: 'amber', text: '请先创建或加载一个客户，再登记官网链接。' })
+    // 修复说明：[中危-演示数据混入]，原因：官网登记是真实写入客户档案的写操作；提交前显式确认目标客户与 URL，防误写。
+    if (!window.confirm(`确认为客户「${selectedCustomer.name}」登记官网 ${websiteUrl || '（空）'} 吗？`)) return
     return run(
       () => api.toolWebsiteLink({ customerId: selectedCustomer.id, website: websiteUrl, note: 'P3 工具中心人工登记' }),
       setWebsite,
@@ -100,11 +103,16 @@ export function P3ToolsCenterView({ active }: { active: ActivePage }) {
     )
   }
 
-  const runFx = () => run(
-    () => api.toolFx(new URLSearchParams({ from: fxFrom, to: fxTo, amount: fxAmount }).toString()),
-    setFx,
-    '汇率换算已返回本地参考结果。',
-  )
+  const runFx = () => {
+    // 修复说明：[低危-输入校验]，原因：金额未做数字校验直接拼进 query，任意字符串靠后端报错兜底；前端先校验。
+    const amount = Number(fxAmount)
+    if (fxAmount.trim() && !Number.isFinite(amount)) return setNotice({ tone: 'amber', text: '换算金额必须是有效数字。' })
+    return run(
+      () => api.toolFx(new URLSearchParams({ from: fxFrom, to: fxTo, amount: fxAmount }).toString()),
+      setFx,
+      '汇率换算已返回本地参考结果。',
+    )
+  }
 
   const runDedupe = () => run(
     () => api.dedupe({ companyName: dedupeKeyword, website: websiteUrl }),

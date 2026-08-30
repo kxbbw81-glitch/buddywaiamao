@@ -53,6 +53,12 @@ try {
   const salesQuote = await createQuote(sales, salesCustomer.id, product.payload.data.id, 'sales order quote')
   const adminQuote = await createQuote(admin, adminCustomer.id, product.payload.data.id, 'admin order quote')
 
+  // 修复说明：[中危-口径同步] 转单现在要求报价版本已锁定；测试在转单前先锁定两个报价版本。
+  for (const [cookie, quote] of [[admin, adminQuote], [sales, salesQuote]]) {
+    const locked = await request(`/api/quotes/${quote.id}/versions/${quote.versions[0].id}/lock`, { cookie, method: 'POST', body: { validityDays: 30 } })
+    assert.equal(locked.response.status, 200)
+  }
+
   const adminOrder = await request(`/api/orders/from-quote/${adminQuote.id}`, { cookie: admin, method: 'POST' })
   assert.equal(adminOrder.response.status, 201)
   const salesOrder = await request(`/api/orders/from-quote/${salesQuote.id}`, { cookie: sales, method: 'POST' })
@@ -90,15 +96,16 @@ try {
   const financeWrite = await request(`/api/orders/from-quote/${salesQuote.id}`, { cookie: finance, method: 'POST' })
   assert.equal(financeWrite.response.status, 403)
 
+  // 修复说明：[中危-口径同步] 同一报价不允许重复转订单；重复请求现在返回 409。
   const repeated = await request(`/api/orders/from-quote/${salesQuote.id}`, { cookie: sales, method: 'POST' })
-  assert.equal(repeated.response.status, 201)
-  assert.notEqual(repeated.payload.data.orderNo, salesOrder.payload.data.orderNo)
+  assert.equal(repeated.response.status, 409)
+  assert.equal(repeated.payload.error.code, 'QUOTE_ALREADY_CONVERTED')
 
   const state = testMemoryState()
-  assert.equal(state.salesOrders.length, 3)
-  assert.equal(state.orderItems.length, 3)
-  assert.equal(state.fulfillmentEvents.length, 3)
-  assert.equal(state.auditLogs.filter((item) => item.resource === 'sales_order').length, 3)
+  assert.equal(state.salesOrders.length, 2)
+  assert.equal(state.orderItems.length, 2)
+  assert.equal(state.fulfillmentEvents.length, 2)
+  assert.equal(state.auditLogs.filter((item) => item.resource === 'sales_order').length, 2)
   console.log(JSON.stringify({ result: 'passed', orders: state.salesOrders.length, orderItems: state.orderItems.length, fulfillmentEvents: state.fulfillmentEvents.length, auditLogs: state.auditLogs.length }))
 } finally {
   await new Promise((resolve) => server.close(resolve))

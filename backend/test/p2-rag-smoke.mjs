@@ -104,7 +104,7 @@ try {
   assert.equal(draftOnly.payload.data.status, 'RAG_NOT_CONFIGURED')
   assert.deepEqual(draftOnly.payload.data.sources, [])
 
-  const approved = await request(`/api/knowledge-documents/${draft.payload.data.id}/review`, { cookie: manager, method: 'POST', body: { status: 'APPROVED', note: '人工审核通过' } })
+  const approved = await request(`/api/knowledge-documents/${draft.payload.data.id}/review`, { cookie: admin, method: 'POST', body: { status: 'APPROVED', note: '人工审核通过' } })
   assert.equal(approved.response.status, 200)
   assert.equal(approved.payload.data.status, 'APPROVED')
 
@@ -123,7 +123,7 @@ try {
 
   const expired = await request('/api/knowledge-documents', { cookie: manager, method: 'POST', body: { title: 'Expired ABS FAQ', sourceName: 'expired.md', validUntil: '2020-01-01T00:00:00.000Z', chunks: [{ heading: 'ABS enclosure', content: 'ABS enclosure guidance uses the archive-only chamber profile.' }] } })
   assert.equal(expired.response.status, 201)
-  const approvedExpired = await request(`/api/knowledge-documents/${expired.payload.data.id}/review`, { cookie: manager, method: 'POST', body: { status: 'APPROVED' } })
+  const approvedExpired = await request(`/api/knowledge-documents/${expired.payload.data.id}/review`, { cookie: admin, method: 'POST', body: { status: 'APPROVED' } })
   assert.equal(approvedExpired.response.status, 200)
   const expiredAnswer = await request('/api/rag/query', { cookie: exec, method: 'POST', body: { query: 'archive-only chamber profile' } })
   assert.equal(expiredAnswer.response.status, 200)

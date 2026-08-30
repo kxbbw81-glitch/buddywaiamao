@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { HttpError, listQuery, readJson, send, text } from './http.mjs'
 
 const NOTIFICATION_READ_ROLES = new Set(['SALES', 'MANAGER', 'FINANCE', 'EXEC', 'ADMIN'])
@@ -60,8 +61,12 @@ function jsonObject(value, field, { required = true } = {}) {
 function rejectInlineSecrets(value, field) {
   if (!value || typeof value !== 'object') return
   const serialized = JSON.stringify(value)
-  if (/"?(apiKey|accessToken|refreshToken|password|secret|token|authorization|cookie|credential)"?\s*:/i.test(serialized)) {
+  // 修复说明：[中危-敏感信息]，原因：原键名黑名单漏掉 api_key/api-key/pwd/privateKey 等常见写法，非 sk- 前缀的明文密钥可绕过校验落库；现扩展键名匹配并叠加值形态检测。
+  if (/"?(api[_-]?key|access[_-]?token|refresh[_-]?token|passw(or)?d|pwd|private[_-]?key|client[_-]?secret|secret|token|authorization|cookie|credential)"?\s*:/i.test(serialized)) {
     throw new HttpError(400, 'INLINE_SECRET_FORBIDDEN', `${field} 不允许保存明文密钥、token、密码或 cookie；请只保存 secretRef。`)
+  }
+  if (/sk-[A-Za-z0-9_-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|Bearer [A-Za-z0-9._-]{16,}/.test(serialized)) {
+    throw new HttpError(400, 'INLINE_SECRET_FORBIDDEN', `${field} 检测到疑似密钥内容，不允许明文保存；请只保存 secretRef。`)
   }
 }
 
@@ -103,6 +108,12 @@ function notificationInput(body) {
 function connectionInput(body) {
   const config = jsonObject(body.configSummary || {}, '连接器配置摘要')
   rejectInlineSecrets(config, '连接器配置摘要')
+  // 修复说明：[高危-敏感信息]，原因：secretRef 原无格式校验，可被填入真实 API Key 明文落库；现强制必须为 secret://、vault:// 等密钥管理引用格式，并拒绝疑似密钥本体。
+  const secretRef = text(body.secretRef, '密钥引用', { max: 160 })
+  if (secretRef) {
+    if (!/^(secret|vault|kms|ssm):\/\//i.test(secretRef)) throw new HttpError(400, 'VALIDATION_ERROR', 'secretRef 必须是 secret://、vault:// 等密钥管理服务的引用，不允许保存密钥本体。')
+    if (/sk-[A-Za-z0-9_-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(secretRef)) throw new HttpError(400, 'VALIDATION_ERROR', 'secretRef 检测到疑似密钥内容，请只保存密钥管理服务的引用。')
+  }
   return {
     code: upperText(body.code, '连接器编码', { required: true, max: 80 }),
     provider: upperText(body.provider, '供应商', { required: true, max: 80 }),
@@ -110,7 +121,7 @@ function connectionInput(body) {
     displayName: text(body.displayName, '显示名称', { required: true, max: 160 }),
     status: enumValue(body.status, CONNECTION_STATUSES, 'DRAFT', '连接器状态'),
     authMode: enumValue(body.authMode, AUTH_MODES, 'MANUAL', '认证方式'),
-    secretRef: text(body.secretRef, '密钥引用', { max: 160 }),
+    secretRef,
     configSummary: safeSummary(config),
     fallbackMode: enumValue(body.fallbackMode, FALLBACK_MODES, 'MANUAL_ENTRY', '降级方式'),
     healthStatus: enumValue(body.healthStatus, HEALTH_STATUSES, 'UNKNOWN', '健康状态'),
@@ -138,15 +149,21 @@ function webhookInput(body) {
     throw new HttpError(400, 'WEBHOOK_PROCESSING_FORBIDDEN', '第一版 Webhook 只记录接收台账，不自动处理外部动作。')
   }
   const payload = jsonObject(body.payload || body.receivedPayloadSummary || {}, 'Webhook 摘要')
+  const provider = upperText(body.provider, '供应商', { required: true, max: 80 })
+  const eventType = upperText(body.eventType, '事件类型', { required: true, max: 120 })
+  const providedKey = text(body.idempotencyKey, '幂等键', { max: 160 })
+  // 修复说明：[中危-幂等]，原因：idempotencyKey 可空导致唯一约束对 NULL 失效；缺失时按 provider+eventType+连接+payload 摘要自动生成确定性幂等键（缺 eventType/连接维度会把不同事件误去重）。
+  const integrationConnectionId = text(body.integrationConnectionId, '连接器 ID', { max: 120 })
+  const idempotencyKey = providedKey || `auto-${provider}-${eventType}-${integrationConnectionId || 'none'}-${createHash('sha256').update(JSON.stringify(payload)).digest('hex').slice(0, 32)}`
   return {
-    integrationConnectionId: text(body.integrationConnectionId, '连接器 ID', { max: 120 }),
-    provider: upperText(body.provider, '供应商', { required: true, max: 80 }),
-    eventType: upperText(body.eventType, '事件类型', { required: true, max: 120 }),
+    integrationConnectionId,
+    provider,
+    eventType,
     externalEventId: text(body.externalEventId, '外部事件 ID', { max: 160 }),
     status: enumValue(body.status, WEBHOOK_STATUSES, 'RECEIVED', 'Webhook 状态'),
     receivedPayloadSummary: safeSummary(payload),
     processingResult: body.processingResult == null ? null : safeSummary(jsonObject(body.processingResult, '处理结果')),
-    idempotencyKey: text(body.idempotencyKey, '幂等键', { max: 160 }),
+    idempotencyKey,
   }
 }
 
@@ -230,7 +247,8 @@ export async function handleIntegrationRoute({ req, res, url, pathname, actor, d
     const data = connectionInput(await readJson(req))
     const row = await db.integrationConnection.create({ data: { ...data, createdById: actor.id } })
     await audit(db, actor, 'CREATE', 'integration_connection', row.id, { code: row.code, provider: row.provider, connectorType: row.connectorType, status: row.status, fallbackMode: row.fallbackMode })
-    return send(res, 201, { data: row })
+    // 修复说明：[高危-敏感信息]，原因：创建接口原返回完整 ORM 行，包含 secretRef 与完整 configSummary，明文密钥可被读回；现统一走 compactConnection 摘要。
+    return send(res, 201, { data: compactConnection(row) })
   }
 
   const connectionStatusMatch = pathname.match(/^\/api\/integration-connections\/([^/]+)\/status$/)
@@ -245,14 +263,16 @@ export async function handleIntegrationRoute({ req, res, url, pathname, actor, d
     }
     const row = await db.integrationConnection.update({ where: { id: existing.id }, data })
     await audit(db, actor, 'STATUS_CHANGE', 'integration_connection', row.id, { from: existing.status, to: row.status, healthStatus: row.healthStatus })
-    return send(res, 200, { data: row })
+    // 修复说明：[高危-敏感信息]，原因：状态更新接口原返回完整 ORM 行，包含 secretRef；现统一走 compactConnection 摘要。
+    return send(res, 200, { data: compactConnection(row) })
   }
 
   const connectionDetailMatch = pathname.match(/^\/api\/integration-connections\/([^/]+)$/)
   if (connectionDetailMatch && req.method === 'GET') {
     assertRole(actor, INTEGRATION_READ_ROLES)
     const row = await connectionById(db, connectionDetailMatch[1])
-    return send(res, 200, { data: row })
+    // 修复说明：[高危-敏感信息]，原因：连接器详情接口原返回完整 ORM 行，包含 secretRef，任何有读权限的人都能读回密钥引用原文；现统一走 compactConnection 摘要。
+    return send(res, 200, { data: compactConnection(row) })
   }
 
   if (req.method === 'GET' && pathname === '/api/webhook-events') {
@@ -277,7 +297,17 @@ export async function handleIntegrationRoute({ req, res, url, pathname, actor, d
       const existing = await db.webhookEvent.findFirst({ where: { provider: data.provider, idempotencyKey: data.idempotencyKey } })
       if (existing) return send(res, 200, { data: { ...compactWebhook(existing), duplicatePrevented: true } })
     }
-    const row = await db.webhookEvent.create({ data: { ...data, recordedById: actor.id } })
+    // 修复说明：[低危-幂等]，原因：幂等去重是先查后插，并发重复请求会撞唯一约束抛 P2002 变成 500；捕获后改查并按幂等返回已有记录。
+    let row
+    try {
+      row = await db.webhookEvent.create({ data: { ...data, recordedById: actor.id } })
+    } catch (error) {
+      if (error?.code === 'P2002' && data.idempotencyKey) {
+        const existing = await db.webhookEvent.findFirst({ where: { provider: data.provider, idempotencyKey: data.idempotencyKey } })
+        if (existing) return send(res, 200, { data: { ...compactWebhook(existing), duplicatePrevented: true } })
+      }
+      throw error
+    }
     await audit(db, actor, 'RECORD', 'webhook_event', row.id, { provider: row.provider, eventType: row.eventType, status: row.status, idempotencyKey: row.idempotencyKey, noAutomaticProcessing: true })
     return send(res, 201, { data: row })
   }

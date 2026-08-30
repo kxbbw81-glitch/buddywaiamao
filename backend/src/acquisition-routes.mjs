@@ -278,8 +278,12 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
     assertAcquisitionAccess(actor, true)
     const lead = await leadById(db, leadFollowMatch[1]); assertLeadScope(actor, lead)
     const data = followInput(await readJson(req))
-    const row = await db.leadFollowUp.create({ data: { ...data, leadId: lead.id, authorId: actor.id } })
-    await audit(db, actor, 'CREATE', 'lead_follow_up', row.id, { leadId: lead.id, type: row.type })
+    // 修复说明：[中危-数据一致性]，原因：业务写入与审计日志分离；改为事务内写入。
+    const row = await db.$transaction(async (tx) => {
+      const created = await tx.leadFollowUp.create({ data: { ...data, leadId: lead.id, authorId: actor.id } })
+      await audit(tx, actor, 'CREATE', 'lead_follow_up', created.id, { leadId: lead.id, type: created.type })
+      return created
+    })
     return send(res, 201, { data: row })
   }
 
@@ -289,9 +293,15 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
     const lead = await leadById(db, leadStatusMatch[1]); assertLeadScope(actor, lead)
     const body = await readJson(req)
     const status = enumValue(body.status, LEAD_STATUSES, 'NEW', '线索状态')
+    // 修复说明：[中危-状态机绕过]，原因：status 接口原接受 CONVERTED，可绕过转客户流程与指纹查重；终态必须走 /convert 专属流程。
+    if (status === 'CONVERTED') throw new HttpError(400, 'VALIDATION_ERROR', '线索转客户必须走 /api/leads/:id/convert 流程。')
     const data = { status, invalidReason: status === 'INVALID' ? text(body.invalidReason, '无效原因', { required: true, max: 500 }) : null }
-    const row = await db.lead.update({ where: { id: lead.id }, data })
-    await audit(db, actor, 'STATUS_CHANGE', 'lead', row.id, { from: lead.status, to: row.status })
+    // 修复说明：[中危-数据一致性]，原因：业务写入与审计日志分离，审计失败时状态已变更无痕迹；改为事务内写入。
+    const row = await db.$transaction(async (tx) => {
+      const updated = await tx.lead.update({ where: { id: lead.id }, data })
+      await audit(tx, actor, 'STATUS_CHANGE', 'lead', updated.id, { from: lead.status, to: updated.status })
+      return updated
+    })
     return send(res, 200, { data: presentLead(row) })
   }
 
@@ -334,9 +344,12 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
       let opportunity = null
       if (body.createOpportunity !== false) {
         const amount = decimalValue(body.amount, '预计金额')
-        opportunity = await tx.opportunity.create({ data: { customerId: customer.id, ownerId: lead.ownerId || actor.id, name: text(body.opportunityName || `${lead.companyName} 询盘商机`, '商机名称', { required: true, max: 160 }), amount, currency: upperText(body.currency || 'USD', '币种', { required: true, max: 3 }) } })
+        opportunity = await tx.opportunity.create({ data: { customerId: customer.id, ownerId: lead.ownerId || actor.id, name: text(body.opportunityName || `${lead.companyName} 询盘商机`, '商机名称', { required: true, max: 160 }), amount, currency: (() => { const currency = upperText(body.currency || 'USD', '币种', { required: true, max: 3 }); if (!/^[A-Z]{3}$/.test(currency)) throw new HttpError(400, 'VALIDATION_ERROR', '币种必须为三位 ISO 代码。'); return currency })() } })
       }
-      const updated = await tx.lead.update({ where: { id: lead.id }, data: { status: 'CONVERTED', convertedCustomerId: customer.id, convertedOpportunityId: opportunity?.id || null, convertedAt: new Date() } })
+      // 修复说明：[高危-并发竞态]，原因：CONVERTED 检查在事务外且事务内 update 不带状态守卫，双击/并发会双重转换、重复建客户并互相覆盖 convertedCustomerId；改用条件更新按受影响行数判定。
+      const claimed = await tx.lead.updateMany({ where: { id: lead.id, status: { not: 'CONVERTED' } }, data: { status: 'CONVERTED', convertedCustomerId: customer.id, convertedOpportunityId: opportunity?.id || null, convertedAt: new Date() } })
+      if (claimed.count === 0) throw new HttpError(400, 'LEAD_ALREADY_CONVERTED', '该线索已经转客户。')
+      const updated = await tx.lead.findUnique({ where: { id: lead.id } })
       await audit(tx, actor, 'CONVERT', 'lead', lead.id, { customerId: customer.id, opportunityId: opportunity?.id || null, fingerprintCount: fingerprints.length, duplicateCheckConfirmed: body.duplicateCheckConfirmed === true || Boolean(existingCustomerId) })
       return { lead: presentLead(updated), customer, opportunity }
     })
@@ -377,7 +390,8 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
     const row = await db.$transaction(async (tx) => {
       const inquiry = await tx.inquiry.create({ data: { ...data, code: text(body.code, '询盘编号', { max: 80 }) || await nextCode(tx, 'inquiry', 'INQ'), customerId: customer?.id || data.customerId || null, opportunityId: opportunity?.id || data.opportunityId || null, ownerId: lead?.ownerId || customer?.ownerId || actor.id, createdById: actor.id } })
       for (const item of items) await tx.inquiryItem.create({ data: { ...item, inquiryId: inquiry.id } })
-      if (lead) await tx.lead.update({ where: { id: lead.id }, data: { status: lead.status === 'CONVERTED' ? lead.status : 'INQUIRY' } })
+      // 修复说明：[中危-业务逻辑]，原因：建询盘会把 INVALID/PAUSED 线索强制改回 INQUIRY，推翻人工判定；现一并保护。
+      if (lead && !['CONVERTED', 'INVALID', 'PAUSED'].includes(lead.status)) await tx.lead.update({ where: { id: lead.id }, data: { status: 'INQUIRY' } })
       await audit(tx, actor, 'CREATE', 'inquiry', inquiry.id, { leadId: lead?.id || null, customerId: customer?.id || null, itemCount: items.length, aiExtracted: inquiry.aiExtracted })
       return inquiry
     })
@@ -390,8 +404,12 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
     const inquiry = await inquiryById(db, inquiryStatusMatch[1]); assertInquiryScope(actor, inquiry)
     const body = await readJson(req)
     const status = enumValue(body.status, INQUIRY_STATUSES, 'NEW', '询盘状态')
-    const row = await db.inquiry.update({ where: { id: inquiry.id }, data: { status } })
-    await audit(db, actor, 'STATUS_CHANGE', 'inquiry', row.id, { from: inquiry.status, to: row.status })
+    // 修复说明：[中危-数据一致性]，原因：业务写入与审计日志分离；改为事务内写入。
+    const row = await db.$transaction(async (tx) => {
+      const updated = await tx.inquiry.update({ where: { id: inquiry.id }, data: { status } })
+      await audit(tx, actor, 'STATUS_CHANGE', 'inquiry', updated.id, { from: inquiry.status, to: updated.status })
+      return updated
+    })
     return send(res, 200, { data: row })
   }
 
@@ -399,8 +417,12 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
   if (inquiryItemsMatch && req.method === 'POST') {
     assertAcquisitionAccess(actor, true)
     const inquiry = await inquiryById(db, inquiryItemsMatch[1]); assertInquiryScope(actor, inquiry)
-    const row = await db.inquiryItem.create({ data: { ...inquiryItemInput(await readJson(req)), inquiryId: inquiry.id } })
-    await audit(db, actor, 'CREATE', 'inquiry_item', row.id, { inquiryId: inquiry.id })
+    // 修复说明：[中危-数据一致性]，原因：业务写入与审计日志分离；改为事务内写入。
+    const row = await db.$transaction(async (tx) => {
+      const created = await tx.inquiryItem.create({ data: { ...inquiryItemInput(await readJson(req)), inquiryId: inquiry.id } })
+      await audit(tx, actor, 'CREATE', 'inquiry_item', created.id, { inquiryId: inquiry.id })
+      return created
+    })
     return send(res, 201, { data: row })
   }
 
@@ -408,8 +430,12 @@ export async function handleAcquisitionRoute({ req, res, url, pathname, actor, d
   if (inquiryMessagesMatch && req.method === 'POST') {
     assertAcquisitionAccess(actor, true)
     const inquiry = await inquiryById(db, inquiryMessagesMatch[1]); assertInquiryScope(actor, inquiry)
-    const row = await db.channelMessage.create({ data: { ...messageInput(await readJson(req)), inquiryId: inquiry.id, createdById: actor.id } })
-    await audit(db, actor, 'CREATE', 'channel_message', row.id, { inquiryId: inquiry.id, channel: row.channel, direction: row.direction })
+    // 修复说明：[中危-数据一致性]，原因：业务写入与审计日志分离；改为事务内写入。
+    const row = await db.$transaction(async (tx) => {
+      const created = await tx.channelMessage.create({ data: { ...messageInput(await readJson(req)), inquiryId: inquiry.id, createdById: actor.id } })
+      await audit(tx, actor, 'CREATE', 'channel_message', created.id, { inquiryId: inquiry.id, channel: created.channel, direction: created.direction })
+      return created
+    })
     return send(res, 201, { data: row })
   }
 

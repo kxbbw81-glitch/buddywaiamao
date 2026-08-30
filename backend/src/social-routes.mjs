@@ -1,5 +1,8 @@
 import { HttpError, listQuery, readJson, send, text } from './http.mjs'
 import { findDuplicateCustomers, fingerprintsFromLead } from './customer-fingerprint.mjs'
+// 修复说明：[高危-越权]，原因：转线索查重未按访问者数据范围过滤，跨团队客户信息泄露/存在性探测；补 scopeFor。
+import { scopeFor } from './access.mjs'
+import { randomBytes } from 'node:crypto'
 import { prepareEncryptedLead, publicPiiStorageSummary } from './pii.mjs'
 
 const READ_ROLES = new Set(['SALES', 'MANAGER', 'EXEC', 'ADMIN'])
@@ -126,7 +129,14 @@ export async function handleSocialRoute({ req, res, url, pathname, actor, db }) 
     assertRole(actor, APPROVE_ROLES, '只有主管或管理员可维护社媒账号台账。')
     const data = accountInput(await readJson(req))
     if (data.integrationConnectionId) await db.integrationConnection.findUnique({ where: { id: data.integrationConnectionId } }).then((row) => { if (!row) throw new HttpError(404, 'NOT_FOUND', '连接器不存在。') })
-    const row = await db.socialAccount.create({ data: { ...data, createdById: actor.id } })
+    // 修复说明：[中危-容错]，原因：platform+accountRef 唯一冲突未捕获，重复登记变 500；转 409。
+    let row
+    try {
+      row = await db.socialAccount.create({ data: { ...data, createdById: actor.id } })
+    } catch (error) {
+      if (error?.code === 'P2002') throw new HttpError(409, 'DUPLICATE_ACCOUNT', '同平台同账号引用已存在，不能重复登记。')
+      throw error
+    }
     await audit(db, actor, 'CREATE', 'social_account', row.id, { platform: row.platform, status: row.status, externalPublishing: false })
     return send(res, 201, { data: row })
   }
@@ -166,6 +176,8 @@ export async function handleSocialRoute({ req, res, url, pathname, actor, db }) 
     assertRole(actor, APPROVE_ROLES, '只有主管或管理员可审核社媒内容。')
     const existing = await postById(db, postApproveMatch[1])
     if (existing.status !== 'IN_REVIEW') throw new HttpError(409, 'INVALID_STATE', '只有待审核内容可以通过。')
+    // 修复说明：[中危-职责分离]，原因：MANAGER 可自建草稿自审自发布，四眼原则缺失；现禁止创建人审核自己的内容（ADMIN 例外）。
+    if (existing.createdById === actor.id && actor.role !== 'ADMIN') throw new HttpError(403, 'FORBIDDEN', '不能审核自己创建的内容。')
     const body = await readJson(req)
     const row = await db.socialPost.update({ where: { id: existing.id }, data: { status: 'APPROVED', approvedById: actor.id, approvalNote: text(body.note, '审核意见', { max: 1000 }) } })
     await audit(db, actor, 'APPROVE', 'social_post', row.id, { from: existing.status, to: row.status, externalPublishing: false })
@@ -197,7 +209,14 @@ export async function handleSocialRoute({ req, res, url, pathname, actor, db }) 
     const data = interactionInput(await readJson(req))
     if (data.socialAccountId) await accountById(db, data.socialAccountId)
     if (data.socialPostId) await postById(db, data.socialPostId)
-    const row = await db.socialInteraction.create({ data: { ...data, status: data.intent === 'UNCLASSIFIED' ? 'NEW' : 'LEAD_SUGGESTED', recordedById: actor.id } })
+    // 修复说明：[中危-容错]，原因：platform+externalRef 唯一冲突未捕获（如同一 webhook 重复登记）变 500；转 409。
+    let row
+    try {
+      row = await db.socialInteraction.create({ data: { ...data, status: data.intent === 'UNCLASSIFIED' ? 'NEW' : 'LEAD_SUGGESTED', recordedById: actor.id } })
+    } catch (error) {
+      if (error?.code === 'P2002') throw new HttpError(409, 'DUPLICATE_INTERACTION', '同平台同外部引用的互动已登记。')
+      throw error
+    }
     await audit(db, actor, 'RECORD', 'social_interaction', row.id, { platform: row.platform, intent: row.intent, status: row.status, externalReply: false })
     return send(res, 201, { data: row })
   }
@@ -210,11 +229,22 @@ export async function handleSocialRoute({ req, res, url, pathname, actor, db }) 
     const body = await readJson(req)
     const candidate = { companyName: text(body.companyName, '公司名称', { required: true, max: 200 }), contactName: text(body.contactName || interaction.authorAlias, '联系人', { max: 120 }), email: text(body.email, '邮箱', { max: 160 }), phone: text(body.phone, '电话', { max: 80 }) }
     const fingerprints = fingerprintsFromLead(candidate, 'SOCIAL_INTERACTION')
-    const duplicates = await findDuplicateCustomers(db, fingerprints)
+    // 修复说明：[高危-越权]，原因：查重未按访问者数据范围过滤，SALES 可探测其他团队客户存在性且 409 返回完整客户行；现按数据范围过滤。
+    const duplicates = await findDuplicateCustomers(db, fingerprints, { customerScope: scopeFor(actor) })
     if (duplicates.length && body.confirmNoDuplicate !== true) return send(res, 409, { error: { code: 'DUPLICATE_REVIEW_REQUIRED', message: '发现可能重复客户，请人工确认后再转线索。', detail: { candidates: duplicates } } })
-    const lead = await db.lead.create({ data: { ...prepareEncryptedLead({ ...candidate, source: 'SOCIAL', channel: interaction.platform, productInterest: { socialInteractionId: interaction.id, intent: interaction.intent, campaignCode: interaction.campaignCode } }), code: await nextLeadCode(db), ownerId: actor.id, createdById: actor.id } })
-    const row = await db.socialInteraction.update({ where: { id: interaction.id }, data: { leadId: lead.id, status: 'CONVERTED' } })
-    await audit(db, actor, 'CONVERT_TO_LEAD', 'social_interaction', row.id, { leadId: lead.id, intent: row.intent, pii: publicPiiStorageSummary(lead), duplicateConfirmed: body.confirmNoDuplicate === true })
+    // 修复说明：[中危-数据一致性]，原因：建线索与互动状态回写原为两步无事务，重试会重复建线索；编号 count+1 并发撞唯一约束即 500；现事务化 + 编号加随机段 + P2002 转 409。
+    let lead, row
+    try {
+      ;({ lead, row } = await db.$transaction(async (tx) => {
+        const created = await tx.lead.create({ data: { ...prepareEncryptedLead({ ...candidate, source: 'SOCIAL', channel: interaction.platform, productInterest: { socialInteractionId: interaction.id, intent: interaction.intent, campaignCode: interaction.campaignCode } }), code: `${await nextLeadCode(tx)}-${randomBytes(2).toString('hex').toUpperCase()}`, ownerId: actor.id, createdById: actor.id } })
+        const updated = await tx.socialInteraction.update({ where: { id: interaction.id }, data: { leadId: created.id, status: 'CONVERTED' } })
+        await audit(tx, actor, 'CONVERT_TO_LEAD', 'social_interaction', updated.id, { leadId: created.id, intent: updated.intent, pii: publicPiiStorageSummary(created), duplicateConfirmed: body.confirmNoDuplicate === true })
+        return { lead: created, row: updated }
+      }))
+    } catch (error) {
+      if (error?.code === 'P2002') throw new HttpError(409, 'DUPLICATE_REQUEST', '互动已转换或编号冲突，请刷新后重试。')
+      throw error
+    }
     return send(res, 201, { data: { interaction: row, lead } })
   }
 

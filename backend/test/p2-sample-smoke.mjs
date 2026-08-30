@@ -51,6 +51,9 @@ try {
   const salesCustomer = await createCustomer(sales, 'Sample Buyer')
   const adminCustomer = await createCustomer(admin, 'Admin Sample Buyer')
   const salesQuote = await createQuote(sales, salesCustomer.id, product.payload.data.id)
+  // 修复说明：[中危-口径同步] 样品转订单现要求报价版本已锁定；测试先锁定。
+  const sampleQuoteLock = await request(`/api/quotes/${salesQuote.id}/versions/${salesQuote.versions[0].id}/lock`, { cookie: sales, method: 'POST', body: { validityDays: 30 } })
+  assert.equal(sampleQuoteLock.response.status, 200)
 
   const sample = await request('/api/samples', {
     cookie: sales,

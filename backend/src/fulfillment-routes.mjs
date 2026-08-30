@@ -3,6 +3,8 @@ import { HttpError, listQuery, readJson, send, text } from './http.mjs'
 
 const FULFILLMENT_TRANSITIONS = new Set(['IN_PRODUCTION', 'READY_TO_SHIP', 'DELIVERED', 'CANCELLED'])
 const SHIPMENT_STATUSES = new Set(['SHIPPED', 'DELIVERED'])
+// 修复说明：[中危-状态机]，原因：履约状态原可从 DELIVERED 回退 IN_PRODUCTION/READY_TO_SHIP，且已发货/已收款订单可被任意置 CANCELLED（连带抹掉提成基数）；现禁止发货后状态回退，取消订单要求 FINANCE/ADMIN 且必须没有任何物流发货记录。
+const FULFILLMENT_TERMINAL_FLOW = new Set(['SHIPPED', 'DELIVERED'])
 
 const shipmentInclude = {
   salesOrder: {
@@ -142,6 +144,15 @@ export async function handleFulfillmentRoute({ req, res, url, pathname, actor, d
     const note = text(body.note, '履约备注', { max: 2000 })
     const order = await orderById(db, actor, statusMatch[1], { write: true })
     const { items, payments, documents, shipments } = await orderSources(db, order)
+    if (FULFILLMENT_TERMINAL_FLOW.has(order.fulfillmentStatus) && ['IN_PRODUCTION', 'READY_TO_SHIP'].includes(status)) {
+      throw new HttpError(400, 'INVALID_STATUS_TRANSITION', `订单已处于 ${order.fulfillmentStatus}，不允许回退到 ${status}。`)
+    }
+    if (status === 'CANCELLED') {
+      if (FULFILLMENT_TERMINAL_FLOW.has(order.fulfillmentStatus) || shipments.length > 0) {
+        throw new HttpError(400, 'FULFILLMENT_GATE_BLOCKED', '已有发货记录的订单不能取消，请走退货/售后流程。', { blockers: ['SHIPMENT_EXISTS'] })
+      }
+      if (!['FINANCE', 'ADMIN'].includes(actor.role)) throw new HttpError(403, 'FORBIDDEN', '取消订单仅限财务或管理员操作。')
+    }
     if (status === 'IN_PRODUCTION') {
       const gate = productionGate(order, payments)
       if (!gate.ready) throw new HttpError(400, 'FULFILLMENT_GATE_BLOCKED', '收款未达到生产/备货解锁条件。', { blockers: gate.blockers })
@@ -188,6 +199,8 @@ export async function handleFulfillmentRoute({ req, res, url, pathname, actor, d
     const shipment = await shipmentById(db, actor, shipmentStatusMatch[1], { write: true })
     const body = await readJson(req)
     const status = shipmentStatus(body.status)
+    // 修复说明：[低危-状态机]，原因：物流状态允许 SHIPPED→DELIVERED→SHIPPED 反复横跳，每次都新建履约事件并改写订单状态；现禁止已签收回退为已发货。
+    if (shipment.status === 'DELIVERED' && status === 'SHIPPED') throw new HttpError(400, 'INVALID_STATUS_TRANSITION', '物流已签收，不能回退为已发货。')
     const note = text(body.note, '物流备注', { max: 2000 })
     const deliveredAt = status === 'DELIVERED' ? dateValue(body.deliveredAt || new Date().toISOString(), '签收时间') : shipment.deliveredAt
     const updated = await db.$transaction(async (tx) => {

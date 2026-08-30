@@ -71,6 +71,8 @@ const team = await db.team.create({ data: { name: `P2 E2E ${suffix}` } })
 const manager = await db.user.create({ data: { email: `manager-${suffix}@nexfab.test`, name: 'P2 测试经理', passwordHash: passwordHash('TestOnly#Password1'), role: 'MANAGER', teamId: team.id } })
 await db.team.update({ where: { id: team.id }, data: { managerId: manager.id } })
 const sales = await db.user.create({ data: { email: `sales-${suffix}@nexfab.test`, name: 'P2 测试销售', passwordHash: passwordHash('TestOnly#Password1'), role: 'SALES', teamId: team.id } })
+// 修复说明：[中危-口径同步] 知识文档审核禁止自审，补建独立 ADMIN 审核人。
+const admin = await db.user.create({ data: { email: `admin-${suffix}@nexfab.test`, name: 'P2 测试管理员', passwordHash: passwordHash('TestOnly#Password1'), role: 'ADMIN', teamId: null } })
 
 const server = createAppServer()
 server.listen(0, '127.0.0.1')
@@ -79,6 +81,7 @@ const base = `http://127.0.0.1:${server.address().port}`
 
 try {
   const managerCookie = await login(base, manager.email)
+  const adminCookie = await login(base, admin.email)
   const salesCookie = await login(base, sales.email)
   const ready = await fetch(`${base}/ready`)
   assert.equal(ready.status, 200)
@@ -93,7 +96,8 @@ try {
     body: { title: `P2 PostgreSQL 来源 ${suffix}`, type: 'FAQ', sourceName: 'p2-postgres-e2e.md', version: 'v1', chunks: [{ heading: '已审核条款', content: '真实 PostgreSQL E2E 资料：对外承诺前必须人工确认。' }] },
   })
   assert.equal(document.response.status, 201)
-  const reviewed = await request(base, `/api/knowledge-documents/${document.payload.data.id}/review`, { cookie: managerCookie, method: 'POST', body: { status: 'APPROVED', note: 'P2 real DB E2E' } })
+  // 修复说明：[中危-口径同步] 知识文档审核禁止自审；E2E 改由 ADMIN 审核。
+  const reviewed = await request(base, `/api/knowledge-documents/${document.payload.data.id}/review`, { cookie: adminCookie, method: 'POST', body: { status: 'APPROVED', note: 'P2 real DB E2E' } })
   assert.equal(reviewed.response.status, 200)
   const rag = await request(base, '/api/rag/query', { cookie: salesCookie, method: 'POST', body: { query: '真实 PostgreSQL E2E 对外承诺', module: 'AI_AGENT' } })
   assert.equal(rag.response.status, 200)

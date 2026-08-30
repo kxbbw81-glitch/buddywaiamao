@@ -1,6 +1,7 @@
 import { HttpError, text } from './http.mjs'
 
-export const loginUserSelect = { id: true, email: true, name: true, role: true, status: true, teamId: true, passwordHash: true }
+// 修复说明：[低危-会话安全]，配套 tokenVersion 撤销机制，登录签发时携带版本号。
+export const loginUserSelect = { id: true, email: true, name: true, role: true, status: true, teamId: true, tokenVersion: true, passwordHash: true }
 
 function normalizeLoginId(value) {
   return text(value, '账号或邮箱', { required: true, max: 160 })?.toLowerCase()

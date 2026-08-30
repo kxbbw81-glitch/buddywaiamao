@@ -148,7 +148,7 @@ try {
 
   const knowledge = await request('/api/knowledge-documents', { cookie: manager, method: 'POST', body: { title: 'P2.2 RAG 基准资料', type: 'FAQ', sourceName: 'P22-FAQ.md', version: 'v1', chunks: [{ heading: '耐温', content: 'P2.2 测试产品耐温为 205°C。' }] } })
   assert.equal(knowledge.response.status, 201)
-  const approved = await request(`/api/knowledge-documents/${knowledge.payload.data.id}/review`, { cookie: manager, method: 'POST', body: { status: 'APPROVED', note: 'P2.2 smoke' } })
+  const approved = await request(`/api/knowledge-documents/${knowledge.payload.data.id}/review`, { cookie: admin, method: 'POST', body: { status: 'APPROVED', note: 'P2.2 smoke' } })
   assert.equal(approved.response.status, 200)
   const insufficient = await request('/api/rag/query', { cookie: sales, method: 'POST', body: { query: '完全不存在的冷门参数 xyz-no-match', module: 'product' } })
   assert.equal(insufficient.response.status, 200)

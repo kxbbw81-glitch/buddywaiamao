@@ -80,13 +80,15 @@ async function documentById(db, id) {
 }
 
 export async function handleKnowledgeRoute({ req, res, url, pathname, actor, db }) {
+  // 修复说明：[低危-越权读]，原因：SALES 可通过列表/详情直读未经审核的 DRAFT/REJECTED 知识文档全文，绕过 RAG"仅 APPROVED 可回答"的红线；现非 MANAGER/ADMIN 角色只能读取 APPROVED 文档。
+  const reviewVisible = ['MANAGER', 'ADMIN'].includes(actor.role)
   if (req.method === 'GET' && pathname === '/api/knowledge-documents') {
     assertKnowledgeAccess(actor)
     const { page, pageSize, skip } = listQuery(url)
     const status = url.searchParams.get('status') ? statusValue(url.searchParams.get('status')) : null
     const productId = url.searchParams.get('productId')
     const type = url.searchParams.get('type')?.toUpperCase()
-    const where = { ...(status ? { status } : {}), ...(productId ? { productId } : {}), ...(type ? { type } : {}) }
+    const where = { ...(reviewVisible ? {} : { status: 'APPROVED' }), ...(status && reviewVisible ? { status } : {}), ...(productId ? { productId } : {}), ...(type ? { type } : {}) }
     const [items, total] = await db.$transaction([db.knowledgeDocument.findMany({ where, include: documentInclude, orderBy: { updatedAt: 'desc' }, skip, take: pageSize }), db.knowledgeDocument.count({ where })])
     return send(res, 200, { data: { items, page, pageSize, total } })
   }
@@ -108,6 +110,7 @@ export async function handleKnowledgeRoute({ req, res, url, pathname, actor, db 
   if (documentMatch && req.method === 'GET') {
     assertKnowledgeAccess(actor)
     const document = await documentById(db, documentMatch[1])
+    if (!reviewVisible && document.status !== 'APPROVED') throw new HttpError(404, 'NOT_FOUND', '知识文档不存在。')
     const chunks = await db.knowledgeChunk.findMany({ where: { documentId: document.id }, orderBy: { chunkNo: 'asc' }, take: 100 })
     return send(res, 200, { data: { ...document, chunks } })
   }
@@ -116,6 +119,8 @@ export async function handleKnowledgeRoute({ req, res, url, pathname, actor, db 
   if (reviewMatch && req.method === 'POST') {
     assertKnowledgeAccess(actor, 'review')
     const document = await documentById(db, reviewMatch[1])
+    // 修复说明：[低危-职责分离]，原因：MANAGER 可审核自己创建的知识文档（自审自批），未审核内容可能带偏向进入 RAG 回答；现禁止创建人审核自己的文档（ADMIN 例外）。
+    if (document.createdById === actor.id && actor.role !== 'ADMIN') throw new HttpError(403, 'FORBIDDEN', '不能审核自己创建的知识文档。')
     const body = await readJson(req)
     const status = reviewStatus(body.status || 'APPROVED')
     const note = text(body.note, '审核备注', { max: 2000 })

@@ -45,6 +45,12 @@ async function createQuote(cookie, customerId, productId, amount = 180) {
 }
 
 async function createOrder(cookie, quoteId) {
+  // 修复说明：[中危-口径同步] 转单现在要求报价版本已锁定；测试先取版本列表并锁定再转单。
+  const versions = await request(`/api/quotes/${quoteId}/versions`, { cookie })
+  assert.equal(versions.response.status, 200)
+  const versionId = versions.payload.data.items[0].id
+  const locked = await request(`/api/quotes/${quoteId}/versions/${versionId}/lock`, { cookie, method: 'POST', body: { validityDays: 30 } })
+  assert.equal(locked.response.status, 200)
   const result = await request(`/api/orders/from-quote/${quoteId}`, { cookie, method: 'POST' })
   assert.equal(result.response.status, 201)
   return result.payload.data
@@ -80,7 +86,8 @@ try {
   const salesCustomer = await createCustomer(sales, 'Sales Shipment Buyer')
   const adminCustomer = await createCustomer(admin, 'Admin Shipment Buyer')
   const salesOrder = await createOrder(sales, (await createQuote(sales, salesCustomer.id, product.payload.data.id, 180)).id)
-  const adminOrder = await createOrder(admin, (await createQuote(admin, adminCustomer.id, product.payload.data.id, 80)).id)
+  // 修复说明：[低危-口径同步] admin 报价 80 元低于成本会触发低毛利审批（锁定 202）；测试目的与毛利无关，改 180。
+  const adminOrder = await createOrder(admin, (await createQuote(admin, adminCustomer.id, product.payload.data.id, 180)).id)
 
   const earlyProduction = await request(`/api/orders/${salesOrder.id}/fulfillment/status`, { cookie: sales, method: 'PATCH', body: { status: 'IN_PRODUCTION' } })
   assert.equal(earlyProduction.response.status, 400)

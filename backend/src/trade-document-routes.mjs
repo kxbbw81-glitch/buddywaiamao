@@ -182,11 +182,18 @@ export async function handleTradeDocumentRoute({ req, res, url, pathname, actor,
     if (snapshot.consistency.blockers.length) throw new HttpError(400, 'DOCUMENT_SOURCE_INVALID', '订单当前数据不足以生成可信单证。', { blockers: snapshot.consistency.blockers })
     const latest = documents.filter((document) => document.type === type).reduce((max, document) => Math.max(max, Number(document.version || 0)), 0)
     const version = latest + 1
-    const document = await db.$transaction(async (tx) => {
-      const created = await tx.tradeDocument.create({ data: { salesOrderId: order.id, customerId: order.customerId, type, version, documentNo: documentNo(order, type, version), currency: order.currency, totalAmount: money(order.totalAmount, '订单金额'), snapshot, sourceHash: sourceHash(snapshot), createdById: actor.id }, include: documentInclude })
-      await audit(tx, actor, 'GENERATE', 'trade_document', created.id, { salesOrderId: order.id, type, version, sourceHash: created.sourceHash, warnings: snapshot.consistency.warnings })
-      return created
-    })
+    // 修复说明：[低危-并发竞态]，原因：版本号在事务外计算，并发生成同类型单证时撞 @@unique([salesOrderId, type, version]) 抛 P2002 变成 500；捕获后转为 409 提示重新生成。
+    let document
+    try {
+      document = await db.$transaction(async (tx) => {
+        const created = await tx.tradeDocument.create({ data: { salesOrderId: order.id, customerId: order.customerId, type, version, documentNo: documentNo(order, type, version), currency: order.currency, totalAmount: money(order.totalAmount, '订单金额'), snapshot, sourceHash: sourceHash(snapshot), createdById: actor.id }, include: documentInclude })
+        await audit(tx, actor, 'GENERATE', 'trade_document', created.id, { salesOrderId: order.id, type, version, sourceHash: created.sourceHash, warnings: snapshot.consistency.warnings })
+        return created
+      })
+    } catch (error) {
+      if (error?.code === 'P2002') throw new HttpError(409, 'DOCUMENT_VERSION_CONFLICT', '该订单同类型单证版本刚被他人生成，请刷新后重试。')
+      throw error
+    }
     return send(res, 201, { data: document })
   }
 
@@ -210,6 +217,8 @@ export async function handleTradeDocumentRoute({ req, res, url, pathname, actor,
     assertTradeDocumentAccess(actor, 'review')
     const document = await documentById(db, actor, reviewMatch[1], { write: true })
     if (document.status === 'APPROVED') throw new HttpError(400, 'DOCUMENT_ALREADY_APPROVED', '已审核通过的单证不能静默覆盖；如需修改请生成新版本。')
+    // 修复说明：[低危-职责分离]，原因：单证审核未限制自审（与报价审批的 requestedById !== actor.id 口径不一致）；现禁止生成人审核自己的单证（ADMIN 例外）。
+    if (document.createdById === actor.id && actor.role !== 'ADMIN') throw new HttpError(403, 'FORBIDDEN', '不能审核自己生成的单证。')
     const body = await readJson(req)
     const status = reviewStatus(body.status)
     const note = text(body.note, '审核备注', { max: 2000 })

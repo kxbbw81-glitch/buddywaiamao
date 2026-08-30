@@ -11,6 +11,8 @@ function encryptionKey() {
     if (/^[0-9a-f]{64}$/i.test(raw)) return Buffer.from(raw, 'hex')
     const decoded = Buffer.from(raw, 'base64url')
     if (decoded.length === 32) return decoded
+    // 修复说明：[中危-密钥强度]，原因：任意低熵短口令（如 my-secret）经单轮 SHA-256 即成为 AES-256 主密钥，离线可爆破；现拒绝少于 32 字符的弱口令，强制 hex64/base64url32 或长口令短语。
+    if (raw.length < 32) throw new HttpError(503, 'PII_KEY_TOO_WEAK', 'PII_ENCRYPTION_KEY 强度不足：请使用 64 位 hex、base64url 32 字节密钥，或不少于 32 字符的口令短语。')
     return createHash('sha256').update(raw).digest()
   }
   if (process.env.NODE_ENV === 'test') return createHash('sha256').update('nexfab-memory-pii-test-key').digest()
@@ -39,7 +41,8 @@ export function maskEmail(value) {
   const email = normalizePiiEmail(value)
   if (!email) return null
   const [local, domain] = email.split('@')
-  return `${local.slice(0, Math.min(2, local.length)) || '*'}***@${domain}`
+  // 修复说明：[低危-脱敏]，原因：单字符 local 首字符即全文，等于未脱敏；不足 2 字符全掩码。
+  return `${local.length >= 2 ? local.slice(0, 2) : '*'}***@${domain}`
 }
 export function maskPhone(value) {
   const phone = normalizePiiPhone(value)
@@ -130,6 +133,10 @@ export function revealPiiFields(row, fields) {
   const next = { ...row }
   for (const field of fields) {
     next[field] = decryptPii(next[`${field}Ciphertext`] || next[`${field}Encrypted`], next[field])
+    // 修复说明：[低危-敏感信息]，原因：解密后响应仍携带密文与哈希字段；与 revealEncryptedContact 口径对齐统一剔除。
+    delete next[`${field}Ciphertext`]
+    delete next[`${field}Encrypted`]
+    delete next[`${field}Hash`]
   }
   return next
 }

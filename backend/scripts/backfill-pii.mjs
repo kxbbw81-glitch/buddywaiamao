@@ -50,7 +50,8 @@ async function backfillFingerprints() {
       const plan = planFingerprintBackfill(row)
       if (plan.state === 'already-protected') continue
       if (plan.state === 'invalid') { summary.fingerprints.invalid += 1; continue }
-      const duplicate = await db.customerFingerprint.findFirst({ where: { customerId: row.customerId, type: row.type, normalized: plan.data.normalized }, select: { id: true } })
+      // 修复说明：[中危-脚本安全]，原因：指纹唯一约束是 (type, normalized) 全局唯一，仅按 customerId 查重会漏检他客户占用，--apply 时 P2002 中断脚本；改全局查重。
+      const duplicate = await db.customerFingerprint.findFirst({ where: { type: row.type, normalized: plan.data.normalized }, select: { id: true, customerId: true } })
       if (duplicate && duplicate.id !== row.id) { summary.fingerprints.conflicts += 1; continue }
       if (apply) await db.customerFingerprint.update({ where: { id: row.id }, data: plan.data })
       summary.fingerprints.updated += 1

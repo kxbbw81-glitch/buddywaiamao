@@ -160,6 +160,11 @@ async function importLeads(db, actor, body) {
   const ownerId = Object.prototype.hasOwnProperty.call(body, 'ownerId') ? text(body.ownerId, '负责人', { max: 120 }) : actor.id
   if (ownerId) await activeUser(db, ownerId)
   if (ownerId && actor.role === 'SALES' && ownerId !== actor.id) throw new HttpError(403, 'FORBIDDEN', '销售只能导入并归属给自己的线索。')
+  // 修复说明：[低危-数据范围]，原因：MANAGER 导入时可将线索挂到其他团队用户名下；限制为本团队成员。
+  if (ownerId && actor.role === 'MANAGER' && ownerId !== actor.id) {
+    const owner = await activeUser(db, ownerId)
+    if (owner.teamId !== actor.teamId) throw new HttpError(403, 'FORBIDDEN', '经理只能将导入线索归属本团队成员。')
+  }
   const duplicateCheckConfirmed = body.duplicateCheckConfirmed === true
   const report = emptyReport('leads', dryRun); report.total = rows.length
   for (const [index, candidate] of rows.entries()) {
@@ -174,8 +179,12 @@ async function importLeads(db, actor, body) {
       }
       if (dryRun) report.created.push({ row: index + 1, preview: true, code: candidate?.code || null, companyName: data.companyName, pii: { email: data.email ? 'encrypted-on-confirm' : null, phone: data.phone ? 'encrypted-on-confirm' : null } })
       else {
-        const created = await db.lead.create({ data: { ...prepareEncryptedLead(data), code: text(candidate?.code, '线索编号', { max: 80 }) || `LEAD-${Date.now()}-${index + 1}`, ownerId, createdById: actor.id } })
-        await audit(db, actor, 'IMPORT_CREATE', 'lead', created.id, { row: index + 1, source: data.source, channel: data.channel, ownerId, duplicateCheckConfirmed: confirmImport && duplicateCheckConfirmed, pii: publicPiiStorageSummary(created) })
+        // 修复说明：[中危-数据一致性]，原因：导入建线索与审计分离；改为事务内写入，编号冲突按行级冲突处理而非整请求 500。
+        const { created } = await db.$transaction(async (tx) => {
+          const created = await tx.lead.create({ data: { ...prepareEncryptedLead(data), code: text(candidate?.code, '线索编号', { max: 80 }) || `LEAD-${Date.now()}-${index + 1}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`, ownerId, createdById: actor.id } })
+          await audit(tx, actor, 'IMPORT_CREATE', 'lead', created.id, { row: index + 1, source: data.source, channel: data.channel, ownerId, duplicateCheckConfirmed: confirmImport && duplicateCheckConfirmed, pii: publicPiiStorageSummary(created) })
+          return { created }
+        })
         report.created.push({ row: index + 1, id: created.id, code: created.code, status: created.status })
       }
     } catch (error) { rowError(report, index, error) }
@@ -230,11 +239,20 @@ async function importProducts(db, actor, body) {
       const payload = { sku, name, specs: parseJsonObject(candidate?.specsJson ?? candidate?.specs, '规格 JSON', {}), packing: parseJsonObject(candidate?.packingJson ?? candidate?.packing, '包装 JSON', {}), costVersions: parseJsonObject(candidate?.costVersionsJson ?? candidate?.costVersions, '成本版本 JSON', {}), active: boolValue(candidate?.active, true) }
       if (dryRun) report.created.push({ row: index + 1, preview: true, sku, name, categoryName })
       else {
-        let [category] = await db.productCategory.findMany({ where: { name: categoryName }, take: 1 })
-        if (!category) category = await db.productCategory.create({ data: { name: categoryName } })
-        const product = await db.product.create({ data: { ...payload, categoryId: category.id } })
-        await audit(db, actor, 'IMPORT_CREATE', 'product', product.id, { row: index + 1, sku, categoryId: category.id })
-        report.created.push({ row: index + 1, id: product.id, sku: product.sku })
+        // 修复说明：[中危-数据一致性]，原因：分类/产品/审计三步无事务，产品创建失败会留下空分类；SKU 并发导入撞唯一约束未捕获变 500。事务化 + P2002 转行级冲突。
+        try {
+          const { product } = await db.$transaction(async (tx) => {
+            let [category] = await tx.productCategory.findMany({ where: { name: categoryName }, take: 1 })
+            if (!category) category = await tx.productCategory.create({ data: { name: categoryName } })
+            const created = await tx.product.create({ data: { ...payload, categoryId: category.id } })
+            await audit(tx, actor, 'IMPORT_CREATE', 'product', created.id, { row: index + 1, sku, categoryId: category.id })
+            return { product: created }
+          })
+          report.created.push({ row: index + 1, id: product.id, sku: product.sku })
+        } catch (error) {
+          if (error?.code === 'P2002') { report.conflicts.push({ row: index + 1, code: 'SKU_EXISTS', message: 'SKU 已存在（并发导入冲突）。', sku }); continue }
+          throw error
+        }
       }
     } catch (error) { rowError(report, index, error) }
   }
@@ -254,9 +272,14 @@ async function importSupplierCosts(db, actor, body) {
       if (!/^[A-Z]{3}$/.test(supplier.currency)) throw new HttpError(400, 'VALIDATION_ERROR', '币种必须为三位 ISO 代码。')
       if (dryRun) report.updated.push({ row: index + 1, preview: true, productId: product.id, sku, supplierName: supplier.supplierName, cost: supplier.cost })
       else {
-        const nextCostVersions = { ...(product.costVersions || {}), current: supplier.cost, currency: supplier.currency, suppliers: [...(Array.isArray(product.costVersions?.suppliers) ? product.costVersions.suppliers : []), supplier] }
-        const updated = await db.product.update({ where: { id: product.id }, data: { costVersions: nextCostVersions } })
-        await audit(db, actor, 'IMPORT_UPDATE', 'product_cost', updated.id, { row: index + 1, sku, supplierName: supplier.supplierName })
+        // 修复说明：[中危-并发丢失更新]，原因：读-改-写 costVersions 无事务/无重读，并发导入会互相覆盖 suppliers 追加；事务内重读后再合并。
+        const { updated } = await db.$transaction(async (tx) => {
+          const fresh = await tx.product.findUnique({ where: { id: product.id } })
+          const nextCostVersions = { ...(fresh?.costVersions || {}), current: supplier.cost, currency: supplier.currency, suppliers: [...(Array.isArray(fresh?.costVersions?.suppliers) ? fresh.costVersions.suppliers : []), supplier] }
+          const updated = await tx.product.update({ where: { id: product.id }, data: { costVersions: nextCostVersions } })
+          await audit(tx, actor, 'IMPORT_UPDATE', 'product_cost', updated.id, { row: index + 1, sku, supplierName: supplier.supplierName })
+          return { updated }
+        })
         report.updated.push({ row: index + 1, id: updated.id, sku })
       }
     } catch (error) { rowError(report, index, error) }
@@ -280,9 +303,18 @@ async function importQuoteRules(db, actor, body) {
       if (!['DRAFT', 'ACTIVE', 'ARCHIVED'].includes(payload.status)) throw new HttpError(400, 'VALIDATION_ERROR', '规则状态仅支持 DRAFT / ACTIVE / ARCHIVED。')
       if (dryRun) report.created.push({ row: index + 1, preview: true, code, status: payload.status, currency: payload.currency })
       else {
-        const created = await db.quoteRuleSet.create({ data: payload })
-        await audit(db, actor, 'IMPORT_CREATE', 'quote_rule_set', created.id, { row: index + 1, code, status: payload.status })
-        report.created.push({ row: index + 1, id: created.id, code: created.code, status: created.status })
+        // 修复说明：[中危-数据一致性]，原因：规则创建与审计分离；code 并发撞唯一约束未捕获变 500。事务化 + P2002 转行级冲突。
+        try {
+          const { created } = await db.$transaction(async (tx) => {
+            const created = await tx.quoteRuleSet.create({ data: payload })
+            await audit(tx, actor, 'IMPORT_CREATE', 'quote_rule_set', created.id, { row: index + 1, code, status: payload.status })
+            return { created }
+          })
+          report.created.push({ row: index + 1, id: created.id, code: created.code, status: created.status })
+        } catch (error) {
+          if (error?.code === 'P2002') { report.conflicts.push({ row: index + 1, code: 'RULE_CODE_EXISTS', message: '报价规则编码已存在（并发导入冲突）。', ruleCode: code }); continue }
+          throw error
+        }
       }
     } catch (error) { rowError(report, index, error) }
   }

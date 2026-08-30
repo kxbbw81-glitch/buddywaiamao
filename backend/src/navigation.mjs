@@ -46,7 +46,8 @@ export function navigationFor(role) {
       .filter((module) => module.roles.includes(role))
       .map(({ subs, ...module }) => ({
         ...module,
-        ...(moduleBadges[module.id] ? { badge: moduleBadges[module.id] } : {}),
+        // 修复说明：[低危-数据正确性]，原因：模块徽标数为硬编码演示值，前端会渲染成真实角标误导用户；显式标注 demo=true 声明非真实数据。
+        ...(moduleBadges[module.id] ? { badge: { ...moduleBadges[module.id], demo: true } } : {}),
         subs: subs.map(([name, ai = false]) => ({ name, ai, ...(subMetadata[`${module.id}/${name}`] || {}) })),
       })),
   }

@@ -62,22 +62,23 @@ export async function handleCrmRoute({ req, res, url, pathname, actor, db }) {
     if (duplicates.length && body.duplicateCheckConfirmed !== true) {
       return send(res, 409, { error: { code: 'DUPLICATE_CHECK_REQUIRED', message: '发现客户指纹重复，创建客户前需要人工确认。' }, data: { fingerprints, candidates: duplicates } })
     }
-    const customer = await db.$transaction(async (tx) => {
-      const item = await tx.customer.create({ data: { ...data, ownerId: actor.id }, include: customerInclude })
-      const createdFingerprints = await registerCustomerFingerprints(tx, item.id, fingerprints, 'CUSTOMER_CREATE')
-      await audit(tx, actor, 'CREATE', 'customer', item.id, { fields: Object.keys(data), fingerprintCount: createdFingerprints.length, duplicateCheckConfirmed: body.duplicateCheckConfirmed === true })
-      return item
-    })
+    // 修复说明：[中危-并发竞态]，原因：查重在事务外执行，并发创建同指纹客户时都能通过查重，事务内指纹注册撞唯一约束抛 P2002 变成 500；统一捕获转 409。
+    let customer
+    try {
+      customer = await db.$transaction(async (tx) => {
+        const item = await tx.customer.create({ data: { ...data, ownerId: actor.id }, include: customerInclude })
+        const createdFingerprints = await registerCustomerFingerprints(tx, item.id, fingerprints, 'CUSTOMER_CREATE')
+        await audit(tx, actor, 'CREATE', 'customer', item.id, { fields: Object.keys(data), fingerprintCount: createdFingerprints.length, duplicateCheckConfirmed: body.duplicateCheckConfirmed === true })
+        return item
+      })
+    } catch (error) {
+      if (error?.code === 'P2002') throw new HttpError(409, 'DUPLICATE_CHECK_REQUIRED', '客户指纹与现有客户冲突，请重新查重确认后再创建。')
+      throw error
+    }
     return send(res, 201, { data: customer })
   }
 
-  if (req.method === 'POST' && pathname === '/api/tools/dedupe') {
-    assertCrmAccess(actor)
-    const body = await readJson(req)
-    const fingerprints = fingerprintsFromDedupeInput(body)
-    const candidates = await findDuplicateCustomers(db, fingerprints, { customerScope: scopeFor(actor) })
-    return send(res, 200, { data: { fingerprints, candidates, hasDuplicates: candidates.length > 0 } })
-  }
+  // 修复说明：[中危-维护性]，原因：/api/tools/dedupe 在 tools-routes 与本文件双重注册（server 分发 tools 先于 crm，本副本为死代码）；已删除，活实现保留在 tools-routes。
 
   const customerMatch = pathname.match(/^\/api\/customers\/([^/]+)(?:\/profile)?$/)
   if (customerMatch && req.method === 'GET' && pathname === `/api/customers/${customerMatch[1]}`) {
@@ -86,12 +87,19 @@ export async function handleCrmRoute({ req, res, url, pathname, actor, db }) {
   }
   if (customerMatch && req.method === 'PUT') {
     assertCrmAccess(actor, true); const current = await customerById(db, customerMatch[1]); assertCustomerScope(actor, current); const data = customerInput(await readJson(req))
-    const item = await db.$transaction(async (tx) => {
+    // 修复说明：[中危-业务逻辑]，原因：PUT 更新把客户名/官网改成与其他客户指纹相同时撞全局唯一约束抛 P2002 变成 500；捕获转 409。
+    let item
+    try {
+      item = await db.$transaction(async (tx) => {
       const updated = await tx.customer.update({ where: { id: current.id }, data, include: customerInclude })
       const createdFingerprints = await registerCustomerFingerprints(tx, current.id, fingerprintsFromCustomer(data, 'CUSTOMER_UPDATE'), 'CUSTOMER_UPDATE')
       await audit(tx, actor, 'UPDATE', 'customer', current.id, { fields: Object.keys(data), fingerprintCount: createdFingerprints.length })
-      return updated
-    })
+        return updated
+      })
+    } catch (error) {
+      if (error?.code === 'P2002') throw new HttpError(409, 'DUPLICATE_CHECK_REQUIRED', '修改后的客户指纹与现有客户冲突，请调整后再保存。')
+      throw error
+    }
     return send(res, 200, { data: item })
   }
 

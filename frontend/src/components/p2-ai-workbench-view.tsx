@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type React from 'react'
 import { AlertTriangle, CheckCircle2, CircleDollarSign, DatabaseZap, FileWarning, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
@@ -76,6 +76,9 @@ export function P2AiWorkbenchView({ active }: { active: ActivePage }) {
   const [toolCalls, setToolCalls] = useState<ToolCall[]>([])
   const [streamEvents, setStreamEvents] = useState<AiTaskEvent[]>([])
   const [streamTaskId, setStreamTaskId] = useState('')
+  // 修复说明：[中危-竞态]，原因：effect 依赖 gateway 对象会因 refresh 重建 EventSource 中断流；改用 ref 读取队列后端。
+  const queueBackendRef = useRef(gateway?.queue?.backend || 'unknown')
+  queueBackendRef.current = gateway?.queue?.backend || 'unknown'
   const [streamMode, setStreamMode] = useState<'idle' | 'sse' | 'polling' | 'closed'>('idle')
   const [ragQuery, setRagQuery] = useState('')
   const [ragResult, setRagResult] = useState<RagResponse | null>(null)
@@ -113,13 +116,16 @@ export function P2AiWorkbenchView({ active }: { active: ActivePage }) {
     let closed = false
     let pollTimer: ReturnType<typeof setInterval> | null = null
     const pushPollingEvent = (task: AiTask) => {
-      setStreamEvents((old) => old.concat({ id: `${Date.now()}`, taskId: task.id, at: new Date().toISOString(), type: 'polling', status: task.status, stage: 'polling_fallback', terminal: ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(task.status), tokens: Number(task.tokens || 0), cost: String(task.cost ?? '0'), durationMs: Number(task.durationMs || 0), dataSentToCloud: task.dataSentToCloud, summary: { provider: task.provider, model: task.model }, queueBackend: gateway?.queue?.backend || 'unknown' }).slice(-20))
+      setStreamEvents((old) => old.concat({ id: `${Date.now()}`, taskId: task.id, at: new Date().toISOString(), type: 'polling', status: task.status, stage: 'polling_fallback', terminal: ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(task.status), tokens: Number(task.tokens || 0), cost: String(task.cost ?? '0'), durationMs: Number(task.durationMs || 0), dataSentToCloud: task.dataSentToCloud, summary: { provider: task.provider, model: task.model }, queueBackend: queueBackendRef.current }).slice(-20))
     }
+    // 修复说明：[中危-错误静默]，原因：SSE 降级轮询对错误无限静默重试（含 401 会话过期），用户无任何提示且请求循环不停；现连续失败 3 次即停止并提示，401 直接终止。
+    let pollFailures = 0
     const startPolling = () => {
       if (pollTimer) return
       setStreamMode('polling')
       pollTimer = setInterval(() => {
         void api.aiTask(taskId).then((task) => {
+          pollFailures = 0
           if (closed) return
           pushPollingEvent(task)
           if (['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(task.status) && pollTimer) {
@@ -127,17 +133,42 @@ export function P2AiWorkbenchView({ active }: { active: ActivePage }) {
             pollTimer = null
             setStreamMode('closed')
           }
-        }).catch(() => undefined)
+        }).catch((error) => {
+          pollFailures += 1
+          if (error instanceof ApiError && error.status === 401) {
+            if (pollTimer) clearInterval(pollTimer)
+            pollTimer = null
+            setStreamMode('closed')
+            return
+          }
+          if (pollFailures >= 3 && pollTimer) {
+            clearInterval(pollTimer)
+            pollTimer = null
+            setStreamMode('closed')
+            setNotice({ tone: 'red', text: '任务状态轮询连续失败，请稍后手动刷新。' })
+          }
+        })
       }, 1200)
     }
+    // 修复说明：[中危-竞态]，原因：effect 依赖 gateway?.queue?.backend，run() 后 refresh 更新 gateway 对象会销毁重建 EventSource 中断流式事件；依赖收敛为 streamTaskId。
     const events = new EventSource(`/api/backend/api/ai-tasks/${encodeURIComponent(taskId)}/events`)
     setStreamMode('sse')
+    // 修复说明：[低危-容错]，原因：SSE 帧无 JSON.parse 保护，畸形帧抛未捕获异常；解析失败跳过该帧。
+    const parseEvent = (event: MessageEvent) => {
+      try {
+        return JSON.parse((event as MessageEvent).data) as AiTaskEvent
+      } catch {
+        return null
+      }
+    }
     events.addEventListener('status', (event) => {
-      const data = JSON.parse((event as MessageEvent).data) as AiTaskEvent
+      const data = parseEvent(event as MessageEvent)
+      if (!data) return
       setStreamEvents((old) => old.concat(data).slice(-20))
     })
     events.addEventListener('terminal', (event) => {
-      const data = JSON.parse((event as MessageEvent).data) as AiTaskEvent
+      const data = parseEvent(event as MessageEvent)
+      if (!data) return
       setStreamEvents((old) => old.concat(data).slice(-20))
       setStreamMode('closed')
       events.close()
@@ -151,7 +182,7 @@ export function P2AiWorkbenchView({ active }: { active: ActivePage }) {
       events.close()
       if (pollTimer) clearInterval(pollTimer)
     }
-  }, [gateway?.queue?.backend, streamTaskId])
+  }, [streamTaskId])
 
   async function run(action: () => Promise<string>) {
     setLoading(true)

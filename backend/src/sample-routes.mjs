@@ -3,6 +3,16 @@ import { HttpError, listQuery, readJson, send, text } from './http.mjs'
 import { createOrderFromQuoteInTransaction, latestQuoteVersion, quoteById } from './order-routes.mjs'
 
 const STATUSES = new Set(['REQUESTED', 'APPROVED', 'SENT', 'DELIVERED', 'FEEDBACK_RECEIVED', 'CONVERTED', 'CANCELLED'])
+// 修复说明：[中危-状态机]，原因：样品状态原可任意跳转（REQUESTED 直接置 CONVERTED 会制造"无订单却已转单"脏数据并堵死转单接口）；现定义合法流转表，CONVERTED/CANCELLED 为终态，CONVERTED 只能走 convert-to-order 接口。
+const STATUS_TRANSITIONS = {
+  REQUESTED: ['APPROVED', 'SENT', 'CANCELLED'],
+  APPROVED: ['SENT', 'CANCELLED'],
+  SENT: ['DELIVERED', 'CANCELLED'],
+  DELIVERED: ['FEEDBACK_RECEIVED', 'CANCELLED'],
+  FEEDBACK_RECEIVED: ['CONVERTED', 'CANCELLED'],
+  CONVERTED: [],
+  CANCELLED: [],
+}
 const sampleInclude = {
   customer: { include: { owner: { select: { id: true, name: true, teamId: true } } } },
   product: { select: { id: true, sku: true, name: true, active: true } },
@@ -53,6 +63,12 @@ function createInput(body) {
     shippingAddress: text(body.shippingAddress, '寄送地址', { max: 1000 }),
     note: text(body.note, '样品备注', { max: 2000 }),
   }
+}
+
+// 修复说明：[低危-输入校验]，原因：数量经 numberValue 最小 0.0001 通过后被 toFixed(2) 舍入为 0 落库，产生零数量样品；创建后校验舍入结果仍须大于 0。
+function assertQuantityPositive(quantity) {
+  if (!(quantity > 0)) throw new HttpError(400, 'VALIDATION_ERROR', '样品数量舍入后必须大于 0。')
+  return quantity
 }
 
 function statusInput(body) {
@@ -117,6 +133,7 @@ export async function handleSampleRoute({ req, res, url, pathname, actor, db }) 
   if (req.method === 'POST' && pathname === '/api/samples') {
     assertSampleAccess(actor, true)
     const data = createInput(await readJson(req))
+    assertQuantityPositive(data.quantity)
     const customer = await customerById(db, data.customerId)
     assertCustomerScope(actor, customer)
     await productById(db, data.productId)
@@ -139,6 +156,9 @@ export async function handleSampleRoute({ req, res, url, pathname, actor, db }) 
     assertSampleAccess(actor, true)
     const sample = await sampleById(db, actor, statusMatch[1])
     const data = statusInput(await readJson(req))
+    if (!(STATUS_TRANSITIONS[sample.status] || []).includes(data.status)) {
+      throw new HttpError(400, 'INVALID_STATUS_TRANSITION', `样品状态不允许从 ${sample.status} 变更为 ${data.status}。`)
+    }
     const updated = await db.$transaction(async (tx) => {
       const row = await tx.sampleRequest.update({ where: { id: sample.id }, data: { status: data.status, courier: data.courier ?? sample.courier, trackingNo: data.trackingNo ?? sample.trackingNo, feedback: data.feedback ?? sample.feedback, note: data.note ?? sample.note }, include: sampleInclude })
       await audit(tx, actor, 'UPDATE_STATUS', 'sample_request', sample.id, { from: sample.status, to: data.status, courier: data.courier, trackingNo: data.trackingNo, hasFeedback: Boolean(data.feedback) })
@@ -158,12 +178,24 @@ export async function handleSampleRoute({ req, res, url, pathname, actor, db }) 
     const quote = await quoteById(db, actor, sample.quoteId)
     if (quote.customerId !== sample.customerId) throw new HttpError(400, 'SAMPLE_QUOTE_CUSTOMER_MISMATCH', '样品绑定报价与样品客户不一致。')
     const version = await latestQuoteVersion(db, quote.id)
-    const { order, updated } = await db.$transaction(async (tx) => {
-      const { order } = await createOrderFromQuoteInTransaction(tx, actor, quote, version, { auditAction: 'CREATE_FROM_SAMPLE', auditDetail: { sampleRequestId: sample.id, productId: sample.productId, quantity: sample.quantity }, fulfillmentNote: 'ORDER_CREATED_FROM_SAMPLE' })
-      const row = await tx.sampleRequest.update({ where: { id: sample.id }, data: { status: 'CONVERTED', salesOrderId: order.id }, include: sampleInclude })
-      await audit(tx, actor, 'CONVERT_TO_ORDER', 'sample_request', sample.id, { salesOrderId: order.id, quoteId: quote.id, productId: sample.productId, quantity: sample.quantity })
-      return { order, updated: row }
-    })
+    // 修复说明：[低危-并发竞态]，原因：样品转单的状态检查在事务外且事务内更新不带状态守卫，并发两次调用会生成两张订单并互相覆盖 salesOrderId；现事务内用 updateMany 带 status/salesOrderId 守卫按受影响行数判定。
+    let order, updated
+    try {
+      const result = await db.$transaction(async (tx) => {
+        const created = await createOrderFromQuoteInTransaction(tx, actor, quote, version, { auditAction: 'CREATE_FROM_SAMPLE', auditDetail: { sampleRequestId: sample.id, productId: sample.productId, quantity: sample.quantity }, fulfillmentNote: 'ORDER_CREATED_FROM_SAMPLE' })
+        const claimed = await tx.sampleRequest.updateMany({ where: { id: sample.id, status: 'FEEDBACK_RECEIVED', salesOrderId: null }, data: { status: 'CONVERTED', salesOrderId: created.order.id } })
+        if (claimed.count === 0) throw new HttpError(409, 'SAMPLE_ALREADY_CONVERTED', '样品已关联订单，不能重复转单。')
+        const row = await tx.sampleRequest.findUnique({ where: { id: sample.id }, include: sampleInclude })
+        await audit(tx, actor, 'CONVERT_TO_ORDER', 'sample_request', sample.id, { salesOrderId: created.order.id, quoteId: quote.id, productId: sample.productId, quantity: sample.quantity })
+        return { order: created.order, updated: row }
+      })
+      order = result.order
+      updated = result.updated
+    } catch (error) {
+      // 修复说明：[中危-数据一致性]，原因：quoteId 唯一约束冲突（并发重复转单兜底）原会抛 P2002 变成 500；统一转 409。
+      if (error?.code === 'P2002') throw new HttpError(409, 'SAMPLE_ALREADY_CONVERTED', '样品绑定的报价已生成订单，不能重复转单。')
+      throw error
+    }
     return send(res, 201, { data: { sample: updated, order } })
   }
 

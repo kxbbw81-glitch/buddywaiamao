@@ -126,6 +126,9 @@ export async function handleToolsRoute({ req, res, url, pathname, actor, db }) {
   if (req.method === 'POST' && pathname === '/api/tools/dedupe') {
     assertCrmAccess(actor)
     const body = await readJson(req)
+    // 修复说明：[低危-输入校验]，原因：dedupe 入参未校验结构，数组/标量也被静默处理；现要求 JSON 对象并限制大小，与其他端点口径一致。
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new HttpError(400, 'VALIDATION_ERROR', '请求体必须是 JSON 对象。')
+    if (Buffer.byteLength(JSON.stringify(body), 'utf8') > 16 * 1024) throw new HttpError(413, 'PAYLOAD_TOO_LARGE', '查重请求不能超过 16KB。')
     const fingerprints = fingerprintsFromDedupeInput(body)
     const duplicates = await findDuplicateCustomerMatches(db, fingerprints, { actor })
     return send(res, 200, { data: { fingerprints, candidates: duplicates.candidates, hiddenCount: duplicates.hiddenCount, hasDuplicates: duplicates.total > 0, mode: 'customer-fingerprint' } })

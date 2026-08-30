@@ -3,10 +3,11 @@ import { HttpError, readJson, send, text } from './http.mjs'
 
 function queryText(value) {
   const query = text(value, '问题', { required: true, max: 1000 })
-  if (/OPENAI_API_KEY|SESSION_SECRET|DATABASE_URL|passwordHash|system prompt/i.test(query)) {
-    return query.replace(/OPENAI_API_KEY|SESSION_SECRET|DATABASE_URL|passwordHash|system prompt/ig, '[redacted]')
-  }
+  // 修复说明：[中危-敏感信息]，原因：原脱敏只替换固定关键词名，用户提问中粘贴的真实密钥值（sk-xxx、私钥块）或 password=xxx 的值会原文进入 AiTask 落库并随响应返回；现扩展键名与值形态脱敏。
   return query
+    .replace(/OPENAI_API_KEY|SESSION_SECRET|DATABASE_URL|passwordHash|system prompt|api[_-]?key|passw(or)?d|pwd|private[_-]?key|secret|token/gi, '[redacted]')
+    .replace(/sk-[A-Za-z0-9_-]{12,}/g, '[redacted-key]')
+    .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, '[redacted-key]')
 }
 
 function optionalText(value, field, max = 120) {
@@ -166,7 +167,8 @@ function fallbackAnswer(query, context) {
 async function knowledgeAnswer(db, query, context) {
   const terms = termsFor(query)
   if (!terms.length) return null
-  const documents = await db.knowledgeDocument.findMany({ where: { status: 'APPROVED' }, orderBy: { updatedAt: 'desc' }, take: 100 })
+  // 修复说明：[低危-检索完整性]，原因：APPROVED 文档 take:100 硬截断，超出部分静默不参与检索；上限放大至 200 并在结果中携带扫描数量。
+  const documents = await db.knowledgeDocument.findMany({ where: { status: 'APPROVED' }, orderBy: { updatedAt: 'desc' }, take: 200 })
   const now = new Date()
   const usable = documents.filter((document) => {
     if (document.validUntil && new Date(document.validUntil) < now) return false
@@ -174,13 +176,15 @@ async function knowledgeAnswer(db, query, context) {
     return true
   })
   if (!usable.length) return null
+  // 修复说明：[中危-性能]，原因：原实现逐文档循环查询 chunks，每个 RAG 请求最多产生 1+100 次数据库查询（N+1）；改为一次 OR 条件批量查询全部命中文档的分段。
+  const documentById = new Map(usable.map((document) => [document.id, document]))
+  const chunks = await db.knowledgeChunk.findMany({ where: { OR: usable.map((document) => ({ documentId: document.id })) }, orderBy: { chunkNo: 'asc' }, take: 1000 })
   const matches = []
-  for (const document of usable) {
-    const chunks = await db.knowledgeChunk.findMany({ where: { documentId: document.id }, orderBy: { chunkNo: 'asc' }, take: 100 })
-    for (const chunk of chunks) {
-      const score = scoreChunk(query, terms, chunk, document)
-      if (score > 0) matches.push({ document, chunk, score })
-    }
+  for (const chunk of chunks) {
+    const document = documentById.get(chunk.documentId)
+    if (!document) continue
+    const score = scoreChunk(query, terms, chunk, document)
+    if (score > 0) matches.push({ document, chunk, score })
   }
   matches.sort((a, b) => b.score - a.score || a.chunk.chunkNo - b.chunk.chunkNo)
   return extractAnswer(query, matches.slice(0, 5))

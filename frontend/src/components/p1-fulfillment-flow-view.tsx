@@ -74,7 +74,8 @@ export function P1FulfillmentFlowView({ active }: { active: ActivePage }) {
   const [orderForm, setOrderForm] = useState<OrderForm>({ quoteId: '', orderId: '' })
   const [paymentForm, setPaymentForm] = useState<PaymentForm>({ orderId: '', paymentId: '', amount: '', currency: 'USD', receivedAt: '', note: '' })
   const [documentForm, setDocumentForm] = useState<DocumentForm>({ orderId: '', documentId: '', type: 'PI', templateCode: 'V2_DEFAULT', note: '', reviewNote: '' })
-  const [shipmentForm, setShipmentForm] = useState<ShipmentForm>({ orderId: '', shipmentId: '', transportMode: 'SEA', carrier: '', trackingNo: '', bookingNo: '', billOfLadingNo: '', containerNo: '', etd: todayOffset(1), atd: todayOffset(2), eta: todayOffset(25), deliveredAt: todayOffset(30), note: '' })
+  // 修复说明：[低危-交互误操作]，原因：物流/签收日期默认预填未来日期，一键提交即产生与实际不符的履约留痕；日期默认留空由用户填写。
+  const [shipmentForm, setShipmentForm] = useState<ShipmentForm>({ orderId: '', shipmentId: '', transportMode: 'SEA', carrier: '', trackingNo: '', bookingNo: '', billOfLadingNo: '', containerNo: '', etd: '', atd: '', eta: '', deliveredAt: '', note: '' })
 
   const selectedSample = useMemo(() => samples[0] || null, [samples])
   const selectedOrder = useMemo(() => orders.find((item) => item.id === orderForm.orderId || item.id === paymentForm.orderId || item.id === documentForm.orderId || item.id === shipmentForm.orderId) || orders[0] || null, [orders, orderForm.orderId, paymentForm.orderId, documentForm.orderId, shipmentForm.orderId])
@@ -115,10 +116,12 @@ export function P1FulfillmentFlowView({ active }: { active: ActivePage }) {
       setPaymentForm((old) => ({ ...old, orderId: old.orderId || firstOrder, paymentId: old.paymentId || firstPayment, currency: old.currency || orderList.items[0]?.currency || 'USD' }))
       setDocumentForm((old) => ({ ...old, orderId: old.orderId || firstOrder, documentId: old.documentId || firstDocument }))
       setShipmentForm((old) => ({ ...old, orderId: old.orderId || firstOrder, shipmentId: old.shipmentId || firstShipment }))
-      if (firstOrder) {
+      // 修复说明：[中高-状态竞态]，原因：refresh 固定取列表第一单的门禁/对账，会在 loadGate 之后覆盖用户当前选中订单的门禁展示（发货放行判断张冠李戴）；现优先按选中订单加载，并将其纳入依赖使选择变化时门禁联动刷新。
+      const gateOrderId = selectedOrder?.id || firstOrder
+      if (gateOrderId) {
         const [gateData, reconciliationData] = await Promise.all([
-          api.orderGate(firstOrder).catch(() => null),
-          api.reconciliation(firstOrder).catch(() => null),
+          api.orderGate(gateOrderId).catch(() => null),
+          api.reconciliation(gateOrderId).catch(() => null),
         ])
         setGate(gateData)
         setReconciliation(reconciliationData)
@@ -129,7 +132,7 @@ export function P1FulfillmentFlowView({ active }: { active: ActivePage }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedOrder?.id])
 
   useEffect(() => { void refresh() }, [refresh])
 

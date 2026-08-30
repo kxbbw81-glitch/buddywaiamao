@@ -74,18 +74,35 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     cache: 'no-store',
   })
   if (response.status === 204) return undefined as T
-  const payload = (await response.json()) as ApiEnvelope<T> | ApiErrorEnvelope
+  // 修复说明：[中危-容错]，原因：网关 502/504 返回 HTML 或空 body 时 response.json() 抛 SyntaxError，技术细节直出到页面；现先取文本再解析，失败统一转为友好 ApiError。
+  const text = await response.text()
+  let payload: ApiEnvelope<T> | ApiErrorEnvelope
+  try {
+    payload = text ? (JSON.parse(text) as ApiEnvelope<T> | ApiErrorEnvelope) : ({} as ApiEnvelope<T>)
+  } catch {
+    if (response.status === 401) notifySessionExpired()
+    throw new ApiError(response.status, 'NON_JSON_RESPONSE', '服务暂时不可用，请稍后重试。')
+  }
   if (!response.ok) {
+    if (response.status === 401) notifySessionExpired()
     const error = 'error' in payload ? payload.error : { code: `HTTP_${response.status}`, message: '请求失败。' }
-    throw new ApiError(response.status, error.code, error.message, 'data' in payload ? payload.data : error.detail)
+    // 修复说明：[低危-契约一致性]，原因：detail 原优先取 payload.data，与错误信封契约不符；统一取 error.detail。
+    throw new ApiError(response.status, error.code, error.message, 'error' in payload ? payload.error.detail : undefined)
   }
   return (payload as ApiEnvelope<T>).data
+}
+
+// 修复说明：[中危-会话体验]，原因：业务视图收到 401 只显示错误横幅，会话过期后用户停留在报错页；现派发全局事件由 CrmShell 监听回登录。
+export const SESSION_EXPIRED_EVENT = 'nexfab:session-expired'
+function notifySessionExpired() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT))
 }
 
 export async function apiBinary(path: string): Promise<{ blob: Blob; contentType: string | null; bytes: number }> {
   const response = await fetch(`${basePath}/api/backend${path}`, { credentials: 'include', cache: 'no-store' })
   const contentType = response.headers.get('content-type')
   if (!response.ok) {
+    if (response.status === 401) notifySessionExpired()
     if (contentType?.includes('application/json')) {
       const payload = (await response.json()) as ApiErrorEnvelope
       const error = payload.error || { code: `HTTP_${response.status}`, message: '请求失败。' }

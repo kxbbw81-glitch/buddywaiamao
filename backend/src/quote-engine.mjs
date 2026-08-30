@@ -190,7 +190,8 @@ export function calculateQuote({ items, products, tradeTerm, rules }) {
   }
   const selectedTotal = termTotals[tradeTerm]
   const selectedUnitPrice = selectedTotal / quantityTotal
-  const grossMargin = selectedTotal - costTotalUsd
+  // 修复说明：[中危-业务逻辑]，原因：毛利原按"含国内费用/运费/保险/关税的报价总额 - 货款成本"计算，FOB/CIF/DDP 下毛利与毛利率被系统性高估，真实低毛利单不会触发审批提示；现毛利按 EXW 口径（EXW 总额 - 货款成本）计算，与审批判定口径一致。
+  const grossMargin = exwTotal - costTotalUsd
   const grossMarginRate = selectedTotal > 0 ? grossMargin / selectedTotal : 0
   const approvalRequired = grossMarginRate < rules.minimumMarginRate
   return {

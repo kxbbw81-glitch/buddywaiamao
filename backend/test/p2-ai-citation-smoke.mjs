@@ -26,6 +26,7 @@ async function login(email) {
 
 try {
   const manager = await login('manager@nexfab.test')
+  const admin = await login('admin@nexfab.test')
   const sales = await login('sales@nexfab.test')
   const exec = await login('exec@nexfab.test')
 
@@ -49,7 +50,7 @@ try {
     },
   })
   assert.equal(draft.response.status, 201)
-  const approved = await request(`/api/knowledge-documents/${draft.payload.data.id}/review`, { cookie: manager, method: 'POST', body: { status: 'APPROVED', note: '资料审核通过' } })
+  const approved = await request(`/api/knowledge-documents/${draft.payload.data.id}/review`, { cookie: admin, method: 'POST', body: { status: 'APPROVED', note: '资料审核通过' } })
   assert.equal(approved.response.status, 200)
 
   const answered = await request('/api/rag/query', { cookie: sales, method: 'POST', body: { query: 'CITE-001 nozzle temperature', productId: product.payload.data.id, module: 'product' } })

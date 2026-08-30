@@ -16,7 +16,8 @@ const demoAccounts = [
 ] as const
 
 export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
-  const [loginId, setLoginId] = useState('admin')
+  // 修复说明：[中危-账号枚举]，原因：登录页公开展示全部内部账号并默认预填 admin，构成账号枚举面；生产构建不预填且隐藏演示账号列表。
+  const [loginId, setLoginId] = useState(process.env.NODE_ENV === 'production' ? '' : 'admin')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -64,13 +65,15 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
           <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs leading-6 text-blue-800">
             <b>联调说明：</b>账号、邮箱、密码与权限由现有后端控制；默认 admin 别名由后端映射到唯一启用管理员，前端不保存明文密码、不生成演示数据。
           </div>
-          <div className="mt-4 grid gap-2 text-xs text-slate-500">
-            {demoAccounts.map(([account, role]) => (
-              <button key={account} type="button" className="flex justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left hover:border-brand" onClick={() => setLoginId(account)}>
-                <span>{account}</span><span>{role}</span>
-              </button>
-            ))}
-          </div>
+          {process.env.NODE_ENV !== 'production' ? (
+            <div className="mt-4 grid gap-2 text-xs text-slate-500">
+              {demoAccounts.map(([account, role]) => (
+                <button key={account} type="button" className="flex justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left hover:border-brand" onClick={() => setLoginId(account)}>
+                  <span>{account}</span><span>{role}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </main>

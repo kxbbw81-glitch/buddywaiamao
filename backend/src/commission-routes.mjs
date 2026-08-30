@@ -114,6 +114,16 @@ function summaryFor(rows, rate) {
     potentialCommission: Number(rows.reduce((sum, row) => sum + row.potentialCommission, 0).toFixed(2)),
     collectionRate: totalAmount > 0 ? Number(((confirmedPaidAmount / totalAmount) * 100).toFixed(1)) : 0,
     appliedRate: rate,
+    // 修复说明：[低危-统计口径]，原因：跨币种金额直接相加合计失真；保留合计口径的同时按币种给出分项，混合币种报表以 byCurrency 为准。
+    byCurrency: Object.values(rows.reduce((acc, row) => {
+      const key = row.currency || 'USD'
+      acc[key] ||= { currency: key, orderCount: 0, totalAmount: 0, confirmedPaidAmount: 0, commissionAmount: 0 }
+      acc[key].orderCount += row.orderCount
+      acc[key].totalAmount = Number((acc[key].totalAmount + row.totalAmount).toFixed(2))
+      acc[key].confirmedPaidAmount = Number((acc[key].confirmedPaidAmount + row.confirmedPaidAmount).toFixed(2))
+      acc[key].commissionAmount = Number((acc[key].commissionAmount + row.commissionAmount).toFixed(2))
+      return acc
+    }, {})),
   }
 }
 
@@ -135,11 +145,16 @@ async function commissionReport(db, actor, { rate, range }) {
     orderBy: { createdAt: 'desc' },
     take: 1000,
   })
-  const payments = await db.orderPayment.findMany({ where: { status: 'CONFIRMED', ...(orders.length ? {} : { salesOrderId: '__none__' }) }, orderBy: { createdAt: 'desc' }, take: 5000 })
-  const orderIds = new Set(orders.map((order) => order.id))
+  // 修复说明：[中危-提成漏算]，原因：确认回款原全表拉取且 take:5000 截断，数据量增长时静默漏算提成；现按订单 ID 分批 `in` 精确取数（每批 300 单），既不截断也避免全表扫描。
+  const orderIds = orders.map((order) => order.id)
+  const payments = []
+  for (let index = 0; index < orderIds.length; index += 300) {
+    const chunk = orderIds.slice(index, index + 300)
+    const rows = await db.orderPayment.findMany({ where: { status: 'CONFIRMED', salesOrderId: { in: chunk } }, orderBy: { createdAt: 'desc' }, take: 1000 })
+    payments.push(...rows)
+  }
   const paymentsByOrder = new Map()
   for (const payment of payments) {
-    if (!orderIds.has(payment.salesOrderId)) continue
     if (!paymentsByOrder.has(payment.salesOrderId)) paymentsByOrder.set(payment.salesOrderId, [])
     paymentsByOrder.get(payment.salesOrderId).push(payment)
   }
@@ -171,7 +186,13 @@ export async function handleCommissionRoute({ req, res, url, pathname, actor, db
     const { page, pageSize, skip } = listQuery(url)
     const status = url.searchParams.get('status') ? statusValue(url.searchParams.get('status')) : null
     const salesId = url.searchParams.get('salesId')
-    const where = { ...(status ? { status } : {}), ...(salesId ? { salesId } : {}), ...(['SALES'].includes(actor.role) ? { salesId: actor.id } : {}) }
+    // 修复说明：[中危-横向越权读]，原因：提成记录列表原只限制 SALES 本人，MANAGER 可列出全公司所有人的提成金额明细，与单条接口的 team 范围口径不一致；现 MANAGER 限定本团队（无 teamId 时仅本人）。
+    const scopeByRole = actor.role === 'SALES'
+      ? { salesId: actor.id }
+      : actor.role === 'MANAGER'
+        ? (actor.teamId ? { sales: { teamId: actor.teamId } } : { salesId: actor.id })
+        : {}
+    const where = { ...(status ? { status } : {}), ...(salesId ? { salesId } : {}), ...scopeByRole }
     const [items, total] = await db.$transaction([db.commissionRecord.findMany({ where, include: recordInclude, orderBy: { createdAt: 'desc' }, skip, take: pageSize }), db.commissionRecord.count({ where })])
     return send(res, 200, { data: { items, page, pageSize, total } })
   }
@@ -181,11 +202,17 @@ export async function handleCommissionRoute({ req, res, url, pathname, actor, db
     const body = await readJson(req)
     const rate = rateValue(body.rate)
     const range = dateRange(body)
+    // 修复说明：[中危-业务逻辑]，原因：settle 无幂等/防重，同一期间可反复出提成记录（审批通过即放大提成支出），且空期间落库为 null 无法对账；现要求期间必填并对同一（销售+币种+期间）结算去重。
+    if (!range.from || !range.to) throw new HttpError(400, 'VALIDATION_ERROR', '结算必须提供 from 与 to 期间。')
     const report = await commissionReport(db, actor, { rate, range })
-    const records = await db.$transaction(async (tx) => {
+    let records
+    try {
+      records = await db.$transaction(async (tx) => {
       const created = []
       for (const row of report.rows) {
         if (row.confirmedPaidAmount <= 0 && row.totalAmount <= 0) continue
+        const duplicate = await tx.commissionRecord.findFirst({ where: { salesId: row.salesId, currency: row.currency, periodStart: range.from, periodEnd: range.to } })
+        if (duplicate) continue
         const record = await tx.commissionRecord.create({
           data: {
             salesId: row.salesId,
@@ -208,8 +235,14 @@ export async function handleCommissionRoute({ req, res, url, pathname, actor, db
         await audit(tx, actor, 'SETTLE', 'commission_record', record.id, { salesId: row.salesId, rate, commissionAmount: row.commissionAmount, orderCount: row.orderCount })
         created.push(record)
       }
-      return created
-    })
+      if (!created.length) throw new HttpError(409, 'SETTLE_ALREADY_EXISTS', '该期间已存在提成结算记录，不能重复结算。')
+        return created
+      })
+    } catch (error) {
+      // 修复说明：[中危-数据一致性]，原因：期间唯一约束冲突（并发重复结算兜底）原会抛 P2002 变成 500；统一转 409。
+      if (error?.code === 'P2002') throw new HttpError(409, 'SETTLE_ALREADY_EXISTS', '该期间已存在提成结算记录，不能重复结算。')
+      throw error
+    }
     return send(res, 201, { data: { records, stats: report.stats, period: report.period } })
   }
 

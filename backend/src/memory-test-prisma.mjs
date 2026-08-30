@@ -15,8 +15,15 @@ function matches(where, row, owner) {
   if (where.OR) return where.OR.some((item) => matches(item, row, owner))
   return Object.entries(where).every(([key, value]) => {
     if (key === 'owner') return matches(value, owner || {}, undefined)
-    if (value && typeof value === 'object' && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, 'not')) return row[key] !== value.not
-    if (value && typeof value === 'object' && !Array.isArray(value) && Array.isArray(value.in)) return value.in.includes(row[key])
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      if (Object.prototype.hasOwnProperty.call(value, 'not')) return row[key] !== value.not
+      if (Array.isArray(value.in)) return value.in.includes(row[key])
+      // 修复说明：[低危-测试保真度]，原因：mock 不支持 gte/lte/gt/lt 范围操作符，带时间过滤的查询与真实数据库结果不一致；按真实语义补齐。
+      const RANGE_OPERATORS = { gte: (a, b) => a >= b, lte: (a, b) => a <= b, gt: (a, b) => a > b, lt: (a, b) => a < b }
+      for (const [operator, compare] of Object.entries(RANGE_OPERATORS)) {
+        if (Object.prototype.hasOwnProperty.call(value, operator)) return row[key] != null && compare(row[key], value[operator])
+      }
+    }
     return row[key] === value
   })
 }
@@ -96,7 +103,8 @@ export async function createMemoryPrisma() {
         if (value.customer) return matches(value.customer, state.customers.find((customer) => customer.id === order?.customerId), orderOwner(order))
         return matches(value, order)
       }
-      return row[key] === value
+      // 修复说明：[低危-测试保真度]，原因：字段级过滤只支持全等，in/范围操作符静默失效；统一委托 matches。
+      return matches({ [key]: value }, row)
     })
   })
   const enrichTradeDocument = (document) => ({
@@ -317,6 +325,13 @@ export async function createMemoryPrisma() {
         rows = rows.slice(0, take)
         return rows.map((row) => select ? Object.fromEntries(Object.entries(select).filter(([, enabled]) => enabled).map(([field]) => [field, clone(row[field])])) : clone(row))
       },
+      // 修复说明：[低危-测试保真度]，原因：mock 缺少 user.update，会话撤销（tokenVersion 递增）无法在测试中执行；行不存在时按真实语义抛 P2025。
+      update: async ({ where, data }) => {
+        const row = state.users.find((user) => (where.id && user.id === where.id) || (where.email && user.email === where.email))
+        if (!row) { const error = new Error('Record not found'); error.code = 'P2025'; throw error }
+        Object.assign(row, clone(data), { updatedAt: new Date() })
+        return clone(row)
+      },
     },
     customer: {
       findMany: async ({ where, skip = 0, take = 100 }) => filteredCustomers(where).slice(skip, skip + take).map(enrichCustomer),
@@ -381,6 +396,12 @@ export async function createMemoryPrisma() {
         const row = state.leads.find((item) => item.id === where.id)
         Object.assign(row, clone(data), { updatedAt: new Date() })
         return enrichLead(row)
+      },
+      // 修复说明：[低危-测试保真度]，原因：mock 缺少 updateMany，线索转换的条件更新守卫无法在测试中执行；按真实语义补齐。
+      updateMany: async ({ where, data }) => {
+        const rows = state.leads.filter((row) => matches(where, row))
+        for (const row of rows) Object.assign(row, clone(data), { updatedAt: new Date() })
+        return { count: rows.length }
       },
     },
     leadFollowUp: {
@@ -499,6 +520,8 @@ export async function createMemoryPrisma() {
       create: async ({ data }) => { const row = { id: id('sales-order'), status: 'CONFIRMED', paymentStatus: 'UNPAID', fulfillmentStatus: 'PENDING', ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.salesOrders.push(row); return enrichSalesOrder(row) },
       findUnique: async ({ where }) => { const row = state.salesOrders.find((item) => item.id === where.id); return row ? enrichSalesOrder(row) : null },
       update: async ({ where, data }) => { const row = state.salesOrders.find((item) => item.id === where.id); Object.assign(row, clone(data), { updatedAt: new Date() }); return enrichSalesOrder(row) },
+      // 修复说明：[低危-测试保真度]，原因：mock 缺少 findFirst（报价重复转单/结算防重守卫需要）；按真实语义补齐。
+      findFirst: async ({ where }) => clone(state.salesOrders.find((row) => matches(where, row)) || null),
     },
     orderItem: {
       findMany: async ({ where, skip = 0, take = 100 }) => state.orderItems.filter((row) => matches(where, row)).slice(skip, skip + take).map(clone),
@@ -516,6 +539,11 @@ export async function createMemoryPrisma() {
       create: async ({ data }) => { const row = { id: id('order-payment'), status: 'REGISTERED', ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.orderPayments.push(row); return enrichOrderPayment(row) },
       findUnique: async ({ where }) => { const row = state.orderPayments.find((item) => item.id === where.id); return row ? enrichOrderPayment(row) : null },
       update: async ({ where, data }) => { const row = state.orderPayments.find((item) => item.id === where.id); Object.assign(row, clone(data), { updatedAt: new Date() }); return enrichOrderPayment(row) },
+      // 修复说明：[低危-测试保真度]，原因：mock 缺少 aggregate 聚合，回款确认的 SUM 统计无法在测试中执行；按真实语义补齐（无匹配行 _sum 为 null）。
+      aggregate: async ({ _sum, where }) => {
+        const matched = state.orderPayments.filter((row) => matches(where, row))
+        return { _sum: { amount: matched.length ? matched.reduce((sum, row) => sum + Number(row.amount || 0), 0) : null } }
+      },
     },
     tradeDocument: {
       findMany: async ({ where, skip = 0, take = 100 }) => filteredTradeDocuments(where).slice(skip, skip + take).map(enrichTradeDocument),
@@ -537,6 +565,8 @@ export async function createMemoryPrisma() {
       create: async ({ data }) => { const row = { id: id('commission-record'), status: 'CALCULATED', ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.commissionRecords.push(row); return enrichCommissionRecord(row) },
       findUnique: async ({ where }) => { const row = state.commissionRecords.find((item) => item.id === where.id); return row ? enrichCommissionRecord(row) : null },
       update: async ({ where, data }) => { const row = state.commissionRecords.find((item) => item.id === where.id); Object.assign(row, clone(data), { updatedAt: new Date() }); return enrichCommissionRecord(row) },
+      // 修复说明：[低危-测试保真度]，原因：mock 缺少 findFirst（报价重复转单/结算防重守卫需要）；按真实语义补齐。
+      findFirst: async ({ where }) => clone(state.commissionRecords.find((row) => matches(where, row)) || null),
     },
     knowledgeDocument: {
       findMany: async ({ where, skip = 0, take = 100 }) => filteredKnowledgeDocuments(where).slice(skip, skip + take).map(enrichKnowledgeDocument),
@@ -862,6 +892,12 @@ export async function createMemoryPrisma() {
       create: async ({ data }) => { const row = { id: id('sample'), status: 'REQUESTED', ...clone(data), createdAt: new Date(), updatedAt: new Date() }; state.sampleRequests.push(row); return enrichSampleRequest(row) },
       findUnique: async ({ where }) => { const row = state.sampleRequests.find((item) => item.id === where.id); return row ? enrichSampleRequest(row) : null },
       update: async ({ where, data }) => { const row = state.sampleRequests.find((item) => item.id === where.id); Object.assign(row, clone(data), { updatedAt: new Date() }); return enrichSampleRequest(row) },
+      // 修复说明：[低危-测试保真度]，原因：mock 缺少 updateMany，样品转单的条件更新守卫无法在测试中执行；按真实语义补齐。
+      updateMany: async ({ where, data }) => {
+        const rows = state.sampleRequests.filter((row) => matches(where, row))
+        for (const row of rows) Object.assign(row, clone(data), { updatedAt: new Date() })
+        return { count: rows.length }
+      },
     },
     auditLog: { create: async ({ data }) => { const row = { id: id('audit'), ...clone(data), createdAt: new Date() }; state.auditLogs.push(row); return clone(row) } },
     $transaction: async (operations) => typeof operations === 'function' ? operations(client) : Promise.all(operations),

@@ -54,10 +54,12 @@ function errorText(error: unknown) {
   return '操作失败，请检查后端服务。'
 }
 
+// 修复说明：[中危-输入校验]，原因：非数字输入原样透传到后端（如 "abc"、"1,000"），只能靠后端报错兜底；非法值直接拒绝。
 function asNumber(value: string) {
   if (!value.trim()) return undefined
   const numberValue = Number(value)
-  return Number.isFinite(numberValue) ? numberValue : value
+  if (!Number.isFinite(numberValue)) throw new Error('金额/数量必须是有效数字（不要包含千分位逗号）。')
+  return numberValue
 }
 
 function toneClass(tone: NoticeTone) {

@@ -163,8 +163,9 @@ export async function getDashboardData(db, actor, range) {
     { id: 'pendingToolCalls', label: '待确认工具动作', value: pendingToolCalls, scope: actor.role === 'SALES' ? 'created-by-me' : 'role-queue' },
     { id: 'sampleRequests', label: '样品事项', value: sampleRequests, scope: actor.role === 'SALES' ? 'owned-by-me' : 'role-visible' },
     { id: 'pendingPayments', label: '待确认回款', value: pendingPayments, scope: 'finance-queue' },
-    { id: 'recentAutomationRuns', label: '自动化运行记录', value: recentAutomationRuns, scope: 'system-log' },
-    { id: 'failedWebhooks', label: 'Webhook 失败记录', value: failedWebhooks, scope: 'integration-risk' },
+    // 修复说明：[低危-信息暴露]，原因：全系统 automationRun/webhook 失败计数对所有角色无差别返回；现仅 MANAGER/ADMIN 可见。
+    { id: 'recentAutomationRuns', label: '自动化运行记录', value: ['MANAGER', 'ADMIN'].includes(actor.role) ? recentAutomationRuns : null, scope: 'system-log' },
+    { id: 'failedWebhooks', label: 'Webhook 失败记录', value: ['MANAGER', 'ADMIN'].includes(actor.role) ? failedWebhooks : null, scope: 'integration-risk' },
     { id: 'recentMemos', label: '个人备忘', value: recentMemos, scope: 'personal' },
   ]
 
@@ -262,7 +263,11 @@ export async function handleDashboardRoute({ req, res, url, pathname, actor, db 
     const data = {}
     if (body.title != null) data.title = text(body.title, '待办标题', { required: true, max: 180 })
     if (Object.prototype.hasOwnProperty.call(body, 'dueAt')) data.dueAt = parseDate(body.dueAt, '截止时间')
-    if (Object.prototype.hasOwnProperty.call(body, 'done')) data.doneAt = body.done ? new Date() : null
+    // 修复说明：[低危-输入校验]，原因：done 字段未校验布尔类型，字符串 "false" 等真值会把待办错误标记为完成；现强制布尔校验。
+    if (Object.prototype.hasOwnProperty.call(body, 'done')) {
+      if (typeof body.done !== 'boolean') throw new HttpError(400, 'VALIDATION_ERROR', 'done 必须是布尔值。')
+      data.doneAt = body.done ? new Date() : null
+    }
     if (!Object.keys(data).length) throw new HttpError(400, 'VALIDATION_ERROR', '没有可更新字段。')
     const row = await db.todo.update({ where: { id: current.id }, data })
     await audit(db, actor, 'UPDATE', 'todo', row.id, { fields: Object.keys(data), personal: true })

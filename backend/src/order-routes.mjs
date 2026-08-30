@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { assertCustomerScope, assertOrderAccess, orderScopeFor } from './access.mjs'
 import { HttpError, listQuery, send } from './http.mjs'
 
@@ -10,8 +11,9 @@ const orderInclude = {
 }
 
 function orderNo() {
+  // 修复说明：[低危-并发容错]，原因：orderNo 有唯一约束，随机段原仅 6 字符 base36（约 21 亿分之一/秒），高并发同秒撞号会抛 P2002 变 500；改用 crypto 随机 4 字节（约 43 亿分之一）并独立于时间戳。
   const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)
-  return `SO-${stamp}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+  return `SO-${stamp}-${randomBytes(4).toString('hex').toUpperCase()}`
 }
 
 function money(value, field) {
@@ -77,6 +79,11 @@ export async function latestQuoteVersion(db, quoteId) {
 }
 
 export async function createOrderFromQuoteInTransaction(tx, actor, quote, version, { auditAction = 'CREATE_FROM_QUOTE', auditDetail = {}, fulfillmentNote = 'ORDER_CREATED_FROM_QUOTE' } = {}) {
+  // 修复说明：[中危-业务逻辑]，原因：报价转订单不要求版本已锁定，报价侧"锁定+低毛利审批+发送留痕"在转单环节全部失效，未审批报价可直接转单；现强制 LOCKED。
+  if (!version || version.lockStatus !== 'LOCKED') throw new HttpError(400, 'QUOTE_VERSION_NOT_LOCKED', '报价版本必须先锁定（必要时经低毛利审批）后才能转订单。')
+  // 修复说明：[中危-业务逻辑]，原因：同一报价可无限重复转订单，生成多张订单并放大回款/提成口径；现同一报价仅允许生成一张订单。
+  const existingOrder = await tx.salesOrder.findFirst({ where: { quoteId: quote.id } })
+  if (existingOrder) throw new HttpError(409, 'QUOTE_ALREADY_CONVERTED', '该报价已生成订单，不能重复转单。')
   const items = snapshotItems(version)
   const totalAmount = money(quote.totalAmount, '报价金额')
   const created = await tx.salesOrder.create({ data: { orderNo: orderNo(), customerId: quote.customerId, quoteId: quote.id, currency: quote.currency, totalAmount, createdById: actor.id, ownerId: quote.ownerId }, include: orderInclude })
@@ -89,7 +96,13 @@ export async function createOrderFromQuoteInTransaction(tx, actor, quote, versio
 export async function createOrderFromQuote(db, actor, quoteId, { auditAction = 'CREATE_FROM_QUOTE', auditDetail = {}, fulfillmentNote = 'ORDER_CREATED_FROM_QUOTE' } = {}) {
   const quote = await quoteById(db, actor, quoteId)
   const version = await latestQuoteVersion(db, quote.id)
-  return db.$transaction((tx) => createOrderFromQuoteInTransaction(tx, actor, quote, version, { auditAction, auditDetail, fulfillmentNote }))
+  try {
+    return await db.$transaction((tx) => createOrderFromQuoteInTransaction(tx, actor, quote, version, { auditAction, auditDetail, fulfillmentNote }))
+  } catch (error) {
+    // 修复说明：[中危-数据一致性]，原因：quoteId 唯一约束冲突（并发重复转单兜底）原会抛 P2002 变成 500；统一转 409。
+    if (error?.code === 'P2002') throw new HttpError(409, 'QUOTE_ALREADY_CONVERTED', '该报价已生成订单，不能重复转单。')
+    throw error
+  }
 }
 
 export async function handleOrderRoute({ req, res, url, pathname, actor, db }) {

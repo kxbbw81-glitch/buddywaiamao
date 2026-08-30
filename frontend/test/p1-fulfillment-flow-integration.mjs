@@ -1,12 +1,21 @@
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
+// 修复说明：[低危-可移植性]，原因：经 PATH 找到的 npx 其 shebang 指向固定 node 路径，换机即 ENOENT；改用当前 node 直调 next bin。
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+const nextBin = require.resolve('next/dist/bin/next')
 import { once } from 'node:events'
 import { existsSync, readFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 
 const root = new URL('../../', import.meta.url)
-const backendDir = new URL('backend/', root)
-const frontendDir = new URL('frontend/', root)
+// 修复说明：[低危-可移植性]，原因：backendDir 硬编码 monorepo 兄弟目录布局，独立副本即 spawn ENOENT；支持 NEXFAB_BACKEND_DIR 覆盖。
+const backendDir = process.env.NEXFAB_BACKEND_DIR ? new URL(`file://${process.env.NEXFAB_BACKEND_DIR}/`) : new URL('backend/', root)
+// 修复说明：[低危-可移植性]，原因：frontendDir 原按 monorepo 布局指向兄弟目录，独立副本下不存在导致 build/spawn 全部 ENOENT；改为相对测试文件自身解析（两种布局均正确）。
+const frontendDir = new URL('../', import.meta.url)
+// 修复说明：[低危-可移植性]，原因：child_process 的 cwd 不接受 URL 对象（字符串化后路径非法即 ENOENT）；统一转文件路径。
+const backendDirPath = new URL('file://').protocol === 'file:' ? (await import('node:url')).fileURLToPath(backendDir) : backendDir
+const frontendDirPath = (await import('node:url')).fileURLToPath(frontendDir)
 
 async function freePort() {
   const server = createServer()
@@ -30,8 +39,8 @@ function start(command, args, options) {
 function ensureFrontendBuild() {
   const buildId = new URL('.next/BUILD_ID', frontendDir)
   if (existsSync(buildId)) return
-  const result = spawnSync('npx', ['next', 'build'], {
-    cwd: frontendDir,
+  const result = spawnSync(process.execPath, [nextBin, 'build'], {
+    cwd: frontendDirPath,
     env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
     encoding: 'utf8',
   })
@@ -89,6 +98,9 @@ async function createQuote(base, cookie, customerId, product) {
     body: { customerId, currency: 'USD', notes: 'P1.3 flow quote', items: [{ productId: product.id, sku: product.sku, name: product.name, quantity: 2, unitPrice: 90, unitCost: 30 }] },
   })
   assert.equal(quote.response.status, 201)
+  // 修复说明：[中危-口径同步]，原因：后端已收紧"报价转订单/样品转单必须先锁定报价版本"；测试在创建后统一锁定。
+  const locked = await request(base, `/api/backend/api/quotes/${quote.payload.data.id}/versions/${quote.payload.data.versions[0].id}/lock`, { cookie, method: 'POST', body: { validityDays: 30 } })
+  assert.equal(locked.response.status, 200)
   return quote.payload.data
 }
 
@@ -113,7 +125,7 @@ for (const expected of ['/api/samples', '/api/orders/from-quote', '/api/payments
 const backendPort = await freePort()
 const frontendPort = await freePort()
 const backend = start(process.execPath, ['src/server.mjs'], {
-  cwd: backendDir,
+  cwd: backendDirPath,
   env: { ...process.env, NODE_ENV: 'test', NEXFAB_MEMORY_TEST_DB: 'true', SESSION_SECRET: 'p1-fulfillment-flow-secret-0123456789abcdef', PORT: String(backendPort) },
 })
 let frontend
@@ -121,8 +133,8 @@ let frontend
 try {
   await waitFor(`http://127.0.0.1:${backendPort}/health`)
   ensureFrontendBuild()
-  frontend = start('npx', ['next', 'start', '--hostname', '127.0.0.1', '--port', String(frontendPort)], {
-    cwd: frontendDir,
+  frontend = start(process.execPath, [nextBin, 'start', '--hostname', '127.0.0.1', '--port', String(frontendPort)], {
+    cwd: frontendDirPath,
     env: { ...process.env, BACKEND_URL: `http://127.0.0.1:${backendPort}`, NEXT_TELEMETRY_DISABLED: '1' },
   })
   const appBase = `http://127.0.0.1:${frontendPort}`

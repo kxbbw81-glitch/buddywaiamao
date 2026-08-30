@@ -17,8 +17,10 @@ const TOOL_RESULT_STATUSES = new Set(['EXECUTION_RECORDED', 'FAILED', 'CANCELLED
 function redactSecrets(value) {
   if (typeof value !== 'string') return value
   return value
-    .replace(/OPENAI_API_KEY|SESSION_SECRET|DATABASE_URL|passwordHash|apiKey|secret|token/gi, '[redacted]')
+    // 修复说明：[中危-敏感信息]，原因：脱敏键名漏 api_key/pwd/private_key 等写法，值形态只覆盖 sk- 前缀；现扩展键名与私钥块。
+    .replace(/OPENAI_API_KEY|SESSION_SECRET|DATABASE_URL|passwordHash|api[_-]?key|passw(or)?d|pwd|private[_-]?key|secret|token|authorization|cookie/gi, '[redacted]')
     .replace(/sk-[A-Za-z0-9_-]{12,}/g, '[redacted-key]')
+    .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, '[redacted-key]')
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]')
     .replace(/(?:\+?\d[\d\s().-]{7,}\d)/g, '[redacted-phone]')
 }
@@ -31,7 +33,7 @@ function safeSummary(value, depth = 0) {
   if (Array.isArray(value)) return value.slice(0, 20).map((item) => safeSummary(item, depth + 1))
   if (typeof value === 'object') {
     const entries = Object.entries(value).slice(0, 30).map(([key, item]) => {
-      if (/apiKey|password|secret|token|authorization|cookie/i.test(key)) return [key, '[redacted]']
+      if (/api[_-]?key|passw(or)?d|pwd|private[_-]?key|client[_-]?secret|secret|token|authorization|cookie|credential/i.test(key)) return [key, '[redacted]']
       if (/email|phone|mobile|whatsapp/i.test(key)) return [key, '[redacted-pii]']
       return [key, safeSummary(item, depth + 1)]
     })
@@ -336,6 +338,8 @@ async function evaluateGovernance({ db, module, level, action, provider, model, 
     db.aiCostLimit.findMany({ where: { module, status: 'ACTIVE' }, orderBy: { updatedAt: 'desc' }, take: 20 }),
   ])
   const estimatedInputTokens = estimatedTokens(inputSummary)
+  // 修复说明：[低危-策略绕过]，原因：模块无 ACTIVE 策略时直接放行（fail-open）；真实启用云端（AI_ENABLED=true）时必须存在 ACTIVE 策略，本地草稿模式仍由 502 兜底。
+  if (wantsCloud && process.env.AI_ENABLED === 'true' && !policies.length) return { ok: false, code: 'AI_POLICY_MISSING', message: '当前模块尚未配置 ACTIVE AI 策略，禁止云端调用。', estimatedInputTokens }
   for (const policy of policies) {
     if (LEVEL_RANK[level] > LEVEL_RANK[policy.maxLevel]) return { ok: false, code: 'AI_POLICY_BLOCKED', message: `AI 等级 ${level} 超出模块策略允许的 ${policy.maxLevel}。`, estimatedInputTokens, policyCode: policy.code }
     const blocked = Array.isArray(policy.blockedActions) ? policy.blockedActions.map((item) => String(item).toUpperCase()) : []
@@ -345,12 +349,21 @@ async function evaluateGovernance({ db, module, level, action, provider, model, 
     if (wantsCloud && !providerAllowed(policy.allowedProviders, provider)) return { ok: false, code: 'AI_PROVIDER_NOT_ALLOWED', message: '当前供应商不在模块策略白名单内。', estimatedInputTokens, policyCode: policy.code }
     if (wantsCloud && !providerAllowed(policy.allowedModels, model)) return { ok: false, code: 'AI_MODEL_NOT_ALLOWED', message: '当前模型不在模块策略白名单内。', estimatedInputTokens, policyCode: policy.code }
   }
+  // 修复说明：[高危-业务逻辑]，原因：estimatedCost 硬编码 0 且无周期累计，成本限额形同虚设；现 DAILY/MONTHLY 按 AiTask 聚合真实用量与本次预估合并比较，RUN 保持单次口径；model 比较统一小写防绕过。
   for (const limit of limits) {
     if (limit.provider && String(limit.provider).toUpperCase() !== String(provider || '').toUpperCase()) continue
-    if (limit.model && limit.model !== model) continue
-    if (limit.maxTokens > 0 && estimatedInputTokens > limit.maxTokens && limit.hardBlock) return { ok: false, code: 'AI_COST_LIMIT_EXCEEDED', message: '本次 AI 输入预估 token 超过模块限额。', estimatedInputTokens, costLimitCode: limit.code }
-    const estimatedCost = 0
-    if (Number(limit.maxCost) > 0 && estimatedCost > Number(limit.maxCost) && limit.hardBlock) return { ok: false, code: 'AI_COST_LIMIT_EXCEEDED', message: '本次 AI 预估费用超过模块限额。', estimatedInputTokens, costLimitCode: limit.code }
+    if (limit.model && String(limit.model).toLowerCase() !== String(model || '').toLowerCase()) continue
+    if (limit.period === 'RUN') {
+      if (limit.maxTokens > 0 && estimatedInputTokens > limit.maxTokens && limit.hardBlock) return { ok: false, code: 'AI_COST_LIMIT_EXCEEDED', message: '本次 AI 输入预估 token 超过模块限额。', estimatedInputTokens, costLimitCode: limit.code }
+    } else {
+      const now = new Date()
+      const windowStart = limit.period === 'DAILY' ? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+      const usage = await db.aiTask.aggregate({ _sum: { tokens: true, cost: true }, where: { module, createdAt: { gte: windowStart }, ...(limit.provider ? { provider: limit.provider } : {}), ...(limit.model ? { model: limit.model } : {}) } })
+      const usedTokens = Number(usage._sum.tokens || 0)
+      const usedCost = Number(usage._sum.cost || 0)
+      if (limit.maxTokens > 0 && usedTokens + estimatedInputTokens > limit.maxTokens && limit.hardBlock) return { ok: false, code: 'AI_COST_LIMIT_EXCEEDED', message: `本${limit.period === 'DAILY' ? '日' : '月'} AI token 用量加本次预估已超过模块限额。`, estimatedInputTokens, costLimitCode: limit.code }
+      if (Number(limit.maxCost) > 0 && usedCost > Number(limit.maxCost) && limit.hardBlock) return { ok: false, code: 'AI_COST_LIMIT_EXCEEDED', message: `本${limit.period === 'DAILY' ? '日' : '月'} AI 费用用量已超过模块限额。`, estimatedInputTokens, costLimitCode: limit.code }
+    }
   }
   return { ok: true, estimatedInputTokens, policyCount: policies.length, costLimitCount: limits.length }
 }

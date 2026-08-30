@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { navigationFor, ROLES } from './navigation.mjs'
 import { notImplemented, plannedEndpoint } from './api-contract.mjs'
 import { HttpError, readJson, send, text } from './http.mjs'
-import { createSession, sessionCookie, sessionFromRequest, verifyPassword } from './security.mjs'
+import { createSession, hashPassword, sessionCookie, sessionFromRequest, verifyPassword } from './security.mjs'
 import { findUserForLogin } from './auth-login.mjs'
 import { prisma } from './prisma.mjs'
 import { handleCrmRoute } from './crm-routes.mjs'
@@ -42,13 +42,58 @@ function normalizeBasePath(url) {
 }
 
 async function authenticatedActor(session, db) {
-  const user = await db.user.findUnique({ where: { id: session.sub }, select: { id: true, email: true, name: true, role: true, status: true, teamId: true } })
+  const user = await db.user.findUnique({ where: { id: session.sub }, select: { id: true, email: true, name: true, role: true, status: true, teamId: true, tokenVersion: true } })
   if (!user || user.status !== 'ACTIVE') throw new HttpError(401, 'UNAUTHENTICATED', '账号不存在或已停用。')
   if (user.role !== session.role) throw new HttpError(401, 'INVALID_SESSION', '会话角色已失效，请重新登录。')
+  // 修复说明：[低危-会话安全]，原因：会话令牌无服务端撤销手段，登出/改密后旧 token 仍有效；现校验 tokenVersion，不匹配即失效。
+  if ((user.tokenVersion ?? 0) !== (session.ver ?? 0)) throw new HttpError(401, 'INVALID_SESSION', '会话已失效，请重新登录。')
   return user
 }
 
 const previewFile = new URL('../../frontend-preview/index.html', import.meta.url)
+
+// 修复说明：[中危-接口安全]，原因：登录接口原无任何防爆破限流，可无限次暴力猜测密码；现按账号+来源 IP 做失败计数，15 分钟窗口内失败 5 次即锁定 15 分钟。
+const LOGIN_FAILURE_WINDOW_MS = 15 * 60 * 1000
+const LOGIN_LOCK_MS = 15 * 60 * 1000
+const LOGIN_MAX_FAILURES = 5
+const loginFailures = new Map()
+
+function loginAttemptKey(loginId, req) {
+  return `${loginId}|${req.socket?.remoteAddress || 'unknown'}`
+}
+
+function assertLoginAllowed(key) {
+  const entry = loginFailures.get(key)
+  if (!entry) return
+  if (entry.lockedUntil && Date.now() < entry.lockedUntil) {
+    throw new HttpError(429, 'TOO_MANY_ATTEMPTS', '登录失败次数过多，请 15 分钟后再试。')
+  }
+  if (entry.resetAt && Date.now() > entry.resetAt) loginFailures.delete(key)
+}
+
+function recordLoginFailure(key) {
+  if (loginFailures.size > 5000) {
+    for (const staleKey of loginFailures.keys()) {
+      loginFailures.delete(staleKey)
+      if (loginFailures.size <= 5000) break
+    }
+  }
+  const now = Date.now()
+  const entry = loginFailures.get(key)
+  if (!entry || now > entry.resetAt) {
+    loginFailures.set(key, { failures: 1, resetAt: now + LOGIN_FAILURE_WINDOW_MS, lockedUntil: 0 })
+    return
+  }
+  entry.failures += 1
+  if (entry.failures >= LOGIN_MAX_FAILURES) entry.lockedUntil = now + LOGIN_LOCK_MS
+}
+
+// 修复说明：[低危-用户枚举]，原因：账号不存在时短路跳过 scrypt 校验，响应时间差异可被用于枚举有效账号；现对不存在/停用账号也执行一次等价 scrypt 校验再返回统一错误。
+let dummyHashPromise = null
+function dummyPasswordHash() {
+  if (!dummyHashPromise) dummyHashPromise = hashPassword('nexfab-timing-equalizer-dummy-password')
+  return dummyHashPromise
+}
 
 export function createAppServer() {
   return createServer(async (req, res) => {
@@ -56,7 +101,8 @@ export function createAppServer() {
   if (origin === allowedOrigin) res.setHeader('Access-Control-Allow-Origin', origin)
   res.setHeader('Vary', 'Origin')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, OPTIONS')
+  // 修复说明：[低危-CORS]，原因：允许的方法列表缺少 DELETE，后续补删除接口时前端预检会失败；预防性补齐。
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Credentials', 'true')
   if (req.method === 'OPTIONS') return res.writeHead(204).end()
 
@@ -64,7 +110,8 @@ export function createAppServer() {
     const url = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`)
     url.pathname = normalizeBasePath(url)
     if (req.method === 'GET' && url.pathname === '/health') {
-      return send(res, 200, { ok: true, service: 'nexfab-crm-backend', phase: 1, checks: configurationStatus() })
+      // 修复说明：[低危-信息暴露]，原因：/health 未认证即暴露数据库/会话/PII 配置状态，利于攻击者探测部署阶段；现仅返回存活状态，完整 checks 保留在 /ready。
+      return send(res, 200, { ok: true, service: 'nexfab-crm-backend', phase: 1 })
     }
     if (req.method === 'GET' && url.pathname === '/ready') {
       const checks = configurationStatus()
@@ -85,9 +132,20 @@ export function createAppServer() {
       const body = await readJson(req)
       const loginId = body.loginId ?? body.account ?? body.username ?? body.email
       const password = text(body.password, '密码', { required: true, max: 512 })
+      const attemptKey = loginAttemptKey(String(loginId ?? ''), req)
+      assertLoginAllowed(attemptKey)
       const db = await prisma()
       const user = await findUserForLogin(db, loginId)
-      if (!user || user.status !== 'ACTIVE' || !(await verifyPassword(password, user.passwordHash))) throw new HttpError(401, 'INVALID_CREDENTIALS', '邮箱或密码不正确。')
+      if (!user || user.status !== 'ACTIVE') {
+        await verifyPassword(password, await dummyPasswordHash())
+        recordLoginFailure(attemptKey)
+        throw new HttpError(401, 'INVALID_CREDENTIALS', '邮箱或密码不正确。')
+      }
+      if (!(await verifyPassword(password, user.passwordHash))) {
+        recordLoginFailure(attemptKey)
+        throw new HttpError(401, 'INVALID_CREDENTIALS', '邮箱或密码不正确。')
+      }
+      loginFailures.delete(attemptKey)
       await db.auditLog.create({ data: { userId: user.id, action: 'LOGIN', resource: 'session' } })
       const { passwordHash, ...safeUser } = user
       res.setHeader('Set-Cookie', sessionCookie(createSession(safeUser)))
@@ -95,7 +153,17 @@ export function createAppServer() {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/logout') {
-      res.setHeader('Set-Cookie', 'nexfab_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
+      // 修复说明：[低危-会话安全]，原因：logout 清除 cookie 时生产环境漏掉 Secure 属性；现补齐，并递增 tokenVersion 服务端撤销该用户全部会话。
+      const logoutSecure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
+      res.setHeader('Set-Cookie', `nexfab_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${logoutSecure}`)
+      try {
+        const session = sessionFromRequest(req)
+        const db = await prisma()
+        const current = await db.user.findUnique({ where: { id: session.sub }, select: { tokenVersion: true } })
+        if (current) await db.user.update({ where: { id: session.sub }, data: { tokenVersion: (current.tokenVersion ?? 0) + 1 } })
+      } catch {
+        // 无有效会话或数据库不可用时仍完成 cookie 清除
+      }
       return send(res, 204, {})
     }
 
@@ -126,8 +194,6 @@ export function createAppServer() {
     if (socialHandled !== false) return socialHandled
     const outboundDraftHandled = await handleOutboundDraftRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (outboundDraftHandled !== false) return outboundDraftHandled
-    const toolsHandled = await handleToolsRoute({ req, res, url, pathname: url.pathname, actor, db })
-    if (toolsHandled !== false) return toolsHandled
     const handled = await handleCrmRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (handled !== false) return handled
     const productHandled = await handleProductRoute({ req, res, url, pathname: url.pathname, actor, db })

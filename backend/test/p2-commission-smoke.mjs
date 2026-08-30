@@ -37,6 +37,12 @@ async function createQuote(cookie, customerId, productId, amount) {
 }
 
 async function createOrder(cookie, quoteId) {
+  // 修复说明：[中危-口径同步] 转单现在要求报价版本已锁定；测试先取版本列表并锁定再转单。
+  const versions = await request(`/api/quotes/${quoteId}/versions`, { cookie })
+  assert.equal(versions.response.status, 200)
+  const versionId = versions.payload.data.items[0].id
+  const locked = await request(`/api/quotes/${quoteId}/versions/${versionId}/lock`, { cookie, method: 'POST', body: { validityDays: 30 } })
+  assert.equal(locked.response.status, 200)
   const result = await request(`/api/orders/from-quote/${quoteId}`, { cookie, method: 'POST' })
   assert.equal(result.response.status, 201)
   return result.payload.data
@@ -96,7 +102,8 @@ try {
   const managerSettle = await request('/api/commission-records/settle', { cookie: manager, method: 'POST', body: { rate: 0.02 } })
   assert.equal(managerSettle.response.status, 403)
 
-  const settled = await request('/api/commission-records/settle', { cookie: finance, method: 'POST', body: { rate: 0.02 } })
+  // 修复说明：[中危-口径同步] 结算现在要求 from/to 期间必填；测试补齐期间。
+  const settled = await request('/api/commission-records/settle', { cookie: finance, method: 'POST', body: { rate: 0.02, from: '2026-01-01T00:00:00.000Z', to: '2026-12-31T00:00:00.000Z' } })
   assert.equal(settled.response.status, 201)
   assert.equal(settled.payload.data.records.length, 2)
   assert.equal(settled.payload.data.stats.commissionAmount, 2.8)

@@ -18,7 +18,9 @@ try {
   const denied = await request('/api/outbound-drafts', { cookie: finance }); assert.equal(denied.response.status, 403)
   const draft = await request('/api/outbound-drafts', { cookie: manager, method: 'POST', body: { customerId: customer.payload.data.id, channel: 'email', recipient: 'buyer@example.test', subject: '产品目录草稿', body: '这是待审核邮件草稿。', campaignCode: 'P3-EMAIL' } }); assert.equal(draft.response.status, 201); assert.equal(draft.payload.data.status, 'DRAFT'); assert.equal(draft.payload.data.externalCall, false)
   const review = await request(`/api/outbound-drafts/${draft.payload.data.id}/submit-review`, { cookie: manager, method: 'POST', body: {} }); assert.equal(review.response.status, 200); assert.equal(review.payload.data.status, 'IN_REVIEW')
-  const approval = await request(`/api/outbound-drafts/${draft.payload.data.id}/approve`, { cookie: manager, method: 'POST', body: { note: '人工审核通过' } }); assert.equal(approval.response.status, 200); assert.equal(approval.payload.data.status, 'APPROVED')
+  // 修复说明：[中危-口径同步] 四眼原则生效，创建人不能自审；改由 ADMIN 审核。
+  const admin = await login('admin@nexfab.test')
+  const approval = await request(`/api/outbound-drafts/${draft.payload.data.id}/approve`, { cookie: admin, method: 'POST', body: { note: '人工审核通过' } }); assert.equal(approval.response.status, 200); assert.equal(approval.payload.data.status, 'APPROVED')
   const sent = await request(`/api/outbound-drafts/${draft.payload.data.id}/record-manual-send`, { cookie: manager, method: 'POST', body: {} }); assert.equal(sent.response.status, 200); assert.equal(sent.payload.data.status, 'SENT_RECORDED'); assert.equal(sent.payload.data.externalCall, false)
   const listed = await request('/api/outbound-drafts?status=SENT_RECORDED', { cookie: manager }); assert.equal(listed.response.status, 200); assert.equal(listed.payload.data.total, 1)
   const state = testMemoryState(); assert.equal(state.communicationEvents.length, 1); assert.equal(state.auditLogs.filter((row) => row.resource === 'outbound_draft').length, 4)

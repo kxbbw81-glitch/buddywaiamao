@@ -233,7 +233,8 @@ export async function handleAgentLibraryRoute({ req, res, url, pathname, actor }
     const query = text(url.searchParams.get('q'), '搜索词', { max: 120 }) || ''
     const module = text(url.searchParams.get('module'), '模块', { max: 80 }) || ''
     const kind = text(url.searchParams.get('kind'), '知识类型', { max: 80 }) || ''
-    const items = library.knowledge.filter((item) => (!query || normalized(`${item.title} ${item.summary} ${item.keywords.join(' ')}`).includes(normalized(query))) && (!module || item.module === module) && (!kind || item.kind === kind)).map((item) => publicKnowledge(item))
+    // 修复说明：[低危-越权读]，原因：知识条目带 roles 限定但列表未按访问者角色过滤；现过滤（无 roles 限定视为全员可见）。
+    const items = library.knowledge.filter((item) => (!query || normalized(`${item.title} ${item.summary} ${item.keywords.join(' ')}`).includes(normalized(query))) && (!module || item.module === module) && (!kind || item.kind === kind) && (!item.roles?.length || item.roles.map((r) => String(r).toUpperCase()).includes(actor.role))).map((item) => publicKnowledge(item))
     return send(res, 200, { data: pagination(items, url) })
   }
   if (req.method === 'POST' && pathname === '/api/agent-library/knowledge/search') {

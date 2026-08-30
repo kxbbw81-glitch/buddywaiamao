@@ -1,12 +1,21 @@
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
+// 修复说明：[低危-可移植性]，原因：经 PATH 找到的 npx 其 shebang 指向固定 node 路径，换机即 ENOENT；改用当前 node 直调 next bin。
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+const nextBin = require.resolve('next/dist/bin/next')
 import { once } from 'node:events'
 import { existsSync, readFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 
 const root = new URL('../../', import.meta.url)
-const backendDir = new URL('backend/', root)
-const frontendDir = new URL('frontend/', root)
+// 修复说明：[低危-可移植性]，原因：backendDir 硬编码 monorepo 兄弟目录布局，独立副本即 spawn ENOENT；支持 NEXFAB_BACKEND_DIR 覆盖。
+const backendDir = process.env.NEXFAB_BACKEND_DIR ? new URL(`file://${process.env.NEXFAB_BACKEND_DIR}/`) : new URL('backend/', root)
+// 修复说明：[低危-可移植性]，原因：frontendDir 原按 monorepo 布局指向兄弟目录，独立副本下不存在导致 build/spawn 全部 ENOENT；改为相对测试文件自身解析（两种布局均正确）。
+const frontendDir = new URL('../', import.meta.url)
+// 修复说明：[低危-可移植性]，原因：child_process 的 cwd 不接受 URL 对象（字符串化后路径非法即 ENOENT）；统一转文件路径。
+const backendDirPath = new URL('file://').protocol === 'file:' ? (await import('node:url')).fileURLToPath(backendDir) : backendDir
+const frontendDirPath = (await import('node:url')).fileURLToPath(frontendDir)
 
 async function freePort() {
   const server = createServer()
@@ -30,7 +39,7 @@ function start(command, args, options) {
 function ensureFrontendBuild() {
   const buildId = new URL('.next/BUILD_ID', frontendDir)
   if (existsSync(buildId)) return
-  const result = spawnSync('npx', ['next', 'build'], { cwd: frontendDir, env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' }, encoding: 'utf8' })
+  const result = spawnSync(process.execPath, [nextBin, 'build'], { cwd: frontendDirPath, env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' }, encoding: 'utf8' })
   if (result.status !== 0) throw new Error(`next build failed before P2.1 integration test:\n${result.stdout}\n${result.stderr}`)
 }
 
@@ -115,7 +124,7 @@ for (const expected of ['自定义 Skills', '目标匹配诊断', 'Agent 学习�
 const backendPort = await freePort()
 const frontendPort = await freePort()
 const backend = start(process.execPath, ['src/server.mjs'], {
-  cwd: backendDir,
+  cwd: backendDirPath,
   env: { ...process.env, NODE_ENV: 'test', NEXFAB_MEMORY_TEST_DB: 'true', SESSION_SECRET: 'p2-ai-workbench-secret-0123456789abcdef', PORT: String(backendPort) },
 })
 let frontend
@@ -123,14 +132,15 @@ let frontend
 try {
   await waitFor(`http://127.0.0.1:${backendPort}/health`)
   ensureFrontendBuild()
-  frontend = start('npx', ['next', 'start', '--hostname', '127.0.0.1', '--port', String(frontendPort)], {
-    cwd: frontendDir,
+  frontend = start(process.execPath, [nextBin, 'start', '--hostname', '127.0.0.1', '--port', String(frontendPort)], {
+    cwd: frontendDirPath,
     env: { ...process.env, BACKEND_URL: `http://127.0.0.1:${backendPort}`, NEXT_TELEMETRY_DISABLED: '1' },
   })
   const appBase = `http://127.0.0.1:${frontendPort}`
   await waitFor(appBase)
 
   const manager = await login(appBase, 'manager@nexfab.test')
+  const admin = await login(appBase, 'admin@nexfab.test')
   const sales = await login(appBase, 'sales@nexfab.test')
   const finance = await login(appBase, 'finance@nexfab.test')
 
@@ -189,7 +199,8 @@ try {
     body: { title: 'P2.1 RAG Source', type: 'FAQ', sourceName: 'p21-rag-source.md', version: 'v1', productId: product.payload.data.id, chunks: [{ heading: 'Approved source', content: 'P21 approved source says inspection is required before the operator may issue any commitment.' }] },
   })
   assert.equal(document.response.status, 201)
-  const approved = await request(appBase, `/api/backend/api/knowledge-documents/${document.payload.data.id}/review`, { cookie: manager, method: 'POST', body: { status: 'APPROVED', note: 'reviewed' } })
+  // 修复说明：[中危-口径同步] 知识文档审核禁止自审；测试改由 ADMIN 审核。
+  const approved = await request(appBase, `/api/backend/api/knowledge-documents/${document.payload.data.id}/review`, { cookie: admin, method: 'POST', body: { status: 'APPROVED', note: 'reviewed' } })
   assert.equal(approved.response.status, 200)
 
   const cited = await request(appBase, '/api/backend/api/rag/query', { cookie: sales, method: 'POST', body: { query: 'inspection required', productId: product.payload.data.id, module: 'AI_AGENT' } })

@@ -20,6 +20,7 @@
     "test:p3-social-acquisition": "node test/p3-social-acquisition-contract.mjs"
   },
   "dependencies": {
+    "@next/swc-darwin-arm64": "^16.3.3",
     "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -28,7 +29,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.5",
-    "xlsx": "^0.18.5"
+    "xlsx": "file:vendor/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

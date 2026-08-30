@@ -48,6 +48,8 @@ export function appendAiTaskEvent(taskId, payload) {
   const rows = history.get(taskId) || []
   rows.push(event)
   history.set(taskId, rows.slice(-100))
+  // 修复说明：[中危-内存泄漏]，原因：history Map 按 taskId 永久累积不淘汰，长期运行内存持续增长；任务终态事件写入后延迟 1 小时清理。
+  if (event.terminal) setTimeout(() => history.delete(taskId), 3_600_000).unref?.()
   for (const listener of listeners.get(taskId) || []) listener(event)
   return event
 }

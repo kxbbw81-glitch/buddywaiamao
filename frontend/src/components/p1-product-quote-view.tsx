@@ -117,7 +117,8 @@ export function P1ProductQuoteView({ active }: { active: ActivePage }) {
   const selectedQuote = useMemo(() => quotes.find((item) => item.id === selectedQuoteId) || null, [quotes, selectedQuoteId])
   const selectedVersion = versions[0]
 
-  const refresh = useCallback(async (message?: string) => {
+    // 修复说明：[低危-取舍记录]，原因：refresh 依赖 selectedQuoteId 会在下拉切换时全量重拉（代价可接受）；若收敛依赖会因体内引用造成 stale closure，故保留依赖并记录取舍。
+const refresh = useCallback(async (message?: string) => {
     setLoading(true)
     try {
       const [categoryList, productList, customerList, quoteList] = await Promise.all([
@@ -251,9 +252,15 @@ export function P1ProductQuoteView({ active }: { active: ActivePage }) {
       const result = await api.quotePdf(selectedQuote.id, selectedVersion.id)
       setPdfBytes(result.bytes)
       if (typeof window !== 'undefined') {
+        // 修复说明：[低危-交互]，原因：await 后 window.open 脱离用户手势易被弹窗拦截；改为动态 <a download> 触发并延迟释放。
         const url = URL.createObjectURL(result.blob)
-        window.open(url, '_blank', 'noopener,noreferrer')
-        window.setTimeout(() => URL.revokeObjectURL(url), 30_000)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `quote-${selectedQuote.id}-v${selectedVersion.id}.pdf`
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 0)
       }
       setNotice({ tone: 'green', text: `PDF 获取成功：${result.bytes} bytes。` })
     } catch (error) {
@@ -292,12 +299,12 @@ export function P1ProductQuoteView({ active }: { active: ActivePage }) {
             <CardHeader className="flex flex-row items-center justify-between"><CardTitle>1. 产品库与资料状态</CardTitle><Badge tone="blue">PIM API</Badge></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-                <Field label="新分类名称"><Input value={productForm.categoryName} onChange={(e) => setProductForm({ ...productForm, categoryName: e.target.value })} placeholder="用户输入分类" /></Field>
+                <Field label="新分类名称"><Input value={productForm.categoryName} onChange={(e) => setProductForm({ ...productForm, categoryName: e.target.value })} placeholder="如 包装耗材" /></Field>
                 <Button className="self-end" variant="secondary" onClick={createCategory} disabled={loading}>创建分类</Button>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <Field label="产品分类"><select className={inputClass} value={productForm.categoryId} onChange={(e) => setProductForm({ ...productForm, categoryId: e.target.value })}><option value="">选择后端分类</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-                <Field label="SKU"><Input value={productForm.sku} onChange={(e) => setProductForm({ ...productForm, sku: e.target.value.toUpperCase() })} placeholder="用户输入 SKU" /></Field>
+                <Field label="SKU"><Input value={productForm.sku} onChange={(e) => setProductForm({ ...productForm, sku: e.target.value.toUpperCase() })} placeholder="如 BOX-001" /></Field>
                 <Field label="产品名称"><Input value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })} placeholder="用户输入产品名称" /></Field>
                 <label className="flex items-center gap-2 pt-6 text-xs text-slate-600"><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm({ ...productForm, active: e.target.checked })} />启用产品</label>
                 <Field label="规格 JSON"><textarea className={textareaClass} value={productForm.specsJson} onChange={(e) => setProductForm({ ...productForm, specsJson: e.target.value })} /></Field>
@@ -336,7 +343,7 @@ export function P1ProductQuoteView({ active }: { active: ActivePage }) {
               <div className="grid gap-3 md:grid-cols-2">
                 <Field label="客户"><select className={inputClass} value={calcForm.customerId} onChange={(e) => setCalcForm({ ...calcForm, customerId: e.target.value })}><option value="">选择后端客户</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
                 <Field label="产品"><select className={inputClass} value={calcForm.productId} onChange={(e) => setCalcForm({ ...calcForm, productId: e.target.value })}><option value="">选择后端产品</option>{products.map((item) => <option key={item.id} value={item.id}>{item.sku} · {item.name}</option>)}</select></Field>
-                <Field label="数量"><Input value={calcForm.quantity} onChange={(e) => setCalcForm({ ...calcForm, quantity: e.target.value })} placeholder="用户输入数量" /></Field>
+                <Field label="数量"><Input value={calcForm.quantity} onChange={(e) => setCalcForm({ ...calcForm, quantity: e.target.value })} placeholder="如 500" /></Field>
                 <Field label="贸易术语"><select className={inputClass} value={calcForm.tradeTerm} onChange={(e) => setCalcForm({ ...calcForm, tradeTerm: e.target.value as CalcForm['tradeTerm'] })}><option>EXW</option><option>FOB</option><option>CIF</option><option>DDP</option></select></Field>
                 <Field label="币种"><Input value={calcForm.currency} maxLength={3} onChange={(e) => setCalcForm({ ...calcForm, currency: e.target.value.toUpperCase() })} /></Field>
                 <Field label="汇率 CNY/USD"><Input value={calcForm.fxRateCnyPerUsd} onChange={(e) => setCalcForm({ ...calcForm, fxRateCnyPerUsd: e.target.value })} placeholder="空值使用后端默认" /></Field>
@@ -367,7 +374,7 @@ export function P1ProductQuoteView({ active }: { active: ActivePage }) {
               {pdfBytes != null ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">最近一次 PDF：{pdfBytes} bytes</div> : null}
 
               <div className="grid gap-3 rounded-xl bg-slate-50 p-3 md:grid-cols-2">
-                <Field label="收件人"><Input value={quoteForm.recipient} onChange={(e) => setQuoteForm({ ...quoteForm, recipient: e.target.value })} placeholder="用户输入收件人" /></Field>
+                <Field label="收件人"><Input value={quoteForm.recipient} onChange={(e) => setQuoteForm({ ...quoteForm, recipient: e.target.value })} placeholder="buyer@company.com" /></Field>
                 <Field label="主题"><Input value={quoteForm.subject} onChange={(e) => setQuoteForm({ ...quoteForm, subject: e.target.value })} placeholder="用户输入主题" /></Field>
                 <label className="space-y-1.5 text-xs font-medium text-slate-500 md:col-span-2"><span>发送说明</span><textarea className={textareaClass} value={quoteForm.message} onChange={(e) => setQuoteForm({ ...quoteForm, message: e.target.value })} /></label>
                 <label className="flex items-center gap-2 text-xs text-slate-600 md:col-span-2"><input type="checkbox" checked={quoteForm.confirmedExternalSend} onChange={(e) => setQuoteForm({ ...quoteForm, confirmedExternalSend: e.target.checked })} />已人工确认外部发送；系统仅留痕，不代发邮件</label>
