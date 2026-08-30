@@ -434,3 +434,15 @@
   - `DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/nexfab_test' npx prisma validate`：通过。
   - `frontend npm run typecheck`：通过。
   - `frontend npm run build`：通过。
+- 合并记录：origin/main 侧 P3 tools endpoints 验证要点如下。
+- 新增工具中心后端路由 `src/tools-routes.mjs`，复用现有 `Customer`、`Opportunity`、`CustomerFingerprint` 和 `AuditLog`。
+- 覆盖六项：`POST /api/tools/ocr`、`POST /api/tools/website-link`、`GET /api/tools/fx`、`POST /api/tools/dedupe`、`POST /api/tools/followup-copy`、`GET /api/tools/hs`。
+- UI 同步：`site-preview/public/nexfab-navigation-preview.html` 将工具中心六项标为 P3 最小闭环状态；未新增前端业务模型。
+- 边界：OCR 为 dry-run / 人工文本解析，不接真实 OCR；汇率和 HS 为本地参考，不替代正式财务汇率版本或海关归类；话术为本地模板草稿，不调用真实 AI；客户去重复用现有指纹范围过滤。
+- 验证：
+  - `node --check src/tools-routes.mjs && node --check src/customer-fingerprint.mjs && node --check src/server.mjs && node --check test/p3-tools-smoke.mjs`：通过。
+  - `npm run test:p3-tools`：通过，输出 `{"result":"passed","mode":"p3-tools-center","fxConverted":785,"hsMatches":1,"hiddenDedupe":1,"auditLogs":10}`。
+  - `npm run test:p2-acquisition`：通过，输出 `{"result":"passed","mode":"acquisition-fingerprint-dedupe","leads":2,"inquiries":1,"customers":2,"customerFingerprints":4,"opportunities":1,"inquiryItems":2}`。
+  - `npm run test:smoke`：通过，输出 `{"result":"passed","customers":2,"contacts":1,"opportunities":1,"followUps":1,"auditLogs":10}`。
+  - `npm test`：通过，输出 `Phase 1 security, navigation, and scope checks passed.`。
+
