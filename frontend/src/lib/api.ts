@@ -56,6 +56,10 @@ import type {
   SocialPost,
   OutboundDraft,
   OperationsReport,
+  TimelineEvent,
+  CommissionReport,
+  CommissionRecord,
+  CustomerProfile,
 } from './types'
 
 export class ApiError extends Error {
@@ -183,6 +187,7 @@ export const api = {
 
   customers: (params = 'pageSize=8') => apiFetch<ListEnvelope<Customer>>(`/api/customers?${params}`),
   customer: (id: string) => apiFetch<Customer>(`/api/customers/${id}`),
+  customerProfile: (id: string) => apiFetch<CustomerProfile>(`/api/customers/${id}/profile`),
   createCustomer: (body: Record<string, unknown>) => apiFetch<Customer>('/api/customers', json('POST', body)),
   contacts: (customerId: string, params = 'pageSize=8') => apiFetch<ListEnvelope<Contact>>(`/api/customers/${customerId}/contacts?${params}`),
   createContact: (customerId: string, body: Record<string, unknown>) => apiFetch<Contact>(`/api/customers/${customerId}/contacts`, json('POST', body)),
@@ -239,4 +244,9 @@ export const api = {
   updateFulfillmentStatus: (orderId: string, body: Record<string, unknown>) => apiFetch<SalesOrder>(`/api/orders/${orderId}/fulfillment/status`, { method: 'PATCH', body: JSON.stringify(body) }),
   createShipment: (orderId: string, body: Record<string, unknown>) => apiFetch<Shipment>(`/api/orders/${orderId}/shipments`, json('POST', body)),
   updateShipmentStatus: (shipmentId: string, body: Record<string, unknown>) => apiFetch<Shipment>(`/api/shipments/${shipmentId}/status`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  // 修复说明：[中危-前端契约完整性]，原因：沟通时间线/提成视图已接入真实后端，但 final 树缺少对应 API 客户端方法，导致 typecheck/build 失败。
+  timeline: (params: string) => apiFetch<ListEnvelope<TimelineEvent>>(`/api/timeline?${params}`),
+  commissions: (params = '') => apiFetch<CommissionReport>(`/api/commissions${params ? `?${params}` : ''}`),
+  commissionRecords: (params = 'pageSize=15') => apiFetch<ListEnvelope<CommissionRecord>>(`/api/commission-records?${params}`),
 }

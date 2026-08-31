@@ -19,6 +19,7 @@ import { P3SocialAcquisitionView } from '@/components/p3-social-acquisition-view
 import { P3OutboundDraftView } from '@/components/p3-outbound-draft-view'
 import { TimelineView } from '@/components/p1-timeline-view'
 import { CommissionView } from '@/components/p1-commission-view'
+import { CustomerProfileView } from '@/components/p1-customer-profile-view'
 import { NotAvailableView, AccountAccessView } from '@/components/not-available-view'
 import { P3OperationsReportView } from '@/components/p3-operations-report-view'
 import { P3ToolsCenterView } from '@/components/p3-tools-center-view'
@@ -82,10 +83,6 @@ function isAgentLibraryRoute(active: { moduleId: string; subName: string } | nul
   return active?.moduleId === 'aihub' && ['自定义 Skills', '销售打法', '业务记忆'].includes(active.subName)
 }
 
-function isP31Route(active: { moduleId: string; subName: string } | null) {
-  return active?.moduleId === 'system'
-}
-
 // 修复说明：[P1-台账外]，原因：六个导航入口（客户画像/售后与复购/WhatsApp/社媒私信/沟通时间线/提成与对账）原命中通用占位提示；
 // 有真实后端的（时间线/提成）接真实视图，无后端的诚实标注"未接入"，系统管理子页按功能拆分而非统一落运维状态页。
 function isTimelineRoute(active: { moduleId: string; subName: string } | null) {
@@ -94,20 +91,19 @@ function isTimelineRoute(active: { moduleId: string; subName: string } | null) {
 function isCommissionRoute(active: { moduleId: string; subName: string } | null) {
   return active?.moduleId === 'finance' && active.subName === '提成与对账'
 }
+function isCustomerProfileRoute(active: { moduleId: string; subName: string } | null) {
+  return active?.moduleId === 'customer' && active.subName === '客户画像'
+}
 function isAccountRoute(active: { moduleId: string; subName: string } | null) {
   return active?.moduleId === 'system' && active.subName === '账号与权限'
 }
+// 修复说明：[中危-前端路由完整性]，原因：system 模块宽泛匹配会抢先命中，导致账号与权限页不可达；改为仅运维类子页进入运行状态视图。
 function isP31OpsRoute(active: { moduleId: string; subName: string } | null) {
   // 修复说明：[P1-台账外]，原因：系统管理子页原统一落运维状态页；现仅运行状态/AI 配置/系统设置/数据库维护继续展示运维状态页，账号与权限独立。
   return active?.moduleId === 'system' && ['运行状态', 'AI 配置', '系统设置', '数据库维护'].includes(active?.subName || '')
 }
 function notAvailableInfo(active: { moduleId: string; subName: string } | null): { title: string; reason: string; needed: string } | null {
   if (!active) return null
-  if (active.moduleId === 'customer' && active.subName === '客户画像') return {
-    title: '客户画像',
-    reason: '后端客户画像聚合接口（标签、成交画像、复购统计）尚未提供。',
-    needed: '后端画像聚合端点（基于客户、商机、订单、沟通数据聚合）+ 前端画像视图。',
-  }
   if (active.moduleId === 'pipeline' && active.subName === '售后与复购') return {
     title: '售后与复购',
     reason: '售后工单与复购提醒的后端模型与端点尚未提供（当前跟进记录可部分覆盖复购动作，见商机跟进）。',
@@ -278,7 +274,7 @@ export function CrmShell() {
             <P3OperationsReportView />
           ) : active && isP3ToolsRoute(active) ? (
             <P3ToolsCenterView active={active} />
-          ) : active && isP31Route(active) ? (
+          ) : active && isP31OpsRoute(active) ? (
             <P3OpsStatusView />
           ) : active && isP14Route(active) ? (
             <P1ImportDashboardView active={active} />
@@ -295,6 +291,8 @@ export function CrmShell() {
             <TimelineView active={active} />
           ) : active && isCommissionRoute(active) ? (
             <CommissionView active={active} />
+          ) : active && isCustomerProfileRoute(active) ? (
+            <CustomerProfileView active={active} />
           ) : active && isAccountRoute(active) ? (
             <AccountAccessView user={user} />
           ) : active && notAvailableInfo(active) ? (

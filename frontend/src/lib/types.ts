@@ -799,3 +799,78 @@ export interface AiTaskEvent {
   queueBackend?: string | null
   errorCode?: string | null
 }
+
+// 修复说明：[中危-前端契约完整性]，原因：沟通时间线/提成视图导入真实后端返回类型，但 final 树缺少类型定义，导致 typecheck/build 失败。
+export type TimelineEvent = {
+  id: string
+  customerId: string
+  opportunityId: string | null
+  type: string
+  direction: string
+  summary: string
+  occurredAt: string
+  customer?: { id: string; name: string }
+  opportunity?: { id: string; name: string; stage: string } | null
+}
+
+export type CommissionRow = {
+  salesId: string
+  sales: { id: string; name: string; email: string | null; role: string | null; teamId: string | null }
+  currency: string
+  orderCount: number
+  totalAmount: number
+  confirmedPaidAmount: number
+  outstandingAmount: number
+  commissionAmount: number
+  potentialCommission: number
+  collectionRate: number
+  orderIds: string[]
+}
+
+export type CommissionReport = {
+  rows: CommissionRow[]
+  stats: {
+    salesCount: number; orderCount: number; totalAmount: number; confirmedPaidAmount: number
+    outstandingAmount: number; commissionAmount: number; potentialCommission: number
+    collectionRate: number; appliedRate: number
+    byCurrency: { currency: string; orderCount: number; totalAmount: number; confirmedPaidAmount: number; commissionAmount: number }[]
+  }
+  period: { from: string | null; to: string | null }
+  sourcePolicy: string
+}
+
+export type CustomerProfile = {
+  customer: {
+    id: string; name: string; country: string | null; website: string | null
+    ownerId: string; owner: { id: string; name: string; email: string; role: string } | null
+    createdAt: string; updatedAt: string
+  }
+  contacts: { id: string; name: string; title: string | null; email: string | null; phone: string | null }[]
+  opportunityStats: {
+    total: number; totalAmount: number; wonCount: number; wonAmount: number
+    stageBreakdown: { stage: string; count: number; amount: number }[]
+  }
+  opportunities: { id: string; name: string; stage: string; amount: number; currency: string; ownerName: string; createdAt: string; updatedAt: string }[]
+  orderStats: {
+    total: number; totalAmount: number; totalPaid: number; outstanding: number; collectionRate: number
+    statusBreakdown: { status: string; count: number; amount: number }[]
+  }
+  orders: { id: string; orderNo: string; status: string; paymentStatus: string; totalAmount: number; currency: string; createdAt: string }[]
+  samples: { id: string; status: string; createdAt: string }[]
+  timeline: { id: string; type: string; summary: string; content: string | null; occurredAt: string; userName: string }[]
+}
+
+export type CommissionRecord = {
+  id: string
+  salesId: string
+  currency: string
+  periodStart: string | null
+  periodEnd: string | null
+  rate: number
+  orderCount: number
+  totalAmount: number
+  confirmedPaidAmount: number
+  commissionAmount: number
+  status: string
+  sales?: { id: string; name: string; email: string; role: string; teamId: string | null }
+}
