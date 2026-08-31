@@ -34,6 +34,8 @@ const ALLOWED_PREFIXES = [
   'api/timeline',
   'api/commissions',
   'api/commission-records',
+  // 修复说明：[P1-复原]，原因：售后与复购聚合端点(/api/retention)复原时漏加 BFF 白名单，前端代理 403；补齐。
+  'api/retention',
   'api/shipments',
   'api/social-accounts',
   'api/social-posts',
