@@ -127,7 +127,8 @@ for attempt in $(seq 1 30); do
 done
 systemctl reload nginx
 
-curl -fsS http://127.0.0.1/new/api/backend/ready > "$BACKUP_DIR/public-ready.json"
+# 修复说明：[P2-发布健康检查]，原因：/new/api/backend/ready 会进入前端 BFF 白名单并返回 403；生产 Nginx 兼容探针为 /api/backend/ready。
+curl -fsS http://127.0.0.1/api/backend/ready > "$BACKUP_DIR/public-ready.json"
 curl -fsSI http://127.0.0.1/ > "$BACKUP_DIR/root-headers.txt"
 curl -fsSI http://127.0.0.1/original/ > "$BACKUP_DIR/original-headers.txt"
 printf 'DEPLOYED release=%s backup=%s\n' "$RELEASE_ID" "$BACKUP_DIR"
