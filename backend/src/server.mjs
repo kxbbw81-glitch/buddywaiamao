@@ -8,6 +8,7 @@ import { findUserForLogin } from './auth-login.mjs'
 import { prisma } from './prisma.mjs'
 import { handleCrmRoute } from './crm-routes.mjs'
 import { handleCustomerProfileRoute } from './customer-profile-routes.mjs'
+import { handleRetentionRoute } from './retention-routes.mjs'
 import { handleProductRoute } from './product-routes.mjs'
 import { handleQuoteRoute } from './quote-routes.mjs'
 import { handleOrderRoute } from './order-routes.mjs'
@@ -197,6 +198,8 @@ export function createAppServer() {
     if (outboundDraftHandled !== false) return outboundDraftHandled
     const customerProfileHandled = await handleCustomerProfileRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (customerProfileHandled !== false) return customerProfileHandled
+    const retentionHandled = await handleRetentionRoute({ req, res, url, pathname: url.pathname, actor, db })
+    if (retentionHandled !== false) return retentionHandled
     const handled = await handleCrmRoute({ req, res, url, pathname: url.pathname, actor, db })
     if (handled !== false) return handled
     const productHandled = await handleProductRoute({ req, res, url, pathname: url.pathname, actor, db })

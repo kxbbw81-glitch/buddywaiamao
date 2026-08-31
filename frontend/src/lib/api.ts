@@ -60,6 +60,7 @@ import type {
   CommissionReport,
   CommissionRecord,
   CustomerProfile,
+  RetentionReport,
 } from './types'
 
 export class ApiError extends Error {
@@ -188,6 +189,7 @@ export const api = {
   customers: (params = 'pageSize=8') => apiFetch<ListEnvelope<Customer>>(`/api/customers?${params}`),
   customer: (id: string) => apiFetch<Customer>(`/api/customers/${id}`),
   customerProfile: (id: string) => apiFetch<CustomerProfile>(`/api/customers/${id}/profile`),
+  retention: (params = 'window=90') => apiFetch<RetentionReport>(`/api/retention?${params}`),
   createCustomer: (body: Record<string, unknown>) => apiFetch<Customer>('/api/customers', json('POST', body)),
   contacts: (customerId: string, params = 'pageSize=8') => apiFetch<ListEnvelope<Contact>>(`/api/customers/${customerId}/contacts?${params}`),
   createContact: (customerId: string, body: Record<string, unknown>) => apiFetch<Contact>(`/api/customers/${customerId}/contacts`, json('POST', body)),

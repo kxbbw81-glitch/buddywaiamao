@@ -860,6 +860,17 @@ export type CustomerProfile = {
   timeline: { id: string; type: string; summary: string; content: string | null; occurredAt: string; userName: string }[]
 }
 
+export type RetentionRow = {
+  customerId: string; name: string; country: string | null; ownerName: string
+  lastDealAt: string; lastDealAmount: number; dealCount: number; totalAmount: number
+  repurchaseAt: string; daysLeft: number; window: 'overdue' | 'near' | 'upcoming'
+}
+export type RetentionReport = {
+  rows: RetentionRow[]
+  stats: { total: number; overdue: number; near: number; upcoming: number; totalAmount: number }
+  window: number
+}
+
 export type CommissionRecord = {
   id: string
   salesId: string

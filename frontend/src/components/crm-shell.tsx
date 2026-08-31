@@ -20,6 +20,7 @@ import { P3OutboundDraftView } from '@/components/p3-outbound-draft-view'
 import { TimelineView } from '@/components/p1-timeline-view'
 import { CommissionView } from '@/components/p1-commission-view'
 import { CustomerProfileView } from '@/components/p1-customer-profile-view'
+import { RetentionView } from '@/components/p1-retention-view'
 import { NotAvailableView, AccountAccessView } from '@/components/not-available-view'
 import { P3OperationsReportView } from '@/components/p3-operations-report-view'
 import { P3ToolsCenterView } from '@/components/p3-tools-center-view'
@@ -94,6 +95,9 @@ function isCommissionRoute(active: { moduleId: string; subName: string } | null)
 function isCustomerProfileRoute(active: { moduleId: string; subName: string } | null) {
   return active?.moduleId === 'customer' && active.subName === '客户画像'
 }
+function isRetentionRoute(active: { moduleId: string; subName: string } | null) {
+  return active?.moduleId === 'pipeline' && active.subName === '售后与复购'
+}
 function isAccountRoute(active: { moduleId: string; subName: string } | null) {
   return active?.moduleId === 'system' && active.subName === '账号与权限'
 }
@@ -104,11 +108,6 @@ function isP31OpsRoute(active: { moduleId: string; subName: string } | null) {
 }
 function notAvailableInfo(active: { moduleId: string; subName: string } | null): { title: string; reason: string; needed: string } | null {
   if (!active) return null
-  if (active.moduleId === 'pipeline' && active.subName === '售后与复购') return {
-    title: '售后与复购',
-    reason: '售后工单与复购提醒的后端模型与端点尚未提供（当前跟进记录可部分覆盖复购动作，见商机跟进）。',
-    needed: '后端复购提醒/售后工单模型与端点，接入后可复用商机跟进交互。',
-  }
   if (active.moduleId === 'comms' && active.subName === 'WhatsApp') return {
     title: 'WhatsApp',
     reason: 'WhatsApp 渠道接入与消息收发后端尚未提供（沟通时间线可记录人工发生的 WhatsApp 沟通）。',
@@ -293,6 +292,8 @@ export function CrmShell() {
             <CommissionView active={active} />
           ) : active && isCustomerProfileRoute(active) ? (
             <CustomerProfileView active={active} />
+          ) : active && isRetentionRoute(active) ? (
+            <RetentionView active={active} />
           ) : active && isAccountRoute(active) ? (
             <AccountAccessView user={user} />
           ) : active && notAvailableInfo(active) ? (
