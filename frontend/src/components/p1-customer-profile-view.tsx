@@ -32,7 +32,8 @@ export function CustomerProfileView({ active }: { active: { moduleId: string; su
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.customers('pageSize=200').then((res) => {
+    // 修复说明：[P1-复原]，原因：原 pageSize=200 超过后端分页上限(1-100)被 400 拒绝，客户列表加载失败导致画像页无数据；改为合法分页。
+    api.customers('page=1&pageSize=100').then((res) => {
       setCustomers(res.items)
       if (res.items[0]) setCustomerId(res.items[0].id)
     }).catch((err) => setError(errorText(err)))
