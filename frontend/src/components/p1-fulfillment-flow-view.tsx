@@ -50,10 +50,7 @@ function money(value: number | string | null | undefined) {
   const numberValue = Number(value ?? 0)
   return Number.isFinite(numberValue) ? numberValue.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(value)
 }
-function todayOffset(days: number) {
-  const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
-  return date.toISOString().slice(0, 10)
-}
+// 修复说明：[低危-工程质量]，原因：未使用的日期辅助函数触发 lint 的零告警门禁；移除死代码以恢复前端质量检查。
 function isoFromDate(value: string) { return value ? `${value}T00:00:00.000Z` : undefined }
 
 export function P1FulfillmentFlowView({ active }: { active: ActivePage }) {

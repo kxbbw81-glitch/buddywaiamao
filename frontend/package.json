@@ -20,7 +20,6 @@
     "test:p3-social-acquisition": "node test/p3-social-acquisition-contract.mjs"
   },
   "dependencies": {
-    "@next/swc-darwin-arm64": "^16.3.3",
     "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
