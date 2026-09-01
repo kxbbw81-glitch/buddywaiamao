@@ -169,6 +169,16 @@ function ProfileBody({ profile }: { profile: CustomerProfile }) {
         </CardHeader>
       </Card>
 
+      {/* 空态引导：所选客户无业务数据时，提示切换而非一片 0 */}
+      {opp.total === 0 && ord.total === 0 && profile.contacts.length === 0 && profile.activities.length === 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
+          <ActivityIcon className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <b>该客户暂无业务数据</b>——无商机、订单、联系人和沟通记录。可在上方客户选择器中切换到其他客户查看完整画像。
+          </div>
+        </div>
+      )}
+
       {/* KPI 卡 */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {kpis.map((k) => {
