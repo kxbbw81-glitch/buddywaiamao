@@ -23,7 +23,7 @@
     <p><span class="ok">PASS</span>：NexFab VI 已应用到正式前端，并完成本地构建与公网健康检查。</p>
     <ul>
       <li>正式入口：<a href="http://47.98.101.249/new">http://47.98.101.249/new</a></li>
-      <li>健康检查：<a href="http://47.98.101.249/new/api/backend/health">/new/api/backend/health</a></li>
+      <li>健康检查：<a href="http://47.98.101.249/api/backend/health">/api/backend/health</a></li>
       <li>本次不写生产数据库，不切换 <code>/original/</code> 与 <code>/preview-148/</code>。</li>
     </ul>
   </section>
@@ -55,14 +55,14 @@
       <li><code>NEXT_PUBLIC_BASE_PATH=/new npm run build</code>：通过。</li>
       <li><code>http://47.98.101.249/new</code>：HTTP 200。</li>
       <li><code>http://47.98.101.249/new/logo.svg</code>：HTTP 200。</li>
-      <li><code>http://47.98.101.249/new/api/backend/health</code>：HTTP 200，返回 <code>{"ok":true}</code>。</li>
+      <li><code>http://47.98.101.249/api/backend/health</code>：HTTP 200，返回 <code>{"ok":true}</code>。</li>
     </ul>
   </section>
 
   <section class="card">
     <h2>五、注意事项</h2>
     <ul>
-      <li><span class="warn">/new/api/backend/ready 公网 403 是预期行为</span>：该 ready 探针受 BFF 白名单限制；公网兼容健康探针使用 <code>/new/api/backend/health</code>。</li>
+      <li><span class="warn">/api/backend/ready 公网 403 是预期行为</span>：该 ready 探针受 BFF 白名单限制；公网兼容健康探针使用 <code>/api/backend/health</code>。</li>
       <li>本次只做 VI 与发布同步，不改账号密码、不写生产库、不覆盖原始版长期入口。</li>
     </ul>
   </section>

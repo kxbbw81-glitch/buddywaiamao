@@ -56,12 +56,12 @@
     <div class="grid">
       <div class="metric"><b>/new</b><br>公网 200，HTML 10647 bytes</div>
       <div class="metric"><b>/new/_next/static</b><br>首批 JS/CSS 静态资源 200</div>
-      <div class="metric"><b>/new/api/backend/health</b><br>公网 200：{"ok":true,"service":"nexfab-crm-backend","phase":1}</div>
+      <div class="metric"><b>/api/backend/health</b><br>公网 200：{"ok":true,"service":"nexfab-crm-backend","phase":1}</div>
       <div class="metric"><b>127.0.0.1:4300/ready</b><br>内网 200：database/session/pii/ai/queue ready</div>
       <div class="metric"><b>/original/</b><br>公网 200，旧版对比入口保留</div>
       <div class="metric"><b>/preview-148/</b><br>公网 200，预览入口保留</div>
     </div>
-    <p class="muted">说明：/new/api/backend/ready 当前返回 403 是安全策略，BFF 匿名公网仅允许 /health；完整 ready 状态只在服务器内网验证。</p>
+    <p class="muted">说明：/api/backend/ready 当前返回 403 是安全策略，BFF 匿名公网仅允许 /health；完整 ready 状态只在服务器内网验证。</p>
   </section>
 
   <section class="card"><h2>五、回滚方案</h2>
