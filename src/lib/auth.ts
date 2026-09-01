@@ -14,8 +14,18 @@ import { db } from '@/lib/db'
 export const SESSION_COOKIE = 'nexfab_session'
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 天
 
+function sessionCookieSecure(): boolean {
+  const configured = process.env.SESSION_COOKIE_SECURE
+  if (configured === 'true') return true
+  if (configured === 'false') return false
+  return process.env.NODE_ENV === 'production'
+}
+
 function getSecret(): string {
-  return process.env.AUTH_SECRET || 'nexfab-dev-secret-change-in-production'
+  const secret = process.env.AUTH_SECRET
+  // 修复说明：[P0-会话密钥]，原因：生产环境缺少 AUTH_SECRET 时回退到公开默认值，攻击者可伪造会话；生产环境必须显式配置密钥。
+  if (!secret && process.env.NODE_ENV === 'production') throw new Error('AUTH_SECRET 未配置')
+  return secret || 'nexfab-dev-secret-change-in-production'
 }
 
 // ============ 会话令牌 ============
@@ -61,7 +71,8 @@ export async function setSessionCookie(userId: string): Promise<void> {
   store.set(SESSION_COOKIE, createSessionToken(userId), {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    // 修复说明：[P0-登录会话]，原因：当前 /new 使用 HTTP 地址时，生产环境默认 Secure Cookie 不会被浏览器回传，登录后会立即跳回登录页；由部署环境显式声明是否启用 Secure。
+    secure: sessionCookieSecure(),
     path: '/',
     maxAge: SESSION_TTL_MS / 1000,
   })
@@ -224,7 +235,8 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, stored: string | null): boolean {
-  if (!stored) return true // 未设密码的用户（演示模式）直接放行
+  // 修复说明：[P0-认证绕过]，原因：空 passwordHash 会使任意人仅凭已知邮箱登录；缺少密码哈希必须拒绝认证，迁移脚本会转换既有 scrypt 哈希。
+  if (!stored) return false
   const parts = stored.split(':')
   if (parts.length !== 3 || parts[0] !== 'scrypt') return false
   const [, salt, hash] = parts

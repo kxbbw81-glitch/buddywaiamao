@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, customerScopeWhere } from '@/lib/auth'
+import { prepareEncryptedContact } from '@/lib/contact-pii'
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     if (body.contacts && body.contacts.length > 0) {
       await db.contact.createMany({
-        data: body.contacts.map((c: Record<string, unknown>) => ({
+        data: body.contacts.map((c: Record<string, unknown>) => prepareEncryptedContact({
           customerId: customer.id,
           name: c.name,
           email: c.email,

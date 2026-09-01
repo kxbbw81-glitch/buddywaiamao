@@ -10,38 +10,38 @@ datasource db {
 
 // ============ User & Auth ============
 model User {
-  id            String   @id @default(cuid())
-  tenantId      Int      @default(1)
-  email         String   @unique
-  name          String
-  passwordHash  String?
-  avatar        String?
-  primaryRole   String   @default("sales") // super_admin / management / sales_manager / sales / finance
-  additionalRoles String  @default("[]") // JSON array
-  department    String?
-  dataScope     String   @default("personal") // personal / team / global / super
-  teamId        String?
+  id                   String   @id @default(cuid())
+  tenantId             Int      @default(1)
+  email                String   @unique
+  name                 String
+  passwordHash         String?
+  avatar               String?
+  primaryRole          String   @default("sales") // super_admin / management / sales_manager / sales / finance
+  additionalRoles      String   @default("[]") // JSON array
+  department           String?
+  dataScope            String   @default("personal") // personal / team / global / super
+  teamId               String?
   permissionTemplateId String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  team                 Team?               @relation("TeamMembers", fields: [teamId], references: [id])
-  permissionTemplate   PermissionTemplate? @relation(fields: [permissionTemplateId], references: [id])
-  assignedInquiries  Inquiry[]
-  approvedQuotations Quotation[]  @relation("Approver")
-  activities         Activity[]
-  createdCustomers   Customer[]  @relation("Owner")
-  ownedOpportunities Opportunity[] @relation("OpportunityOwner")
-  createdQuotations  Quotation[]  @relation("Creator")
-  createdOrders      Order[]      @relation("Creator")
-  createdSocialPosts SocialPost[] @relation("SocialCreator")
-  agentConversations AgentConversation[]
-  followupTasks FollowupTask[] @relation("FollowupAssignee")
-  companyProfileUpdates CompanyProfile[] @relation("CompanyProfileUpdater")
-  systemMirrorUpdates   SystemMirror[]   @relation("SystemMirrorUpdater")
-  maintenanceActions MaintenanceLog[] @relation("MaintenanceActor")
-  aiProviderConfigs AiProviderConfig[]
+  team                  Team?               @relation("TeamMembers", fields: [teamId], references: [id])
+  permissionTemplate    PermissionTemplate? @relation(fields: [permissionTemplateId], references: [id])
+  assignedInquiries     Inquiry[]
+  approvedQuotations    Quotation[]         @relation("Approver")
+  activities            Activity[]
+  createdCustomers      Customer[]          @relation("Owner")
+  ownedOpportunities    Opportunity[]       @relation("OpportunityOwner")
+  createdQuotations     Quotation[]         @relation("Creator")
+  createdOrders         Order[]             @relation("Creator")
+  createdSocialPosts    SocialPost[]        @relation("SocialCreator")
+  agentConversations    AgentConversation[]
+  followupTasks         FollowupTask[]      @relation("FollowupAssignee")
+  companyProfileUpdates CompanyProfile[]    @relation("CompanyProfileUpdater")
+  systemMirrorUpdates   SystemMirror[]      @relation("SystemMirrorUpdater")
+  maintenanceActions    MaintenanceLog[]    @relation("MaintenanceActor")
+  aiProviderConfigs     AiProviderConfig[]
 }
 
 // ============ 团队 ============
@@ -80,22 +80,22 @@ model AiSetting {
 
 // ============ AI 供应商配置（多实例，Key 加密按账号隔离，V3.12 第九章） ============
 model AiProviderConfig {
-  id              String   @id @default(cuid())
-  tenantId        Int      @default(1)
+  id              String           @id @default(cuid())
+  tenantId        Int              @default(1)
   ownerId         String
-  owner           User     @relation(fields: [ownerId], references: [id])
-  name            String   // "主 OpenAI" 等自定义名称
-  provider        String   @default("openai-compatible") // openai-compatible / anthropic / gemini
-  baseUrl         String   @default("")
-  model           String   @default("")
-  apiKeyEncrypted String   @default("") // AES-256-GCM: base64(iv):base64(ct):base64(tag)
-  temperature     Float    @default(0.4)
-  enabled         Boolean  @default(true)
-  isDefault       Boolean  @default(false)
+  owner           User             @relation(fields: [ownerId], references: [id])
+  name            String // "主 OpenAI" 等自定义名称
+  provider        String           @default("openai-compatible") // openai-compatible / anthropic / gemini
+  baseUrl         String           @default("")
+  model           String           @default("")
+  apiKeyEncrypted String           @default("") // AES-256-GCM: base64(iv):base64(ct):base64(tag)
+  temperature     Float            @default(0.4)
+  enabled         Boolean          @default(true)
+  isDefault       Boolean          @default(false)
   lastTestedAt    DateTime?
   lastTestOk      Boolean?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   moduleSwitches  AiModuleSwitch[]
 
   @@unique([ownerId, name])
@@ -103,116 +103,127 @@ model AiProviderConfig {
 
 // ============ AI 模块开关 ============
 model AiModuleSwitch {
-  id        String   @id @default(cuid())
-  tenantId  Int      @default(1)
-  module    String   @unique // inquiry_analysis / quotation_suggestion / customer_wakeup / agent_chat
-  enabled   Boolean  @default(true)
+  id        String            @id @default(cuid())
+  tenantId  Int               @default(1)
+  module    String            @unique // inquiry_analysis / quotation_suggestion / customer_wakeup / agent_chat
+  enabled   Boolean           @default(true)
   configId  String?
   config    AiProviderConfig? @relation(fields: [configId], references: [id])
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime          @updatedAt
 }
 
 // ============ Agent 对话 ============
 
 model AgentConversation {
-  id        String   @id @default(cuid())
-  tenantId  Int      @default(1)
-  title     String   @default("新对话")
+  id        String         @id @default(cuid())
+  tenantId  Int            @default(1)
+  title     String         @default("新对话")
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User           @relation(fields: [userId], references: [id])
   messages  AgentMessage[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 model AgentMessage {
-  id             String   @id @default(cuid())
+  id             String            @id @default(cuid())
   conversationId String
   conversation   AgentConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String // user / assistant
   content        String
-  createdAt      DateTime @default(now())
+  createdAt      DateTime          @default(now())
 }
 
 // ============ Agent Skills ============
 
 model AgentSkillCategory {
-  id        String   @id @default(cuid())
-  tenantId  Int      @default(1)
-  key       String   @unique
+  id        String       @id @default(cuid())
+  tenantId  Int          @default(1)
+  key       String       @unique
   name      String
-  icon      String   @default("🗂️")
-  builtin   Boolean  @default(false)
-  desc      String   @default("")
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  icon      String       @default("🗂️")
+  builtin   Boolean      @default(false)
+  desc      String       @default("")
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
   skills    AgentSkill[]
 }
 
 model AgentSkill {
-  id         String   @id @default(cuid())
-  tenantId   Int      @default(1)
+  id         String             @id @default(cuid())
+  tenantId   Int                @default(1)
   categoryId String
   category   AgentSkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   name       String
-  icon       String   @default("⚡")
-  src        String   @default("custom") // builtin / custom
-  on         Boolean  @default(true)
-  desc       String   @default("")
-  params     String   @default("{}") // JSON 字符串
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  icon       String             @default("⚡")
+  src        String             @default("custom") // builtin / custom
+  on         Boolean            @default(true)
+  desc       String             @default("")
+  params     String             @default("{}") // JSON 字符串
+  sortOrder  Int                @default(0)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
 }
 
 // ============ Customer ============
 model Customer {
-  id            String   @id @default(cuid())
-  tenantId      Int      @default(1)
+  id            String    @id @default(cuid())
+  tenantId      Int       @default(1)
   companyName   String
   companyNameEn String?
   country       String?
   city          String?
   website       String?
   industry      String?
-  customerLevel String   @default("C") // A/B/C/D
-  source        String   @default("manual") // exhibition/b2b/social_media/referral/manual
-  status        String   @default("active") // active/inactive/lost
-  tags          String   @default("[]") // JSON array
+  customerLevel String    @default("C") // A/B/C/D
+  source        String    @default("manual") // exhibition/b2b/social_media/referral/manual
+  status        String    @default("active") // active/inactive/lost
+  tags          String    @default("[]") // JSON array
   notes         String?
-  aiScore       Float    @default(0)
-  aiProfile     String?  // JSON
+  aiScore       Float     @default(0)
+  aiProfile     String? // JSON
   ownerId       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   lastContactAt DateTime?
 
-  owner       User?           @relation("Owner", fields: [ownerId], references: [id])
-  contacts    Contact[]
-  inquiries   Inquiry[]
+  owner         User?          @relation("Owner", fields: [ownerId], references: [id])
+  contacts      Contact[]
+  inquiries     Inquiry[]
   opportunities Opportunity[]
-  quotations  Quotation[]
-  orders      Order[]
-  samples     Sample[]
-  socialPosts SocialPost[]
+  quotations    Quotation[]
+  orders        Order[]
+  samples       Sample[]
+  socialPosts   SocialPost[]
   followupTasks FollowupTask[]
 }
 
 model Contact {
-  id            String   @id @default(cuid())
-  customerId    String
-  name          String
-  email         String?
-  phone         String?
-  whatsapp      String?
-  position      String?
-  isDecisionMaker Boolean @default(false)
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  customerId         String
+  name               String
+  email              String?
+  phone              String?
+  whatsapp           String?
+  // 修复说明：[P0-PII 静态加密]，原因：联系人联系方式仅以明文列保存会使迁移后的旧 PII 安全边界回退；写入时保留空明文字段，只保存密文与不可逆检索哈希。
+  emailCiphertext    String?
+  phoneCiphertext    String?
+  whatsappCiphertext String?
+  emailHash          String?
+  phoneHash          String?
+  whatsappHash       String?
+  position           String?
+  isDecisionMaker    Boolean  @default(false)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([emailHash])
+  @@index([phoneHash])
+  @@index([whatsappHash])
 }
 
 // ============ Product ============
@@ -240,21 +251,21 @@ model Product {
   updatedAt     DateTime @updatedAt
 
   productCategory ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  docs           ProductDoc[]
-  quotationItems QuotationItem[]
-  socialPosts    SocialPost[]
+  docs            ProductDoc[]
+  quotationItems  QuotationItem[]
+  socialPosts     SocialPost[]
 }
 
 // ============ 产品分类树 + 产品文档（移植自旧主线） ============
 model ProductCategory {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   name      String
   parentId  String?
   parent    ProductCategory?  @relation("ProductCategoryTree", fields: [parentId], references: [id])
   children  ProductCategory[] @relation("ProductCategoryTree")
   products  Product[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   @@unique([parentId, name])
   @@index([parentId])
@@ -263,9 +274,9 @@ model ProductCategory {
 model ProductDoc {
   id         String    @id @default(cuid())
   productId  String
-  type       String    // TDS / SDS / CERT
+  type       String // TDS / SDS / CERT
   fileUrl    String
-  status     String    // DRAFT / REVIEWED / EXPIRED
+  status     String // DRAFT / REVIEWED / EXPIRED
   validUntil DateTime?
   createdAt  DateTime  @default(now())
   product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -275,56 +286,56 @@ model ProductDoc {
 
 // ============ Inquiry ============
 model Inquiry {
-  id              String   @id @default(cuid())
-  tenantId        Int      @default(1)
-  customerId      String?
-  inquiryNo       String   @unique
-  source          String   @default("email") // email/website/whatsapp/exhibition/b2b_alibaba/linkedin/social_media
-  subject         String?
-  content         String?
+  id                String    @id @default(cuid())
+  tenantId          Int       @default(1)
+  customerId        String?
+  inquiryNo         String    @unique
+  source            String    @default("email") // email/website/whatsapp/exhibition/b2b_alibaba/linkedin/social_media
+  subject           String?
+  content           String?
   contentTranslated String?
-  language        String   @default("en")
-  status          String   @default("new") // new/assigned/following/quoted/won/lost/pooled/closed
-  priority        String   @default("normal") // low/normal/high/urgent
-  assignedTo      String?
-  assignedAt      DateTime?
-  lastFollowUpAt  DateTime?
-  isInPool        Boolean  @default(false)
-  poolEnteredAt   DateTime?
-  aiAnalysis      String?  // JSON
-  aiReplyDraft    String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  language          String    @default("en")
+  status            String    @default("new") // new/assigned/following/quoted/won/lost/pooled/closed
+  priority          String    @default("normal") // low/normal/high/urgent
+  assignedTo        String?
+  assignedAt        DateTime?
+  lastFollowUpAt    DateTime?
+  isInPool          Boolean   @default(false)
+  poolEnteredAt     DateTime?
+  aiAnalysis        String? // JSON
+  aiReplyDraft      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  customer   Customer?  @relation(fields: [customerId], references: [id])
-  assignee   User?      @relation(fields: [assignedTo], references: [id])
-  quotations Quotation[]
-  samples    Sample[]
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  assignee      User?         @relation(fields: [assignedTo], references: [id])
+  quotations    Quotation[]
+  samples       Sample[]
   opportunities Opportunity[]
 }
 
 // ============ Opportunity（商机） ============
 model Opportunity {
-  id               String    @id @default(cuid())
-  tenantId         Int       @default(1)
-  title            String
-  customerId       String?
-  inquiryId        String?
-  stage            String    @default("prospect") // prospect/qualified/proposal/negotiation/won/lost
-  amount           Float     @default(0) // 商机金额（USD）
-  currency         String    @default("USD")
-  probability      Int       @default(30) // 赢单概率 0-100
+  id                String    @id @default(cuid())
+  tenantId          Int       @default(1)
+  title             String
+  customerId        String?
+  inquiryId         String?
+  stage             String    @default("prospect") // prospect/qualified/proposal/negotiation/won/lost
+  amount            Float     @default(0) // 商机金额（USD）
+  currency          String    @default("USD")
+  probability       Int       @default(30) // 赢单概率 0-100
   expectedCloseDate DateTime?
-  closedAt         DateTime?
-  lostReason       String?
-  notes            String?
-  ownerId          String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  closedAt          DateTime?
+  lostReason        String?
+  notes             String?
+  ownerId           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  customer Customer? @relation(fields: [customerId], references: [id])
-  inquiry  Inquiry?  @relation(fields: [inquiryId], references: [id])
-  owner    User?     @relation("OpportunityOwner", fields: [ownerId], references: [id])
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+  inquiry       Inquiry?       @relation(fields: [inquiryId], references: [id])
+  owner         User?          @relation("OpportunityOwner", fields: [ownerId], references: [id])
   followupTasks FollowupTask[]
 }
 
@@ -337,8 +348,8 @@ model FollowupTask {
   customerId    String?
   opportunityId String?
   type          String    @default("follow_up") // follow_up/call/email/meeting/aftersales/other
-  status        String    @default("pending")   // pending/in_progress/done/cancelled
-  priority      String    @default("normal")    // low/normal/high/urgent
+  status        String    @default("pending") // pending/in_progress/done/cancelled
+  priority      String    @default("normal") // low/normal/high/urgent
   dueDate       DateTime?
   notes         String?
   assigneeId    String?
@@ -368,7 +379,7 @@ model Quotation {
   status            String    @default("draft") // draft/sent/accepted/rejected/expired/cancelled
   validUntil        DateTime?
   notes             String?
-  aiSuggestion      String?   // JSON
+  aiSuggestion      String? // JSON
   marginCheckPassed Boolean?
   marginCheckReason String?
   approvedBy        String?
@@ -378,26 +389,26 @@ model Quotation {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  inquiry    Inquiry?  @relation(fields: [inquiryId], references: [id])
-  customer   Customer? @relation(fields: [customerId], references: [id])
-  approver   User?     @relation("Approver", fields: [approvedBy], references: [id])
-  creator    User?     @relation("Creator", fields: [createdById], references: [id])
-  items      QuotationItem[]
-  versions   QuoteVersion[]
-  orders     Order[]
+  inquiry  Inquiry?        @relation(fields: [inquiryId], references: [id])
+  customer Customer?       @relation(fields: [customerId], references: [id])
+  approver User?           @relation("Approver", fields: [approvedBy], references: [id])
+  creator  User?           @relation("Creator", fields: [createdById], references: [id])
+  items    QuotationItem[]
+  versions QuoteVersion[]
+  orders   Order[]
 }
 
 model QuotationItem {
-  id                String  @id @default(cuid())
-  quotationId       String
-  productId         String?
-  productName       String
-  productSpec       String?
-  quantity          Int
-  unit              String  @default("PCS")
-  unitPrice         Float
-  cost              Float
-  totalPrice        Float
+  id                 String  @id @default(cuid())
+  quotationId        String
+  productId          String?
+  productName        String
+  productSpec        String?
+  quantity           Int
+  unit               String  @default("PCS")
+  unitPrice          Float
+  cost               Float
+  totalPrice         Float
   priceDeviationFlag Boolean @default(false)
 
   quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
@@ -406,67 +417,67 @@ model QuotationItem {
 
 // ============ 报价版本快照（移植自旧主线） ============
 model QuoteVersion {
-  id           String   @id @default(cuid())
-  quotationId  String
-  version      Int
-  itemsJson    String   @default("[]") // 明细快照 JSON
-  notes        String?
-  totalAmount  Float    @default(0)
-  totalCost    Float    @default(0)
-  grossMargin  Float    @default(0)
-  createdById  String?
-  createdAt    DateTime @default(now())
-  quotation    Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  quotationId String
+  version     Int
+  itemsJson   String    @default("[]") // 明细快照 JSON
+  notes       String?
+  totalAmount Float     @default(0)
+  totalCost   Float     @default(0)
+  grossMargin Float     @default(0)
+  createdById String?
+  createdAt   DateTime  @default(now())
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 
   @@index([quotationId, version])
 }
 
 // ============ Order ============
 model Order {
-  id              String   @id @default(cuid())
-  tenantId        Int      @default(1)
-  quotationId     String?
-  customerId      String?
-  orderNo         String   @unique
-  piNo            String?
-  status          String   @default("pending") // pending/confirmed/in_production/ready/shipped/completed/cancelled
-  totalAmount     Float    @default(0)
-  currency        String   @default("USD")
-  paymentTerm     String?
-  deliveryDate    DateTime?
-  paidAmount      Float    @default(0)
-  aiRiskScore     Float    @default(0)
-  notes           String?
-  trackingNo      String?
-  shippingMethod  String?
-  paymentStatus   String   @default("unpaid") // unpaid/partial/paid
-  fulfillmentStatus String @default("pending") // pending/in_production/ready_to_ship/shipped/delivered/cancelled
-  createdById     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
+  id                String    @id @default(cuid())
+  tenantId          Int       @default(1)
+  quotationId       String?
+  customerId        String?
+  orderNo           String    @unique
+  piNo              String?
+  status            String    @default("pending") // pending/confirmed/in_production/ready/shipped/completed/cancelled
+  totalAmount       Float     @default(0)
+  currency          String    @default("USD")
+  paymentTerm       String?
+  deliveryDate      DateTime?
+  paidAmount        Float     @default(0)
+  aiRiskScore       Float     @default(0)
+  notes             String?
+  trackingNo        String?
+  shippingMethod    String?
+  paymentStatus     String    @default("unpaid") // unpaid/partial/paid
+  fulfillmentStatus String    @default("pending") // pending/in_production/ready_to_ship/shipped/delivered/cancelled
+  createdById       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now())
 
-  quotation        Quotation? @relation(fields: [quotationId], references: [id])
-  customer         Customer? @relation(fields: [customerId], references: [id])
-  creator          User?    @relation("Creator", fields: [createdById], references: [id])
-  payments         Payment[]
-  orderItems       OrderItem[]
+  quotation         Quotation?         @relation(fields: [quotationId], references: [id])
+  customer          Customer?          @relation(fields: [customerId], references: [id])
+  creator           User?              @relation("Creator", fields: [createdById], references: [id])
+  payments          Payment[]
+  orderItems        OrderItem[]
   fulfillmentEvents FulfillmentEvent[]
 }
 
 // ============ 订单明细 + 履约事件（移植自旧主线） ============
 model OrderItem {
-  id          String  @id @default(cuid())
-  orderId     String
-  productId   String?
-  sku         String?
-  name        String
-  quantity    Float   @default(1)
-  unitPrice   Float   @default(0)
-  unitCost    Float   @default(0)
-  amount      Float   @default(0)
-  cost        Float   @default(0)
-  snapshotJson String @default("{}")
-  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id           String  @id @default(cuid())
+  orderId      String
+  productId    String?
+  sku          String?
+  name         String
+  quantity     Float   @default(1)
+  unitPrice    Float   @default(0)
+  unitCost     Float   @default(0)
+  amount       Float   @default(0)
+  cost         Float   @default(0)
+  snapshotJson String  @default("{}")
+  order        Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
 }
@@ -474,7 +485,7 @@ model OrderItem {
 model FulfillmentEvent {
   id          String   @id @default(cuid())
   orderId     String
-  type        String   // PENDING/IN_PRODUCTION/READY_TO_SHIP/SHIPPED/DELIVERED/CANCELLED
+  type        String // PENDING/IN_PRODUCTION/READY_TO_SHIP/SHIPPED/DELIVERED/CANCELLED
   note        String?
   createdById String?
   createdAt   DateTime @default(now())
@@ -485,48 +496,48 @@ model FulfillmentEvent {
 
 // ============ Payment ============
 model Payment {
-  id            String   @id @default(cuid())
-  tenantId      Int      @default(1)
+  id            String    @id @default(cuid())
+  tenantId      Int       @default(1)
   orderId       String
   amount        Float
-  currency      String   @default("USD")
-  paymentMethod String?  // T/T / L/C / Western Union / PayPal
+  currency      String    @default("USD")
+  paymentMethod String? // T/T / L/C / Western Union / PayPal
   paymentDate   DateTime?
   dueDate       DateTime?
-  status        String   @default("pending") // pending/partial/completed/overdue
+  status        String    @default("pending") // pending/partial/completed/overdue
   notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 // ============ Activity ============
 model Activity {
-  id          String   @id @default(cuid())
-  tenantId    Int      @default(1)
-  type        String   // follow_up/email/call/meeting/note/system
-  subject     String?
-  content     String?
-  entityType  String?  // customer/inquiry/quotation/order
-  entityId    String?
-  userId      String?
-  readAt      DateTime?
-  createdAt   DateTime @default(now())
+  id         String    @id @default(cuid())
+  tenantId   Int       @default(1)
+  type       String // follow_up/email/call/meeting/note/system
+  subject    String?
+  content    String?
+  entityType String? // customer/inquiry/quotation/order
+  entityId   String?
+  userId     String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
 
-  user     User?    @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 }
 
 // ============ Approval（交接文档 §3.7）============
 model Approval {
   id        String   @id @default(cuid())
   tenantId  Int      @default(1)
-  type      String   // QUOTE | DISCOUNT | LOW_MARGIN | DOC | RELEASE
+  type      String // QUOTE | DISCOUNT | LOW_MARGIN | DOC | RELEASE
   refId     String
   requester String
   approver  String?
   status    String   @default("PENDING") // PENDING | APPROVED | REJECTED
-  aiRisk    String?  // AI 只标注风险，不做决定
+  aiRisk    String? // AI 只标注风险，不做决定
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -535,21 +546,21 @@ model Approval {
 
 // ============ Sample ============
 model Sample {
-  id            String   @id @default(cuid())
-  tenantId      Int      @default(1)
-  customerId    String?
-  inquiryId     String?
-  productName   String
-  quantity      Int      @default(1)
-  status        String   @default("pending") // pending/approved/sent/in_transit/delivered/testing/confirmed/rejected
-  trackingNo    String?
+  id             String    @id @default(cuid())
+  tenantId       Int       @default(1)
+  customerId     String?
+  inquiryId      String?
+  productName    String
+  quantity       Int       @default(1)
+  status         String    @default("pending") // pending/approved/sent/in_transit/delivered/testing/confirmed/rejected
+  trackingNo     String?
   shippingMethod String?
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  testResult    String?
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now())
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  testResult     String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now())
 
   customer Customer? @relation(fields: [customerId], references: [id])
   inquiry  Inquiry?  @relation(fields: [inquiryId], references: [id])
@@ -557,82 +568,82 @@ model Sample {
 
 // ============ SocialPost ============
 model SocialPost {
-  id            String   @id @default(cuid())
-  tenantId      Int      @default(1)
-  title         String
-  content       String
-  platform      String   // linkedin/facebook/twitter/instagram/alibaba
-  status        String   @default("draft") // draft/scheduled/published/failed
-  scheduledAt   DateTime?
-  publishedAt   DateTime?
-  customerId    String?
-  productId     String?
-  mediaUrls     String   @default("[]") // JSON array
-  tags          String   @default("[]") // JSON array
-  likes         Int      @default(0)
-  comments      Int      @default(0)
-  shares        Int      @default(0)
-  clicks        Int      @default(0)
-  createdById   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(cuid())
+  tenantId    Int       @default(1)
+  title       String
+  content     String
+  platform    String // linkedin/facebook/twitter/instagram/alibaba
+  status      String    @default("draft") // draft/scheduled/published/failed
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  customerId  String?
+  productId   String?
+  mediaUrls   String    @default("[]") // JSON array
+  tags        String    @default("[]") // JSON array
+  likes       Int       @default(0)
+  comments    Int       @default(0)
+  shares      Int       @default(0)
+  clicks      Int       @default(0)
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  customer  Customer? @relation(fields: [customerId], references: [id])
-  product   Product?  @relation(fields: [productId], references: [id])
-  creator   User?     @relation("SocialCreator", fields: [createdById], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  product  Product?  @relation(fields: [productId], references: [id])
+  creator  User?     @relation("SocialCreator", fields: [createdById], references: [id])
 }
 
 // ============ 系统设置：单行表 (id 固定为 "1") ============
 // 仅超级管理员可读可写；与外部单证抬头 + 邮件签名直接挂钩。
 model CompanyProfile {
-  id              String   @id @default("1")
-  companyName     String   @default("")
-  website         String   @default("")
-  email           String   @default("")
-  mainProducts    String   @default("")  // 主营业务（一行简短说明）
-  phone           String   @default("")
-  address         String   @default("")
-  updatedAt       DateTime @updatedAt
-  updatedById     String?
-  updatedBy       User?    @relation("CompanyProfileUpdater", fields: [updatedById], references: [id])
+  id           String   @id @default("1")
+  companyName  String   @default("")
+  website      String   @default("")
+  email        String   @default("")
+  mainProducts String   @default("") // 主营业务（一行简短说明）
+  phone        String   @default("")
+  address      String   @default("")
+  updatedAt    DateTime @updatedAt
+  updatedById  String?
+  updatedBy    User?    @relation("CompanyProfileUpdater", fields: [updatedById], references: [id])
 }
 
 // 系统更新 — 镜像源 URL + 上次检查时间
 model SystemMirror {
-  id              String   @id @default("1")
-  url             String   @default("")
-  lastCheckedAt   DateTime?
-  lastKnownVersion String  @default("")   // 上次检查返回的最新版本
-  lastManifestSha256 String @default("")  // manifest.json SHA256
-  lastSignatureValid Boolean?              // 签名校验结果（null=未校验）
-  lastChangelog   String   @default("")   // 上次 changelog
-  lastBackupFile  String   @default("")    // 更新前自动备份文件名
-  lastBackupAt    DateTime?
-  updatedAt       DateTime @updatedAt
-  updatedById     String?
-  updatedBy       User?    @relation("SystemMirrorUpdater", fields: [updatedById], references: [id])
+  id                 String    @id @default("1")
+  url                String    @default("")
+  lastCheckedAt      DateTime?
+  lastKnownVersion   String    @default("") // 上次检查返回的最新版本
+  lastManifestSha256 String    @default("") // manifest.json SHA256
+  lastSignatureValid Boolean? // 签名校验结果（null=未校验）
+  lastChangelog      String    @default("") // 上次 changelog
+  lastBackupFile     String    @default("") // 更新前自动备份文件名
+  lastBackupAt       DateTime?
+  updatedAt          DateTime  @updatedAt
+  updatedById        String?
+  updatedBy          User?     @relation("SystemMirrorUpdater", fields: [updatedById], references: [id])
 }
 
 // ============ 数据库维护日志 ============
 model MaintenanceLog {
-  id              String   @id @default(cuid())
-  tenantId        Int      @default(1)
-  type            String   // backup / migrate / restore / cleanup
-  status          String   @default("queued") // queued / running / completed / failed / cancelled
-  phase           String   @default("") // inventory / schema / data / completed
-  currentTable    String   @default("")
-  totalTables     Int      @default(0)
-  processedTables Int      @default(0)
-  estimatedRows   Int      @default(0)
-  fileName        String   @default("")
-  fileSize        Int      @default(0)
-  fileSha256      String   @default("")
-  errorMessage    String   @default("")
-  tableStatsJson  String   @default("{}") // { table: { rows, ok } }
-  eventsJson      String   @default("[]") // DatabaseMaintenanceEvent[]
+  id              String    @id @default(cuid())
+  tenantId        Int       @default(1)
+  type            String // backup / migrate / restore / cleanup
+  status          String    @default("queued") // queued / running / completed / failed / cancelled
+  phase           String    @default("") // inventory / schema / data / completed
+  currentTable    String    @default("")
+  totalTables     Int       @default(0)
+  processedTables Int       @default(0)
+  estimatedRows   Int       @default(0)
+  fileName        String    @default("")
+  fileSize        Int       @default(0)
+  fileSha256      String    @default("")
+  errorMessage    String    @default("")
+  tableStatsJson  String    @default("{}") // { table: { rows, ok } }
+  eventsJson      String    @default("[]") // DatabaseMaintenanceEvent[]
   actorId         String?
-  actor           User?    @relation("MaintenanceActor", fields: [actorId], references: [id])
-  createdAt       DateTime @default(now())
+  actor           User?     @relation("MaintenanceActor", fields: [actorId], references: [id])
+  createdAt       DateTime  @default(now())
   completedAt     DateTime?
 
   @@index([type, status])

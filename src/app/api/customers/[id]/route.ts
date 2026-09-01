@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { revealEncryptedContact } from '@/lib/contact-pii'
 
 /** 销售角色访问他人客户时返回 403 */
 function canAccessCustomer(user: { id: string; primaryRole: string }, ownerId: string | null): boolean {
@@ -42,7 +43,7 @@ export async function GET(
       orderBy: { createdAt: 'desc' },
       take: 30,
     })
-    return NextResponse.json({ success: true, data: { ...customer, activities } })
+    return NextResponse.json({ success: true, data: { ...customer, contacts: customer.contacts.map(revealEncryptedContact), activities } })
   } catch (error) {
     console.error('Customer GET error:', error)
     return NextResponse.json({ success: false, error: '获取客户详情失败' }, { status: 500 })

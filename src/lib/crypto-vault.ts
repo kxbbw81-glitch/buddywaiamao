@@ -10,8 +10,10 @@ const SALT = 'nexfab-ai-key-salt-v1'
 const KEY_LEN = 32
 
 function getKey(): Buffer {
-  const secret = process.env.AUTH_SECRET || 'nexfab-dev-secret-change-in-production'
-  return scryptSync(secret, SALT, KEY_LEN)
+  const secret = process.env.AUTH_SECRET
+  // 修复说明：[P0-密钥安全]，原因：生产环境缺少 AUTH_SECRET 时回退公开默认值会使 AI Provider 密钥可被离线解密；生产必须显式配置密钥。
+  if (!secret && process.env.NODE_ENV === 'production') throw new Error('AUTH_SECRET 未配置')
+  return scryptSync(secret || 'nexfab-dev-secret-change-in-production', SALT, KEY_LEN)
 }
 
 export function encrypt(plain: string): string {

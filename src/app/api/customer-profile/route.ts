@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { requireAuth, customerScopeWhere } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
+import { revealEncryptedContact } from '@/lib/contact-pii'
 
 /**
  * GET /api/customer-profile?customerId=xxx
@@ -84,7 +85,8 @@ export async function GET(request: NextRequest) {
   }
 
   // 联系人里的决策人
-  const decisionMakers = customer.contacts.filter((c) => c.isDecisionMaker)
+  const contacts = customer.contacts.map(revealEncryptedContact)
+  const decisionMakers = contacts.filter((c) => c.isDecisionMaker)
 
   const profile = {
     customer: {
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
       tags,
       aiProfile,
     },
-    contacts: customer.contacts.map((c) => ({
+    contacts: contacts.map((c) => ({
       id: c.id, name: c.name, email: c.email, phone: c.phone,
       whatsapp: c.whatsapp, position: c.position, isDecisionMaker: c.isDecisionMaker, notes: c.notes,
     })),
