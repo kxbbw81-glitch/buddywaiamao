@@ -8,10 +8,10 @@ export const metadata: Metadata = {
   title: 'NexFab AI 外贸 CRM',
   description: 'NexFab AI 外贸 CRM V2.0 正式前端基础平台',
   manifest: `${basePath}/manifest.webmanifest`,
-  icons: { icon: `${basePath}/icons/nexfab-icon.svg`, apple: `${basePath}/icons/nexfab-icon.svg` },
+  icons: { icon: `${basePath}/logo.svg`, apple: `${basePath}/logo.svg` },
 }
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#185fa5' }
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#2D2D2D' }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { api, ApiError } from '@/lib/api'
+import { NexFabMark } from '@/components/nexfab-mark'
 
 const demoAccounts = [
   ['admin', '默认管理员'],
@@ -42,7 +43,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       <Card className="w-full max-w-[460px]">
         <CardHeader>
           <div className="mb-3 flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-xs font-bold text-white">NF</div>
+            <NexFabMark iconClassName="h-10 w-10 rounded-xl" />
             <div>
               <CardTitle>NexFab AI 外贸 CRM</CardTitle>
               <p className="mt-1 text-xs text-muted">P0 正式前端基础平台</p>
