@@ -1,0 +1,63 @@
+import { createHmac, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto'
+import { promisify } from 'node:util'
+import { HttpError } from './http.mjs'
+
+const scrypt = promisify(scryptCallback)
+const SESSION_TTL_SECONDS = 60 * 60 * 8
+
+function secret() {
+  const value = process.env.SESSION_SECRET
+  if (!value || value.length < 32) throw new HttpError(503, 'SESSION_NOT_CONFIGURED', '会话服务尚未配置。')
+  return value
+}
+function encode(value) { return Buffer.from(JSON.stringify(value)).toString('base64url') }
+function sign(value) { return createHmac('sha256', secret()).update(value).digest('base64url') }
+
+export async function hashPassword(password) {
+  const salt = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  return `${salt}:${Buffer.from(await scrypt(password, salt, 64)).toString('hex')}`
+}
+
+export async function verifyPassword(password, hash) {
+  if (typeof password !== 'string' || typeof hash !== 'string') return false
+  const [salt, expected] = hash.split(':')
+  if (!salt || !expected) return false
+  const actual = Buffer.from(await scrypt(password, salt, 64)).toString('hex')
+  const left = Buffer.from(actual, 'hex'), right = Buffer.from(expected, 'hex')
+  return left.length === right.length && timingSafeEqual(left, right)
+}
+
+export function createSession(user) {
+  // 修复说明：[低危-会话安全]，原因：会话令牌无服务端撤销手段；payload 携带 tokenVersion，登出/改密递增后旧 token 全部失效（配套 server.mjs 校验与 User.tokenVersion 列）。
+  const payload = { sub: user.id, role: user.role, teamId: user.teamId || null, ver: user.tokenVersion ?? 0, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS }
+  const body = encode(payload)
+  return `${body}.${sign(body)}`
+}
+
+export function sessionFromRequest(req) {
+  const bearer = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
+  const cookie = req.headers.cookie?.split(';').map((part) => part.trim()).find((part) => part.startsWith('nexfab_session='))?.slice('nexfab_session='.length)
+  const token = bearer || cookie
+  if (!token) throw new HttpError(401, 'UNAUTHENTICATED', '需要登录会话。')
+  const [body, signature] = token.split('.')
+  const expected = Buffer.from(sign(body))
+  const received = Buffer.from(signature)
+  if (!body || !signature || expected.length !== received.length || !timingSafeEqual(expected, received)) throw new HttpError(401, 'INVALID_SESSION', '会话无效。')
+  let payload
+  try { payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) } catch { throw new HttpError(401, 'INVALID_SESSION', '会话无效。') }
+  if (!payload.sub || !payload.role || payload.exp <= Math.floor(Date.now() / 1000)) throw new HttpError(401, 'SESSION_EXPIRED', '会话已过期。')
+  return payload
+}
+
+export function sessionCookieSecureAttribute() {
+  const configured = process.env.SESSION_COOKIE_SECURE?.trim().toLowerCase()
+  // 修复说明：[P0-HTTP 会话]，原因：生产环境通过 HTTP IP 地址访问时，强制 Secure Cookie 会被浏览器拒收，表现为登录成功后立刻回到登录页；默认生产仍保持 Secure，仅允许显式配置为 false 以兼容临时 HTTP 入口。
+  if (configured === undefined || configured === '') return process.env.NODE_ENV === 'production' ? '; Secure' : ''
+  if (configured === 'true') return '; Secure'
+  if (configured === 'false') return ''
+  throw new HttpError(503, 'SESSION_COOKIE_CONFIG_INVALID', 'SESSION_COOKIE_SECURE 仅支持 true 或 false。')
+}
+
+export function sessionCookie(token) {
+  return `nexfab_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_TTL_SECONDS}${sessionCookieSecureAttribute()}`
+}

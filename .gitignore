@@ -61,3 +61,16 @@ server.log
 # local sqlite database (contains AI API keys, sessions, business data — never commit)
 db/*.db
 db/*.db-journal
+
+# NexFab V2 local/runtime artifacts
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+prisma/**/*.db
+prisma/**/*.db-journal
+backend/.env
+backend/node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/.next.predeploy.*/

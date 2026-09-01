@@ -102,3 +102,11 @@
 ### 部署备注
 - 本轮无新增数据库字段。
 - 若生产环境尚未同步 V7.22/V7.25 的 schema，正式部署前仍需备份 SQLite 并执行 `pnpm prisma db push`。
+
+## 2026-09-01 NexFab V2 正式部署与 VI 同步
+
+- 正式部署源码：`nexfab-v2-full-audit-repair-20260831`。
+- 线上入口：`http://47.98.101.249/new`。
+- 线上 release：`/opt/nexfab-ai-crm/releases/20260901160200-formal-current/nexfab-v2-full-audit-repair-20260831`。
+- 前端 VI：登录页、顶部栏与 PWA 图标统一为 NexFab 标识；主题色改为 NexFab 深灰，保留业务状态色。
+- 验证：frontend typecheck/build PASS；backend npm test/test:smoke/test:p0-login PASS；公网 `/new` 与 `/new/api/backend/health` PASS。
