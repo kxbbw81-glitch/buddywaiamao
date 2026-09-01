@@ -138,8 +138,8 @@ async function main() {
       opportunities: await source.opportunity.count(), quotes: await source.quote.count(), orders: await source.salesOrder.count(),
       payments: await source.orderPayment.count(), samples: await source.sampleRequest.count(), auditLogs: await source.auditLog.count(),
     }
-    const [users, customers, contacts, quotations, orders] = await targetCounts(target)
-    if (users || customers || contacts || quotations || orders) throw new Error('目标 SQLite 不是空库，拒绝覆盖已有数据')
+    const [targetUsers, targetCustomers, targetContacts, targetQuotations, targetOrders] = await targetCounts(target)
+    if (targetUsers || targetCustomers || targetContacts || targetQuotations || targetOrders) throw new Error('目标 SQLite 不是空库，拒绝覆盖已有数据')
     console.log(JSON.stringify({ mode: apply ? 'apply' : 'dry-run', source: sourceCounts, targetEmpty: true }))
     if (!apply) return
 
@@ -162,8 +162,8 @@ async function main() {
       for (const row of categories) await tx.productCategory.create({ data: { ...row } })
       for (const row of products) await tx.product.create({ data: { id: row.id, productCode: row.sku, name: row.name, categoryId: row.categoryId, specs: row.specs, packing: row.packing, costVersions: row.costVersions, isActive: row.active, createdAt: row.createdAt, updatedAt: row.updatedAt } })
       for (const row of docs) await tx.productDoc.create({ data: { ...row } })
-      for (const row of customers) await tx.customer.create({ data: { id: row.id, companyName: row.name, country: row.country, website: row.website, ownerId: row.ownerId, createdAt: row.createdAt, updatedAt: row.updatedAt } })
-      for (const row of contacts) {
+      for (const row of sourceCustomers) await tx.customer.create({ data: { id: row.id, companyName: row.name, country: row.country, website: row.website, ownerId: row.ownerId, createdAt: row.createdAt, updatedAt: row.updatedAt } })
+      for (const row of sourceContacts) {
         const email = decryptLegacyPii(row.emailCiphertext, row.email, legacyPiiSecret)
         const phone = decryptLegacyPii(row.phoneCiphertext, row.phone, legacyPiiSecret)
         await tx.contact.create({ data: { id: row.id, ...encryptedContact({ customerId: row.customerId, name: row.name, position: row.title, email, phone, createdAt: row.createdAt, updatedAt: row.createdAt }) } })
