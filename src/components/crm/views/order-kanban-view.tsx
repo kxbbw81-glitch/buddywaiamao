@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useCallback } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ClipboardCheck, Factory, Truck, CheckCircle, LayoutGrid } from 'lucide-react'
 import { differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -191,8 +191,6 @@ function OrderCard({ order, config, isGlobalDragging, overId }: {
           config.cardBorder,
           isCancelled && 'opacity-60'
         )}
-        role="button"
-        tabIndex={0}
         aria-label={`查看订单 ${order.orderNo} 的详情`}
         onKeyDown={(e) => {
           if (!isGlobalDragging && (e.key === 'Enter' || e.key === ' ')) {
@@ -220,7 +218,6 @@ function EmptyColumnState({ label }: { label: string }) {
 
 export function OrderKanbanView() {
   const { searchQuery, filters } = useCRMStore()
-  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['orders-kanban', searchQuery, filters],
@@ -266,17 +263,10 @@ export function OrderKanbanView() {
     const order = orders.find(o => o.id === itemId)
     if (!order) return
     const targetStatus = getColumnTargetStatus(columnKey as KanbanColumnKey, order.status)
-    const res = await fetch('/api/bulk-update-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entityType: 'order', id: itemId, status: targetStatus }),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.error || '更新失败')
-    }
-    queryClient.invalidateQueries({ queryKey: ['orders-kanban'] })
-  }, [orders, queryClient])
+    void itemId
+    void targetStatus
+    throw new Error('订单状态必须通过收款、单证和履约流程推进，不能在看板直接拖动')
+  }, [orders])
 
   const {
     sensors, activeId, overId, isDragging,

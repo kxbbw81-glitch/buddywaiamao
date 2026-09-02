@@ -131,8 +131,6 @@ function SortablePaymentCard({ item, col, isGlobalDragging, overId }: {
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       >
         <div
-          role="button"
-          tabIndex={0}
           className={cn(
             'kanban-card rounded-lg p-3 bg-card border cursor-grab active:cursor-grabbing hover:shadow-sm',
             isOverdue && 'border-l-[3px] border-l-rose-500',
@@ -181,11 +179,10 @@ export function PaymentKanbanView() {
     const item = allItems.find((p: PaymentRow) => p.id === itemId)
     if (!item) return
     const targetStatus = getColumnTargetStatus(columnKey, item.status)
-    const res = await fetch('/api/bulk-update-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entityType: 'payment', id: itemId, status: targetStatus }),
-    })
+    if (targetStatus !== 'completed') {
+      throw new Error('回款状态仅能由财务确认到账；其他状态请通过财务流程处理')
+    }
+    const res = await fetch(`/api/payments/${itemId}/confirm`, { method: 'POST' })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.error || '更新失败')

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Check, ChevronsUpDown } from 'lucide-react'
@@ -49,7 +49,7 @@ const PAYMENT_TERMS = [
 ]
 
 export function OrderFormDialog() {
-  const { orderFormOpen, closeOrderForm, currentUser, selectedCustomerId } = useCRMStore()
+  const { orderFormOpen, closeOrderForm } = useCRMStore()
   const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState<OrderForm>({ ...DEFAULT_FORM })
@@ -90,53 +90,15 @@ export function OrderFormDialog() {
   const selectedCustomer = customers.find((c: Record<string, unknown>) => c.id === form.customerId)
   const selectedQuotation = quotations.find((q: Record<string, unknown>) => q.id === form.quotationId)
 
-  // Auto-fill from quotation
-  useEffect(() => {
-    if (selectedQuotation) {
-      setForm((f) => ({
-        ...f,
-        quotationId: selectedQuotation.id as string,
-        totalAmount: selectedQuotation.totalAmount as number,
-        customerId: selectedQuotation.customerId as string || f.customerId,
-      }))
-    }
-  }, [selectedQuotation])
-
-  useEffect(() => {
-    if (!orderFormOpen) {
-      setForm({ ...DEFAULT_FORM })
-      return
-    }
-    if (selectedCustomerId) {
-      setForm((f) => ({ ...f, customerId: selectedCustomerId }))
-    }
-  }, [orderFormOpen, selectedCustomerId])
-
   const handleSubmit = async () => {
-    if (!form.customerId) {
-      toast.error('请选择客户')
-      return
-    }
-    if (form.totalAmount <= 0) {
-      toast.error('请输入有效金额')
+    if (!form.quotationId) {
+      toast.error('请选择已接受的关联报价')
       return
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch(`/api/orders/from-quote/${form.quotationId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerId: form.customerId,
-          quotationId: form.quotationId || undefined,
-          totalAmount: form.totalAmount,
-          currency: 'USD',
-          paymentTerm: form.paymentTerm,
-          deliveryDate: form.deliveryDate || undefined,
-          piNo: form.piNo || undefined,
-          notes: form.notes || undefined,
-          createdById: currentUser?.id,
-        }),
       })
       const data = await res.json()
       if (data.success) {
@@ -154,7 +116,12 @@ export function OrderFormDialog() {
   }
 
   return (
-    <Dialog open={orderFormOpen} onOpenChange={(v) => !v && closeOrderForm()}>
+    <Dialog open={orderFormOpen} onOpenChange={(v) => {
+      if (!v) {
+        setForm({ ...DEFAULT_FORM })
+        closeOrderForm()
+      }
+    }}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto crm-scrollbar">
         <DialogHeader>
           <DialogTitle>新建订单</DialogTitle>
@@ -211,7 +178,7 @@ export function OrderFormDialog() {
 
           {/* Quotation Select (optional) */}
           <div className="space-y-1.5">
-            <Label className="text-xs">关联报价（可选，自动填充金额）</Label>
+            <Label className="text-xs">关联报价（必填，仅已接受报价可转订单）</Label>
             <Popover open={quotationOpen} onOpenChange={setQuotationOpen}>
               <PopoverTrigger asChild>
                 <Button

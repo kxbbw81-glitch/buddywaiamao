@@ -153,8 +153,6 @@ function SortableQuotationCard({ item, col, isGlobalDragging, overId }: {
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       >
         <div
-          role="button"
-          tabIndex={0}
           className="kanban-card rounded-lg p-3 bg-card border cursor-grab active:cursor-grabbing hover:shadow-sm"
           onClick={() => !isGlobalDragging && selectQuotation(item.id)}
           onKeyDown={(e) => { if (!isGlobalDragging && (e.key === 'Enter' || e.key === ' ')) selectQuotation(item.id) }}
@@ -199,10 +197,10 @@ export function QuotationKanbanView() {
     const item = allItems.find((q: QuotationRow) => q.id === itemId)
     if (!item) return
     const targetStatus = getColumnTargetStatus(columnKey, item.status)
-    const res = await fetch('/api/bulk-update-status', {
-      method: 'POST',
+    const res = await fetch(`/api/quotations/${itemId}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entityType: 'quotation', id: itemId, status: targetStatus }),
+      body: JSON.stringify({ status: targetStatus }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
