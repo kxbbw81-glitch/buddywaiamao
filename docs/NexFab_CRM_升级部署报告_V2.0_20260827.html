@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NexFab CRM V2.0 登录修复发布报告（2026-08-27）</title>
+  <style>
+    body{margin:0;background:#f4f7fb;color:#172033;font:15px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}.wrap{max-width:960px;margin:32px auto;padding:0 20px}.card{background:#fff;border:1px solid #e5eaf2;border-radius:14px;padding:24px;margin:16px 0;box-shadow:0 4px 18px #1d36520a}h1{margin:0 0 8px;font-size:27px}h2{font-size:18px;margin:0 0 10px}.ok{color:#087443;font-weight:700}.meta{color:#667085}code{background:#f2f5f9;padding:2px 5px;border-radius:4px}table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #edf0f4;text-align:left;vertical-align:top}th{color:#526071;background:#f8fafc}
+  </style>
+</head>
+<body><main class="wrap">
+  <section class="card"><h1>NexFab CRM V2.0 登录修复发布报告</h1><p class="meta">发布日期：2026-08-27　|　范围：管理员别名登录恢复与发布闭环</p><p class="ok">结论：PASS — GitHub 与阿里云生产环境已同步，线上关键路径通过。</p></section>
+  <section class="card"><h2>发布基线</h2><table><tr><th>项目</th><th>证据</th></tr><tr><td>GitHub main</td><td><code>9b44dfb7e3ef08b9700ee56fec040948b6600661</code></td></tr><tr><td>生产 release</td><td><code>/opt/nexfab-ai-crm/releases/20260827123000-auth-alias</code></td></tr><tr><td>回滚备份</td><td><code>/opt/nexfab-ai-crm/backups/20260827123000-auth-alias</code>，含 PostgreSQL 发布前备份及校验值。</td></tr></table></section>
+  <section class="card"><h2>变更内容</h2><ul><li>登录接口同时支持账号别名与邮箱；<code>admin</code> 仅映射到唯一启用管理员，多个启用管理员时明确拒绝并要求配置。</li><li>前端登录表单改为“账号 / 邮箱”，不会保存明文密码。</li><li>新增管理员登录修复脚本：默认只读，写入必须显式确认；密码只以哈希方式保存。</li><li>新增登录回归测试，覆盖邮箱、管理员别名、普通账号、会话、无效账号与歧义管理员场景。</li></ul></section>
+  <section class="card"><h2>验证结果</h2><table><tr><th>检查</th><th>结果</th></tr><tr><td>本地</td><td><code>test:p0-login</code>、既有后端冒烟、Phase 1 安全检查及前端生产构建均通过。</td></tr><tr><td>生产服务</td><td><code>nexfab-ai-crm</code>、<code>nexfab-v2-frontend</code>、<code>nginx</code>、<code>goodjob-crm-original</code> 均为 active。</td></tr><tr><td>公网</td><td><code>/</code> 最终到 <code>/new</code> 为 200；<code>/new</code>、<code>/original/</code>、<code>/new/api/backend/ready</code> 均为 200。</td></tr><tr><td>管理员条件</td><td>只读检查确认目标管理员存在且启用，并且当前仅有一个启用管理员，可安全使用别名。</td></tr></table></section>
+  <section class="card"><h2>边界与回滚</h2><p>本次未接入外部 AI、邮件、社媒或其他渠道；AI 仍处于 disabled 状态。发生异常时，将 <code>/opt/nexfab-ai-crm/current</code> 指回备份中记录的上一 release，并恢复对应 Nginx 与服务配置后重载服务。</p></section>
+</main></body></html>

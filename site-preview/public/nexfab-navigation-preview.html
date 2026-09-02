@@ -1,0 +1,3334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexFab AI 外贸 CRM · 导航优化预览 V3.12</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6f8; color: #1f2937; font-size: 14px; overflow: hidden;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    height: 56px; background: #fff; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; position: relative; z-index: 10;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 30px; height: 30px; border-radius: 8px; background: #185FA5;
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 13px; letter-spacing: -0.5px;
+  }
+  .logo-text { font-weight: 600; font-size: 15px; }
+  .logo-tag {
+    font-size: 11px; color: #185FA5; background: #E6F1FB;
+    padding: 2px 8px; border-radius: 10px; font-weight: 500;
+  }
+  .header-controls { display: flex; align-items: center; gap: 12px; }
+
+  .role-switch { display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; gap: 2px; }
+  .role-btn {
+    border: none; background: transparent; padding: 5px 12px; border-radius: 6px;
+    font-size: 12px; color: #6b7280; cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .role-btn:hover { color: #1f2937; }
+  .role-btn.active { background: #fff; color: #185FA5; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+  .compare-btn {
+    border: 1px solid #d1d5db; background: #fff; color: #374151;
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all .15s;
+  }
+  .compare-btn:hover { border-color: #185FA5; color: #185FA5; }
+  .compare-btn.on { background: #185FA5; border-color: #185FA5; color: #fff; }
+
+  /* ===== Layout ===== */
+  .main { display: flex; height: calc(100% - 56px); }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: 232px; background: #fff; border-right: 1px solid #e5e7eb;
+    display: flex; flex-direction: column; flex-shrink: 0;
+    transition: width .2s;
+  }
+  .sidebar-scroll { flex: 1; overflow-y: auto; padding: 8px; }
+  .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+  .sidebar-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+  .nav-group { margin-bottom: 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: 8px; cursor: pointer; color: #374151; transition: background .12s;
+    user-select: none; position: relative;
+  }
+  .nav-item:hover { background: #f3f4f6; }
+  .nav-item.active { background: #E6F1FB; color: #185FA5; font-weight: 500; }
+  .nav-item.expanded { background: #f8fafc; }
+  .nav-icon { width: 17px; height: 17px; flex-shrink: 0; display: flex; }
+  .nav-icon svg { width: 100%; height: 100%; }
+  .nav-label { flex: 1; font-size: 13px; }
+  .nav-badge {
+    min-width: 18px; height: 16px; border-radius: 8px; color: #fff;
+    font-size: 10px; display: flex; align-items: center; justify-content: center;
+    padding: 0 5px; font-weight: 500;
+  }
+  .badge-red { background: #E24B4A; }
+  .badge-blue { background: #378ADD; }
+  .badge-amber { background: #EF9F27; }
+  .nav-arrow {
+    width: 8px; height: 8px; border-right: 1.5px solid #9ca3af; border-bottom: 1.5px solid #9ca3af;
+    transform: rotate(-45deg); transition: transform .15s; flex-shrink: 0; margin-right: 2px;
+  }
+  .nav-item.expanded .nav-arrow { transform: rotate(45deg); }
+
+  .sub-list { overflow: hidden; max-height: 0; transition: max-height .2s ease; }
+  .sub-list.open { max-height: 220px; }
+  .sub-item {
+    display: flex; align-items: center; padding: 6px 12px 6px 40px;
+    font-size: 12px; color: #6b7280; cursor: pointer; border-radius: 6px;
+    margin: 1px 8px 1px 4px; transition: all .12s; position: relative;
+  }
+  .sub-item:hover { background: #f3f4f6; color: #374151; }
+  .sub-item.active { background: #E6F1FB; color: #185FA5; font-weight: 500; }
+  .sub-item .nav-badge { height: 14px; min-width: 16px; font-size: 9px; }
+  .sub-ai {
+    font-size: 9px; color: #534AB7; background: #EEEDFE; padding: 1px 5px;
+    border-radius: 4px; font-weight: 500; margin-left: 6px; flex-shrink: 0;
+  }
+
+  .sidebar-footer { border-top: 1px solid #e5e7eb; padding: 10px 8px; }
+  .ai-assistant-btn {
+    width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: linear-gradient(135deg, #EEEDFE, #f6f5ff); border: 1px solid #AFA9EC;
+    border-radius: 10px; cursor: pointer; color: #534AB7; font-size: 13px; font-weight: 500;
+    transition: all .15s;
+  }
+  .ai-assistant-btn:hover { background: #EEEDFE; }
+  .ai-assistant-btn .spark { width: 16px; height: 16px; }
+  .ai-assistant-btn .ai-hint { margin-left: auto; font-size: 10px; color: #7F77DD; font-weight: 400; }
+
+  /* ===== Content ===== */
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+  .page-head { margin-bottom: 20px; }
+  .breadcrumb { font-size: 12px; color: #9ca3af; margin-bottom: 6px; }
+  .page-title { font-size: 20px; font-weight: 600; color: #111827; }
+  .page-desc { font-size: 13px; color: #6b7280; margin-top: 6px; line-height: 1.6; max-width: 640px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .kpi-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px;
+  }
+  .kpi-label { font-size: 12px; color: #6b7280; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 600; color: #111827; }
+  .kpi-foot { font-size: 11px; color: #9ca3af; margin-top: 6px; }
+  .kpi-foot .up { color: #E24B4A; }
+  .kpi-foot .down { color: #0F6E56; }
+
+  .panel-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; }
+  .panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; }
+  .panel-title { font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .panel-title .more { font-size: 12px; color: #185FA5; font-weight: 400; cursor: pointer; }
+
+  .task-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-pri {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  }
+  .pri-red { background: #E24B4A; } .pri-blue { background: #378ADD; } .pri-gray { background: #d1d5db; } .pri-amber { background: #EF9F27; }
+  .task-body { flex: 1; min-width: 0; }
+  .task-name { font-size: 13px; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task-meta { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+  .task-meta .overdue { color: #E24B4A; }
+  .task-act {
+    font-size: 11px; color: #185FA5; background: #E6F1FB; border: none;
+    padding: 4px 10px; border-radius: 6px; cursor: pointer; flex-shrink: 0;
+  }
+
+  .approval-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .approval-item:last-child { border-bottom: none; }
+  .approval-type {
+    font-size: 11px; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; font-weight: 500;
+  }
+  .type-quote { color: #854F0B; background: #FAEEDA; }
+  .type-order { color: #0C447C; background: #E6F1FB; }
+  .type-risk { color: #A32D2D; background: #FCEBEB; }
+  .approval-body { flex: 1; min-width: 0; }
+  .approval-name { font-size: 13px; color: #111827; }
+  .approval-meta { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+  .ai-risk {
+    font-size: 10px; color: #A32D2D; background: #FCEBEB; padding: 1px 6px;
+    border-radius: 4px; margin-left: 6px;
+  }
+
+  /* ===== V3.8 工作台最终设计方案 ===== */
+  .atmo-bar { display:flex; align-items:center; background:#fff; border:1px solid #e5e7eb; border-radius:10px; height:42px; margin-bottom:14px; overflow:hidden; font-size:12px; }
+  .atmo-quote { flex:1; min-width:160px; overflow:hidden; position:relative; height:100%; display:flex; align-items:center; color:#6b7280; }
+  .atmo-quote .marquee { position:absolute; white-space:nowrap; animation:marquee 18s linear infinite; }
+  @keyframes marquee { 0% { left:100%; } 100% { left:-100%; } }
+  .atmo-item { padding:0 14px; border-left:1px solid #f0f1f3; color:#6b7280; display:flex; align-items:center; gap:6px; white-space:nowrap; height:100%; }
+  .atmo-item b { font-weight:600; color:#374151; }
+  .atmo-item.hot { background:#FDF3F3; color:#A32D2D; }
+  .atmo-item.hot b { color:#A32D2D; }
+  .atmo-select { border:1px solid #d1d5db; border-radius:6px; font-size:11px; padding:2px 4px; color:#374151; background:#fff; font-family:inherit; outline:none; cursor:pointer; }
+  .atmo-hint { font-size:12px; color:#A32D2D; background:#FDF3F3; border:1px solid #F0B9B8; border-radius:8px; padding:7px 12px; margin-bottom:14px; display:none; line-height:1.6; }
+  .atmo-hint.show { display:block; }
+
+  .cap-row { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .cap { flex:1; min-width:200px; display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:12px; border:1px solid; cursor:pointer; position:relative; background:#fff; transition:transform .12s; }
+  .cap:hover { transform:translateY(-1px); }
+  .cap-emoji { font-size:22px; }
+  .cap-num { font-size:24px; font-weight:700; color:#111827; line-height:1; }
+  .cap-label { font-size:12px; color:#374151; }
+  .cap-sub { font-size:11px; color:#9ca3af; margin-top:3px; }
+  .cap-yellow { border-color:#F3D9A4; background:#FFFBF2; }
+  .cap-red { border-color:#F0B9B8; background:#FEF6F6; }
+  .cap-blue { border-color:#B9DCF5; background:#F5FAFE; }
+  .cap-green { border-color:#B9E2D3; background:#F4FBF8; }
+  .breath::after { content:''; position:absolute; top:8px; right:8px; width:8px; height:8px; border-radius:50%; background:#E24B4A; animation:breath 1.6s ease-in-out infinite; }
+  @keyframes breath { 0%,100% { opacity:.3; box-shadow:0 0 0 0 rgba(226,75,74,.45); } 50% { opacity:1; box-shadow:0 0 0 6px rgba(226,75,74,0); } }
+
+  .kpi-delta { font-size:13px; font-weight:600; }
+  .kpi-delta.up { color:#E24B4A; } .kpi-delta.down { color:#0F6E56; }
+  .spark { margin-top:8px; display:block; }
+  .scope-tag { font-size:10px; color:#9ca3af; background:#f3f4f6; border-radius:4px; padding:1px 6px; font-weight:400; margin-left:6px; }
+
+  .funnel-row { display:grid; grid-template-columns:1fr 118px; gap:12px; align-items:center; }
+  .funnel-wrap { display:flex; justify-content:center; }
+  .funnel-bar { height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; }
+  .fb-line { font-size:11px; opacity:.95; display:flex; gap:8px; align-items:baseline; }
+  .fb-amt { font-size:15px; font-weight:700; }
+  .funnel-conv { display:flex; flex-direction:column; gap:3px; font-size:11px; color:#9ca3af; }
+  .fc-pill { display:inline-flex; align-items:center; background:#f3f4f6; border-radius:10px; padding:2px 9px; width:max-content; color:#374151; font-weight:500; }
+  .dev-up { color:#0F6E56; font-weight:600; } .dev-down { color:#E24B4A; font-weight:600; }
+  .funnel-sum { margin-top:12px; padding:9px 14px; background:#FFFBF2; border:1px solid #F3D9A4; border-radius:10px; font-size:12px; color:#374151; }
+  .funnel-sum b { color:#854F0B; }
+
+  .stage-row { display:grid; grid-template-columns:44px 1fr 110px; gap:10px; align-items:center; padding:5px 0; font-size:12px; color:#374151; }
+  .stage-track { height:10px; background:#f3f4f6; border-radius:5px; overflow:hidden; }
+  .stage-fill { height:100%; border-radius:5px; background:#A8C5E8; }
+  .stage-fill.warn { background:#EF9F27; }
+  .stage-days { text-align:right; color:#6b7280; }
+  .stage-days .warn { color:#B45309; font-weight:600; }
+
+  .news-item { padding:10px 0; border-bottom:1px solid #f3f4f6; }
+  .news-item:last-child { border-bottom:none; }
+  .news-tag { font-size:10px; padding:1px 7px; border-radius:4px; font-weight:500; margin-right:8px; vertical-align:1px; }
+  .tag-policy { color:#A32D2D; background:#FCEBEB; }
+  .tag-industry { color:#854F0B; background:#FAEEDA; }
+  .tag-biz { color:#0F6E56; background:#DFF2EC; }
+  .tag-fx { color:#0C447C; background:#E6F1FB; }
+  .tag-sys { color:#4B5563; background:#f3f4f6; }
+  .news-title { font-size:13px; color:#111827; }
+  .news-meta { font-size:11px; color:#9ca3af; margin-top:3px; }
+
+  .fx-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .fx-card { border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; }
+  .fx-pair { font-size:11px; color:#6b7280; display:flex; justify-content:space-between; }
+  .fx-rate { font-size:16px; font-weight:600; margin-top:4px; display:flex; align-items:baseline; justify-content:space-between; color:#111827; }
+  .fx-chg { font-size:11px; font-weight:600; }
+  .fx-chg.up { color:#E24B4A; } .fx-chg.down { color:#0F6E56; }
+
+  .map-wrap { position:relative; height:230px; background:linear-gradient(180deg,#F7FAFD,#F0F5FA); border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
+  .map-grid { position:absolute; inset:0; background-image:radial-gradient(#d6dfe9 1px, transparent 1px); background-size:22px 22px; opacity:.6; }
+  .map-bubble { position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+  .map-dot { border-radius:50%; background:rgba(24,95,165,.85); display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:600; box-shadow:0 0 0 5px rgba(24,95,165,.14); }
+  .map-dot.risk { background:rgba(239,159,39,.92); box-shadow:0 0 0 5px rgba(239,159,39,.16); }
+  .map-lbl { font-size:10px; color:#374151; margin-top:5px; background:rgba(255,255,255,.88); padding:1px 6px; border-radius:6px; white-space:nowrap; }
+  .map-legend { display:flex; gap:16px; font-size:11px; color:#6b7280; margin-top:10px; align-items:center; }
+
+  .role-mod-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .role-mod-card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px 14px; cursor:pointer; transition:border-color .12s; }
+  .role-mod-card:hover { border-color:#85B7EB; }
+  .rm-badge { font-size:10px; padding:1px 7px; border-radius:4px; font-weight:500; display:inline-block; margin-bottom:6px; }
+  .rm-sales { color:#9A5B00; background:#FAEEDA; }
+  .rm-manager { color:#534AB7; background:#EEEDFE; }
+  .rm-finance { color:#0F6E56; background:#DFF2EC; }
+  .rm-exec { color:#A32D2D; background:#FCEBEB; }
+  .rm-admin { color:#4B5563; background:#f3f4f6; }
+  .rm-name { font-size:13px; font-weight:600; color:#111827; }
+  .rm-desc { font-size:11px; color:#9ca3af; margin-top:4px; line-height:1.6; }
+
+  .quick-ops { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .qo-search { flex:1; min-width:220px; display:flex; align-items:center; gap:8px; border:1px solid #d1d5db; border-radius:8px; padding:8px 12px; background:#fff; }
+  .qo-search input { border:none; outline:none; flex:1; font-size:13px; font-family:inherit; background:transparent; }
+  .qo-btn { border:1px solid #d1d5db; background:#fff; border-radius:8px; padding:8px 14px; font-size:12px; color:#374151; cursor:pointer; font-family:inherit; transition:all .12s; }
+  .qo-btn:hover { border-color:#185FA5; color:#185FA5; }
+  .qo-ch { display:flex; gap:8px; margin-top:12px; }
+
+  /* module blueprint page */
+  .blueprint { max-width: 760px; }
+  .bp-intro {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 20px 22px; margin-bottom: 14px;
+  }
+  .bp-intro h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .bp-intro p { font-size: 13px; color: #6b7280; line-height: 1.7; }
+  .bp-intro .merge-info {
+    margin-top: 10px; font-size: 12px; color: #185FA5; background: #E6F1FB;
+    padding: 6px 12px; border-radius: 6px; display: inline-block;
+  }
+
+  .bp-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .bp-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px;
+    cursor: pointer; transition: border-color .15s;
+  }
+  .bp-card:hover { border-color: #85B7EB; }
+  .bp-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .bp-card-title { font-size: 14px; font-weight: 600; color: #111827; flex: 1; }
+  .bp-card p { font-size: 12px; color: #6b7280; line-height: 1.7; }
+  .bp-ai {
+    margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e5e7eb;
+    font-size: 11px; color: #534AB7; line-height: 1.7;
+  }
+  .bp-ai b { font-weight: 500; }
+
+  /* ===== Quick Quote (秒报价) ===== */
+  .qq-form { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .qq-row { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .qq-field { flex: 1; min-width: 170px; }
+  .qq-field label { font-size: 12px; color: #6b7280; display: block; margin-bottom: 6px; }
+  .qq-field select, .qq-field input {
+    width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px;
+    font-size: 13px; outline: none; font-family: inherit; background: #fff; color: #1f2937;
+  }
+  .qq-field select:focus, .qq-field input:focus { border-color: #185FA5; }
+  .qq-term { display: flex; gap: 6px; }
+  .qq-term button {
+    flex: 1; padding: 8px 0; border: 1px solid #d1d5db; background: #fff; border-radius: 8px;
+    font-size: 12px; cursor: pointer; color: #6b7280; transition: all .12s; font-family: inherit;
+  }
+  .qq-term button.on { border-color: #185FA5; color: #185FA5; background: #E6F1FB; font-weight: 500; }
+  .qq-run {
+    background: #185FA5; color: #fff; border: none; padding: 10px 24px; border-radius: 8px;
+    font-size: 13px; cursor: pointer; font-weight: 500; font-family: inherit; transition: background .15s;
+  }
+  .qq-run:hover { background: #124a82; }
+  .qq-timer { font-size: 12px; color: #9ca3af; margin-left: 10px; }
+  .qq-result { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; }
+  .qq-loading { text-align: center; padding: 36px 0; color: #6b7280; font-size: 13px; }
+  .qq-price { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; }
+  .qq-price .big { font-size: 30px; font-weight: 600; color: #111827; }
+  .qq-price .unit { font-size: 13px; color: #6b7280; }
+  .qq-meta { font-size: 11px; color: #9ca3af; }
+  .cost-bar { height: 8px; border-radius: 4px; background: #f3f4f6; overflow: hidden; display: flex; margin: 8px 0 4px; }
+  .cost-bar span { height: 100%; }
+  .cost-legend { font-size: 11px; color: #6b7280; line-height: 1.9; }
+  .cost-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .qq-ai {
+    margin-top: 14px; padding: 12px 14px; background: #EEEDFE; border-radius: 10px;
+    font-size: 12px; color: #534AB7; line-height: 1.8;
+  }
+  .qq-ai b { font-weight: 600; }
+  .qq-actions { display: flex; gap: 10px; margin-top: 14px; align-items: center; }
+  .qq-gen {
+    background: #534AB7; color: #fff; border: none; padding: 9px 20px; border-radius: 8px;
+    font-size: 12px; cursor: pointer; font-weight: 500; font-family: inherit;
+  }
+  .qq-gen.gray { background: #374151; }
+  .qq-done { font-size: 12px; color: #0F6E56; }
+
+  /* ===== Product KB (产品知识库) ===== */
+  .pim-wrap { display: flex; gap: 14px; align-items: flex-start; }
+  .pim-tree {
+    width: 216px; flex-shrink: 0; background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 12px; padding: 14px 10px;
+  }
+  .pim-tree-title { font-size: 12px; font-weight: 600; color: #111827; padding: 0 8px 10px; }
+  .pim-cat { font-size: 12px; font-weight: 500; color: #374151; padding: 7px 8px; border-radius: 6px; display: flex; justify-content: space-between; cursor: pointer; }
+  .pim-cat:hover { background: #f3f4f6; }
+  .pim-cat.on { background: #E6F1FB; color: #185FA5; font-weight: 600; }
+  .pim-cat .n { color: #9ca3af; font-size: 11px; }
+  .pim-fam { font-size: 12px; color: #6b7280; padding: 5px 8px 5px 24px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; }
+  .pim-fam:hover { background: #f3f4f6; }
+  .pim-fam.on { background: #E6F1FB; color: #185FA5; }
+  .pim-fam .n { color: #9ca3af; font-size: 11px; }
+  .pim-main { flex: 1; min-width: 0; }
+  .pim-list { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 6px 14px 14px; }
+  .pim-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .pim-table th { text-align: left; color: #9ca3af; font-weight: 500; padding: 10px 8px 8px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
+  .pim-table td { padding: 9px 8px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+  .pim-table tr.row { cursor: pointer; }
+  .pim-table tr.row:hover td { background: #f8fafc; }
+  .pim-table tr.sel td { background: #E6F1FB; }
+  .pim-sku { font-weight: 600; color: #111827; font-family: ui-monospace, monospace; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap; }
+  .pill-ok { background: #E7F4EF; color: #0F6E56; }
+  .pill-warn { background: #FBEFDD; color: #9A6B15; }
+  .pill-miss { background: #FDECEC; color: #B42318; }
+  .pim-detail { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
+  .pim-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .pim-detail-head b { font-size: 14px; color: #111827; }
+  .pim-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .pim-cell { background: #f8fafc; border-radius: 8px; padding: 10px 12px; }
+  .pim-cell .k { font-size: 11px; color: #9ca3af; margin-bottom: 3px; }
+  .pim-cell .v { font-size: 13px; color: #111827; font-weight: 500; }
+  .pim-docs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pim-doc { font-size: 11px; padding: 4px 10px; border: 1px solid #e5e7eb; border-radius: 6px; color: #374151; }
+  .pim-doc.stale { border-color: #F1C8C4; color: #B42318; background: #FDF3F2; }
+  .rag-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; }
+  .rag-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .rag-chip {
+    border: 1px solid #d1d5db; background: #fff; border-radius: 16px; padding: 6px 14px;
+    font-size: 12px; color: #374151; cursor: pointer; font-family: inherit; transition: all .12s;
+  }
+  .rag-chip:hover { border-color: #534AB7; color: #534AB7; }
+  .rag-chip.on { background: #EEEDFE; border-color: #534AB7; color: #534AB7; font-weight: 500; }
+  .rag-q { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 10px; }
+  .rag-a { font-size: 12.5px; color: #374151; line-height: 1.9; background: #f3f4f6; border-radius: 4px 12px 12px 12px; padding: 12px 16px; }
+  .rag-a b { color: #111827; }
+  .rag-cite { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #d1d5db; font-size: 11px; color: #6b7280; }
+  .rag-cite .c { display: inline-block; margin: 2px 8px 2px 0; padding: 2px 10px; background: #EEEDFE; color: #534AB7; border-radius: 6px; cursor: pointer; }
+  .rag-none { font-size: 12.5px; color: #B42318; line-height: 1.9; background: #FDF3F2; border: 1px solid #F1C8C4; border-radius: 4px 12px 12px 12px; padding: 12px 16px; }
+  .rag-note { margin-top: 12px; font-size: 11px; color: #9ca3af; }
+
+  /* ===== Pipeline (销售管道) ===== */
+  .pl-funnel { display: flex; gap: 8px; margin-bottom: 14px; }
+  .pl-fstep { flex: 1; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; position: relative; }
+  .pl-fstep .n { font-size: 20px; font-weight: 600; color: #0F6E56; }
+  .pl-fstep .t { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .pl-fstep .r { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+  .pl-board { display: flex; gap: 10px; align-items: flex-start; }
+  .pl-col { flex: 1; min-width: 0; background: #F6F7F9; border-radius: 12px; padding: 10px; }
+  .pl-col-head { font-size: 12px; font-weight: 600; color: #374151; padding: 2px 4px 8px; display: flex; justify-content: space-between; }
+  .pl-col-head .n { color: #9ca3af; font-weight: 500; }
+  .pl-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
+  .pl-card:hover { border-color: #185FA5; }
+  .pl-card.sel { border-color: #185FA5; box-shadow: 0 0 0 2px #E6F1FB; }
+  .pl-card .cust { font-size: 12.5px; font-weight: 600; color: #111827; display: flex; justify-content: space-between; align-items: center; }
+  .pl-card .prod { font-size: 11px; color: #6b7280; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pl-card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
+  .pl-card .amt { font-size: 12px; font-weight: 600; color: #0F6E56; }
+  .pl-days { font-size: 10px; color: #9ca3af; }
+  .pl-days.late { color: #B42318; font-weight: 600; }
+  .pl-prob { font-size: 10px; color: #534AB7; background: #EEEDFE; padding: 1px 6px; border-radius: 8px; }
+  .pl-detail { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
+  .pl-ctx { display: flex; gap: 26px; flex-wrap: wrap; padding: 10px 0 12px; border-bottom: 1px dashed #e5e7eb; }
+  .pl-ctx .item .k { font-size: 10px; color: #9ca3af; }
+  .pl-ctx .item .v { font-size: 12.5px; color: #111827; font-weight: 500; margin-top: 2px; }
+  .pl-timeline { font-size: 12px; color: #374151; line-height: 2; }
+  .pl-timeline .d { color: #9ca3af; margin-right: 8px; }
+  .pl-adv { background: #534AB7; color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 500; font-family: inherit; }
+  .pl-adv:disabled { background: #d1d5db; cursor: not-allowed; }
+
+  /* ===== AI Agent 演示 ===== */
+  .ag-grid { display: grid; grid-template-columns: 250px 1fr; gap: 14px; align-items: start; }
+  .ag-side { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; }
+  .ag-side h4 { font-size: 11px; color: #9ca3af; font-weight: 600; margin: 12px 0 8px; letter-spacing: .04em; }
+  .ag-side h4:first-child { margin-top: 0; }
+  .ag-new { width: 100%; background: #534AB7; color: #fff; border: none; border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .ag-cap { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #374151; padding: 6px 8px; border-radius: 8px; background: #F6F7F9; margin-bottom: 6px; }
+  .ag-cap b { font-size: 10px; color: #9ca3af; font-weight: 500; }
+  .ag-quick { width: 100%; text-align: left; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 9px; font-size: 11.5px; color: #374151; cursor: pointer; margin-bottom: 6px; font-family: inherit; }
+  .ag-quick:hover { border-color: #534AB7; color: #534AB7; }
+  .ag-main { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; }
+  .ag-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #f3f4f6; }
+  .ag-head .who { display: flex; gap: 10px; align-items: center; }
+  .ag-head .ava { width: 34px; height: 34px; border-radius: 9px; background: #534AB7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .ag-head .who b { font-size: 13.5px; color: #111827; display: block; }
+  .ag-head .who small { font-size: 11px; color: #6b7280; }
+  .ag-msgs { padding: 14px 0; min-height: 120px; }
+  .ag-bubble { max-width: 86%; font-size: 12.5px; line-height: 1.75; color: #263247; }
+  .ag-row { display: flex; gap: 9px; margin-bottom: 12px; }
+  .ag-row.self { justify-content: flex-end; }
+  .ag-row .mini-ava { flex: none; width: 24px; height: 24px; border-radius: 7px; background: #EEEDFE; color: #534AB7; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .ag-row.self .bub { background: #185FA5; color: #fff; }
+  .ag-row .bub { background: #F6F7F9; border-radius: 10px; padding: 10px 13px; }
+  .ag-steps { margin-top: 6px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+  .ag-step { display: flex; align-items: center; gap: 9px; padding: 8px 12px; font-size: 12px; color: #374151; border-bottom: 1px solid #f3f4f6; background: #fff; }
+  .ag-step:last-child { border-bottom: none; }
+  .ag-step .st { flex: none; width: 16px; height: 16px; border-radius: 50%; font-size: 9px; display: flex; align-items: center; justify-content: center; background: #f3f4f6; color: #9ca3af; }
+  .ag-step.done .st { background: #0F6E56; color: #fff; }
+  .ag-step.run .st { background: #534AB7; color: #fff; animation: agpulse 1s infinite; }
+  .ag-step.wait .st { background: #f3f4f6; color: #9ca3af; }
+  @keyframes agpulse { 50% { opacity: .5; } }
+  .ag-step .meta { margin-left: auto; font-size: 10.5px; color: #9ca3af; }
+  .ag-approve { background: #FEF0C7; border: 1px solid #F5D689; border-radius: 8px; padding: 9px 12px; font-size: 11.5px; color: #854F0B; display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .ag-approve button { background: #854F0B; color: #fff; border: none; border-radius: 6px; padding: 5px 12px; font-size: 11px; cursor: pointer; font-family: inherit; }
+  .ag-note { font-size: 11px; color: #9ca3af; margin-top: 12px; line-height: 1.8; }
+
+  /* ===== 工具中心（名片 OCR）演示 ===== */
+  .tc-grid { display: grid; grid-template-columns: 200px 1fr; gap: 14px; align-items: start; }
+  .tc-list { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; }
+  .tc-item { display: flex; gap: 9px; align-items: center; padding: 9px 10px; border-radius: 9px; font-size: 12px; color: #374151; cursor: pointer; margin-bottom: 4px; }
+  .tc-item:hover { background: #F6F7F9; }
+  .tc-item.on { background: #EEEDFE; color: #534AB7; font-weight: 600; }
+  .tc-mark { flex: none; width: 34px; height: 24px; border-radius: 6px; background: #111827; color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .tc-badge { margin-left: auto; font-size: 9.5px; padding: 1px 7px; border-radius: 8px; background: #f3f4f6; color: #6b7280; }
+  .tc-badge.ok { background: #E6F4EF; color: #0F6E56; }
+  .tc-main { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; }
+  .tc-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .tc-stat { background: #F6F7F9; border-radius: 10px; padding: 11px 13px; }
+  .tc-stat span { font-size: 10.5px; color: #6b7280; display: block; }
+  .tc-stat b { font-size: 15px; color: #111827; font-weight: 600; margin-top: 3px; display: block; }
+  .tc-upload { border: 2px dashed #d1d5db; border-radius: 12px; padding: 26px; text-align: center; color: #9ca3af; font-size: 12px; cursor: pointer; transition: border-color .15s; }
+  .tc-upload:hover { border-color: #534AB7; }
+  .tc-upload .btn { margin-top: 10px; background: #534AB7; color: #fff; border: none; padding: 8px 22px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .tc-fields { margin-top: 12px; }
+  .tc-field { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid #f3f4f6; font-size: 12.5px; }
+  .tc-field .k { flex: none; width: 90px; color: #9ca3af; font-size: 11px; }
+  .tc-field .v { color: #111827; font-weight: 500; }
+  .tc-field .conf { margin-left: auto; font-size: 10px; padding: 1px 8px; border-radius: 8px; background: #E6F4EF; color: #0F6E56; }
+  .tc-field .conf.low { background: #FEF0C7; color: #854F0B; }
+  .tc-sync { margin-top: 12px; background: #F6F7F9; border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #374151; display: flex; align-items: center; gap: 12px; }
+  .tc-sync button { background: #0F6E56; color: #fff; border: none; padding: 7px 16px; border-radius: 8px; font-size: 11.5px; cursor: pointer; font-family: inherit; }
+  .tc-fx { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .tc-fx input, .tc-fx select { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; font-family: inherit; width: 130px; }
+  .tc-fx .res { font-size: 13px; font-weight: 600; color: #0F6E56; }
+
+  /* ===== 系统管理（AI 配置 / 系统设置 / 数据库维护，移植自 GoodJob） ===== */
+  .sys-prov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+  .sys-prov { border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 11px 12px; cursor: pointer; background: #fff; transition: border-color .15s, box-shadow .15s; }
+  .sys-prov:hover { border-color: #a5b4fc; }
+  .sys-prov.on { border-color: #534AB7; box-shadow: 0 0 0 3px rgba(83,74,183,.12); background: #FAFAFF; }
+  .sys-prov-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .sys-prov-mark { width: 30px; height: 30px; border-radius: 8px; background: #111827; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .sys-tag { font-size: 9px; padding: 1px 7px; border-radius: 8px; }
+  .sys-tag.free { background: #E6F4EF; color: #0F6E56; }
+  .sys-tag.gray { background: #f3f4f6; color: #6b7280; }
+  .sys-tag.cur { background: #FEF0C7; color: #854F0B; }
+  .sys-prov h4 { font-size: 12.5px; color: #111827; margin-bottom: 2px; }
+  .sys-prov p { font-size: 10.5px; color: #9ca3af; }
+  .sys-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .sys-form .full { grid-column: 1 / -1; }
+  .sys-form label { display: block; font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+  .sys-form input, .sys-form select { width: 100%; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 12px; font-family: inherit; background: #fff; }
+  .sys-uses { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .sys-use { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #374151; background: #F6F7F9; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  .sys-use.off { color: #9ca3af; text-decoration: line-through; cursor: not-allowed; }
+  .sys-fallback { background: linear-gradient(135deg, #F0FDF4, #ECFDF5); border: 1px solid #BBF7D0; border-radius: 10px; padding: 12px 14px; font-size: 11.5px; color: #166534; line-height: 1.7; margin-bottom: 12px; }
+  .sys-mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .sys-mode-tab { flex: 1; text-align: center; padding: 9px; border-radius: 9px; border: 1.5px solid #e5e7eb; background: #fff; font-size: 12.5px; color: #6b7280; cursor: pointer; }
+  .sys-mode-tab.on { border-color: #534AB7; color: #534AB7; background: #FAFAFF; font-weight: 600; }
+  .sys-prog-track { height: 8px; border-radius: 5px; background: #EEF0F4; overflow: hidden; margin-top: 8px; }
+  .sys-prog-bar { height: 100%; background: #534AB7; border-radius: 5px; transition: width .3s; }
+  .sys-log { background: #0F172A; color: #A5F3FC; font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; line-height: 1.8; border-radius: 10px; padding: 12px 14px; max-height: 170px; overflow-y: auto; }
+  .sys-tbl { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .sys-tbl th { text-align: left; color: #9ca3af; font-weight: 500; padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 10.5px; }
+  .sys-tbl td { padding: 7px 8px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+  .sys-rule { display: flex; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
+  .sys-rule b { color: #111827; font-size: 12.5px; }
+  .sys-rule span { color: #6b7280; font-size: 11px; }
+
+  /* ===== AI Drawer ===== */
+  .ai-drawer {
+    position: fixed; top: 56px; right: -380px; bottom: 0; width: 380px;
+    background: #fff; border-left: 1px solid #e5e7eb; z-index: 100;
+    transition: right .25s ease; display: flex; flex-direction: column;
+  }
+  .ai-drawer.open { right: 0; }
+  .ai-drawer-head {
+    padding: 16px 20px; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ai-drawer-head .spark { color: #534AB7; width: 18px; height: 18px; }
+  .ai-drawer-head b { font-size: 14px; }
+  .ai-drawer-close {
+    margin-left: auto; border: none; background: none; font-size: 18px;
+    color: #9ca3af; cursor: pointer; line-height: 1;
+  }
+  .ai-drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .ai-msg { margin-bottom: 16px; display: flex; gap: 10px; }
+  .ai-ava {
+    width: 28px; height: 28px; border-radius: 50%; background: #EEEDFE;
+    color: #534AB7; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+  .ai-bubble {
+    background: #f3f4f6; border-radius: 4px 12px 12px 12px; padding: 10px 14px;
+    font-size: 12px; color: #374151; line-height: 1.7; max-width: 280px;
+  }
+  .ai-bubble.self { background: #E6F1FB; border-radius: 12px 4px 12px 12px; margin-left: auto; }
+  .ai-suggest { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+  .ai-suggest-item {
+    font-size: 12px; color: #534AB7; background: #EEEDFE; padding: 8px 12px;
+    border-radius: 8px; cursor: pointer; border: 1px solid transparent;
+  }
+  .ai-suggest-item:hover { border-color: #AFA9EC; }
+  .ai-drawer-foot { padding: 14px 20px; border-top: 1px solid #e5e7eb; }
+  .ai-input {
+    width: 100%; border: 1px solid #d1d5db; border-radius: 10px; padding: 10px 14px;
+    font-size: 13px; outline: none; resize: none; font-family: inherit;
+  }
+  .ai-input:focus { border-color: #AFA9EC; }
+  .ai-send {
+    margin-top: 8px; background: #534AB7; color: #fff; border: none;
+    padding: 8px 18px; border-radius: 8px; font-size: 12px; cursor: pointer; float: right;
+  }
+
+  /* ===== Compare mode ===== */
+  .compare-view {
+    position: fixed; inset: 56px 0 0 0; background: #f5f6f8; z-index: 90;
+    display: none; padding: 24px; overflow-y: auto;
+  }
+  .compare-view.show { display: block; }
+  .compare-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1100px; margin: 0 auto; }
+  .compare-col h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .compare-col .sub-t { font-size: 12px; color: #6b7280; margin-bottom: 14px; }
+  .compare-col.old h3 { color: #A32D2D; }
+  .compare-col.new h3 { color: #0F6E56; }
+
+  .old-menu {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px;
+  }
+  .old-item {
+    display: flex; align-items: center; padding: 8px 14px; font-size: 12px; color: #374151;
+    border-radius: 6px;
+  }
+  .old-item:nth-child(odd) { background: #fafafa; }
+  .old-num { color: #9ca3af; font-size: 10px; width: 24px; flex-shrink: 0; }
+  .old-tag { margin-left: auto; font-size: 10px; padding: 1px 6px; border-radius: 4px; }
+  .tag-merge { color: #0F6E56; background: #E1F5EE; }
+  .tag-split { color: #854F0B; background: #FAEEDA; }
+  .tag-move { color: #534AB7; background: #EEEDFE; }
+
+  .new-menu { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; }
+  .new-item { padding: 7px 14px; border-radius: 6px; }
+  .new-item .grp {
+    display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #111827;
+    padding: 5px 0;
+  }
+  .grp-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .grp-sub { font-size: 11px; color: #6b7280; padding: 3px 0 3px 18px; }
+  .grp-sub .dot { color: #d1d5db; margin-right: 4px; }
+
+  .compare-stat {
+    grid-column: 1 / -1; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 18px 22px; display: flex; gap: 40px; justify-content: center; margin-bottom: 0;
+  }
+  .cstat { text-align: center; }
+  .cstat .v { font-size: 24px; font-weight: 600; color: #111827; }
+  .cstat .v.hl { color: #0F6E56; }
+  .cstat .l { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+  .arrow-change { display: flex; align-items: center; justify-content: center; color: #0F6E56; font-size: 22px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111827; color: #fff; font-size: 12px; padding: 8px 18px;
+    border-radius: 8px; z-index: 200; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: .92; }
+
+  /* ===== V3.9 AI Agent · skills 可扩展容器 ===== */
+  .sk-page .sk-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .sk-page .sk-head .sk-ico{font-size:22px;width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#EEEDFE;color:#534AB7}
+  .sk-page .sk-head h3{font-size:18px;font-weight:700;color:#111827}
+  .sk-page .sk-head .sk-count{font-size:11px;color:#534AB7;background:#EEEDFE;padding:2px 10px;border-radius:10px;font-weight:600}
+  .sk-page .sk-desc{font-size:12.5px;color:#6B7280;line-height:1.7;margin-bottom:16px;max-width:820px}
+  .sk-page .sk-desc b{color:#374151}
+  .sk-add-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:13px 16px;background:linear-gradient(90deg,#F0F4FF,#F7F5FF);border:1px dashed #C7C1F0;border-radius:11px}
+  .sk-add-bar .sk-tip{font-size:12px;color:#4B5563;flex:1}
+  .sk-add-bar .sk-tip b{color:#534AB7}
+  .sk-add-btn{padding:7px 16px;border-radius:8px;background:#534AB7;color:#fff;font-size:13px;font-weight:600;white-space:nowrap;transition:.15s}
+  .sk-add-btn:hover{background:#6C63FF}
+  .sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .sk-card{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:15px 16px;transition:.15s}
+  .sk-card:hover{box-shadow:0 4px 16px rgba(17,24,39,.06);border-color:#C7C1F0}
+  .sk-card.off{opacity:.58}
+  .sk-card .skc-head{display:flex;align-items:flex-start;gap:11px;margin-bottom:9px}
+  .sk-card .skc-ico{font-size:20px;width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#F6F7F9;flex-shrink:0}
+  .sk-card .skc-info{flex:1}
+  .sk-card .skc-name{font-size:13.5px;font-weight:600;color:#111827;margin-bottom:2px}
+  .sk-card .skc-src{font-size:10px;font-weight:600;padding:1px 7px;border-radius:7px}
+  .skc-src.builtin{background:#EEEDFE;color:#534AB7}
+  .skc-src.custom{background:#FEF0C7;color:#854F0B}
+  .sk-card .skc-desc{font-size:12px;color:#4B5563;line-height:1.6;margin-bottom:9px}
+  .sk-card .skc-params{font-size:10.5px;color:#6B7280;background:#F9FAFB;border:1px solid #F1F2F4;border-radius:8px;padding:6px 9px;margin-bottom:10px;font-family:"SF Mono",Menlo,monospace;line-height:1.6;overflow:hidden}
+  .sk-card .skc-foot{display:flex;align-items:center;gap:8px;border-top:1px solid #F1F2F4;padding-top:9px}
+  .sk-card .skc-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:7px}
+  .skc-tag.playbook{background:#FEF0C7;color:#854F0B}
+  .skc-tag.memory{background:#F3E8FF;color:#7E22CE}
+  .skc-tag.trigger{background:#D1FAE5;color:#0F6E56}
+  .skc-tag.quality{background:#FEE2E2;color:#B91C1C}
+  .sk-toggle{position:relative;width:34px;height:19px;background:#D1D5DB;border-radius:10px;cursor:pointer;transition:.2s;flex-shrink:0;margin-left:auto}
+  .sk-toggle.on{background:#0F6E56}
+  .sk-toggle::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .sk-toggle.on::after{left:17px}
+  .skc-act{font-size:11px;color:#534AB7;cursor:pointer;padding:3px 9px;border-radius:6px}
+  .skc-act:hover{background:#EEEDFE}
+  .skc-del{font-size:11px;color:#9CA3AF;cursor:pointer;padding:3px 9px;border-radius:6px}
+  .skc-del:hover{color:#DC2626;background:#FEE2E2}
+  .sk-modal-mask{position:fixed;inset:0;background:rgba(17,24,39,.45);display:none;align-items:center;justify-content:center;z-index:300}
+  .sk-modal-mask.show{display:flex}
+  .sk-modal{background:#fff;border-radius:14px;width:500px;max-width:92vw;max-height:84vh;overflow:hidden;display:flex;flex-direction:column}
+  .sk-modal .skm-h{padding:15px 20px;border-bottom:1px solid #F1F2F4;font-size:15px;font-weight:700;color:#111827;display:flex;justify-content:space-between;align-items:center}
+  .sk-modal .skm-h .x{font-size:19px;color:#9CA3AF;cursor:pointer}
+  .sk-modal .skm-b{padding:16px 20px;overflow-y:auto}
+  .sk-modal .skm-b label{display:block;font-size:11px;color:#6B7280;margin-bottom:4px;margin-top:11px}
+  .sk-modal .skm-b label:first-child{margin-top:0}
+  .sk-modal .skm-b input,.sk-modal .skm-b textarea{width:100%;border:1px solid #E5E7EB;border-radius:8px;padding:8px 11px;font-size:12.5px;font-family:inherit;outline:none}
+  .sk-modal .skm-b input:focus,.sk-modal .skm-b textarea:focus{border-color:#534AB7}
+  .sk-modal .skm-b textarea{resize:vertical;min-height:58px}
+  .sk-modal .skm-b .sk-row{display:flex;gap:10px}
+  .sk-modal .skm-b .sk-row>div{flex:1}
+  .sk-modal .skm-b .src-pick{display:flex;gap:8px;margin-top:4px}
+  .sk-modal .skm-b .src-pick span{font-size:12px;padding:5px 14px;border-radius:8px;border:1px solid #E5E7EB;cursor:pointer;color:#4B5563}
+  .sk-modal .skm-b .src-pick span.on{background:#534AB7;color:#fff;border-color:#534AB7}
+  .sk-modal .skm-f{padding:12px 20px;border-top:1px solid #F1F2F4;display:flex;justify-content:flex-end;gap:10px}
+  .sk-modal .skm-f button{padding:8px 18px;border-radius:8px;font-size:13px}
+  .sk-btn-cancel{background:#F3F4F6;color:#4B5563}
+  .sk-btn-ok{background:#534AB7;color:#fff}
+  .sk-btn-ok:hover{background:#6C63FF}
+  .sk-agent-hint{margin-top:12px;font-size:11px;color:#6B7280;background:#F9FAFB;border:1px dashed #E5E7EB;border-radius:8px;padding:8px 12px;line-height:1.6}
+  .ag-cap{cursor:pointer;transition:.12s}
+  .ag-cap:hover{background:#EEEDFE}
+  .ag-cap .skc-add-tag{font-size:9px;color:#534AB7;font-weight:600}
+  /* ===== V3.10 自定义分类 ===== */
+  .sk-cat-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding:10px 12px;background:#FAFAFC;border:1px solid #EFEFF6;border-radius:10px}
+  .sk-cat-tab{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;border:1px solid transparent;transition:.15s;color:#4B5563;white-space:nowrap}
+  .sk-cat-tab.builtin{background:#F3F4F6;border-color:#E5E7EB}
+  .sk-cat-tab.custom{background:#ECFDF5;border-color:#A7F3D0;color:#065F46}
+  .sk-cat-tab.on{background:#534AB7;color:#fff;border-color:#534AB7}
+  .sk-cat-tab.on.custom{background:#0F6E56;border-color:#0F6E56;color:#fff}
+  .sk-cat-tab .ct-x{font-size:11px;opacity:.55;padding:0 3px;border-radius:4px;font-weight:700}
+  .sk-cat-tab .ct-x:hover{opacity:1;background:rgba(0,0,0,.1)}
+  .sk-cat-tab .ct-del:hover{color:#DC2626;background:#FEE2E2}
+  .sk-cat-add{font-size:12px;font-weight:600;color:#534AB7;cursor:pointer;padding:6px 12px;border-radius:18px;border:1px dashed #C7C1F0;background:#F5F3FF;transition:.15s;white-space:nowrap}
+  .sk-cat-add:hover{background:#EEEDFE}
+  .sk-select{width:100%;border:1px solid #E5E7EB;border-radius:8px;padding:8px 11px;font-size:12.5px;font-family:inherit;outline:none;background:#fff}
+  .sk-select:focus{border-color:#534AB7}
+  .sk-empty{text-align:center;padding:36px 20px;color:#9CA3AF;font-size:12.5px;border:1px dashed #E5E7EB;border-radius:10px;background:#FAFAFC}
+  .ctc{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #E5E7EB;cursor:pointer;color:#4B5563}
+  .ctc.on{border-color:#534AB7;color:#534AB7;background:#EEEDFE}
+  .skc-tag.custom-teal{background:#D1FAE5;color:#0F6E56}
+  .skc-tag.custom-blue{background:#DBEAFE;color:#1D4ED8}
+  .skc-tag.custom-orange{background:#FFEDD5;color:#C2410C}
+  .skc-tag.custom-purple{background:#F3E8FF;color:#7E22CE}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-mark">NF</div>
+    <span class="logo-text">NexFab AI 外贸 CRM</span>
+    <span class="logo-tag">导航优化预览 V3.12</span>
+  </div>
+  <div class="header-controls">
+    <div class="role-switch" id="roleSwitch"></div>
+    <button class="compare-btn" id="compareBtn">新旧结构对比</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="sidebar-scroll" id="sidebarNav"></div>
+    <div class="sidebar-footer">
+      <div class="ai-assistant-btn" onclick="toggleAI()">
+        <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6z"/></svg>
+        AI 助手
+        <span class="ai-hint">Ctrl+K</span>
+      </div>
+    </div>
+  </aside>
+  <main class="content" id="content"></main>
+</div>
+
+<div class="ai-drawer" id="aiDrawer">
+  <div class="ai-drawer-head">
+    <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6z"/></svg>
+    <b>AI 助手</b>
+    <button class="ai-drawer-close" onclick="toggleAI()">&times;</button>
+  </div>
+  <div class="ai-drawer-body" id="aiBody">
+    <div class="ai-msg">
+      <div class="ai-ava">AI</div>
+      <div class="ai-bubble">你好，我是 NexFab AI 助手。我可以帮你查询客户、解释报价、起草邮件、检查单证。试试下面的快捷指令：</div>
+    </div>
+    <div class="ai-suggest">
+      <div class="ai-suggest-item" onclick="aiAsk('帮我总结今天需要跟进的客户')">帮我总结今天需要跟进的客户</div>
+      <div class="ai-suggest-item" onclick="aiAsk('解释报价 Q-2026-0831 的利润构成')">解释报价 Q-2026-0831 的利润构成</div>
+      <div class="ai-suggest-item" onclick="aiAsk('给沉默超过60天的客户起草复购邮件')">给沉默超过60天的客户起草复购邮件</div>
+    </div>
+  </div>
+  <div class="ai-drawer-foot">
+    <textarea class="ai-input" id="aiInput" rows="2" placeholder="输入问题，或让 AI 帮你完成业务操作…"></textarea>
+    <button class="ai-send" onclick="aiSend()">发送</button>
+    <div style="clear:both"></div>
+  </div>
+</div>
+
+<div class="compare-view" id="compareView">
+  <div class="compare-wrap">
+    <div class="compare-stat">
+      <div class="cstat"><div class="v">26</div><div class="l">旧版一级菜单</div></div>
+      <div class="cstat"><div class="arrow-change">&#10142;</div></div>
+      <div class="cstat"><div class="v hl">12</div><div class="l">新版主模块</div></div>
+      <div class="cstat"><div class="v hl">43</div><div class="l">二级菜单</div></div>
+      <div class="cstat"><div class="v hl">-54%</div><div class="l">找功能扫描次数</div></div>
+    </div>
+    <div class="compare-col old">
+      <h3>旧版 · 26 个平铺菜单</h3>
+      <div class="sub-t">无分组、无层级，业务员需扫描全部菜单定位功能</div>
+      <div class="old-menu" id="oldMenu"></div>
+    </div>
+    <div class="compare-col new">
+      <h3>新版 · 10 个业务分组</h3>
+      <div class="sub-t">按外贸业务生命周期分组，二级菜单承载深度</div>
+      <div class="new-menu" id="newMenu"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 数据定义 ============ */
+const icons = {
+  dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  funnel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5z"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18 20c0-2.5-1-4-2.5-5"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 01-8 8H4l2.5-3.5A8 8 0 1121 12z"/></svg>',
+  box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
+  truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 6h14v10H1zM15 9h4.5L22 12.5V16h-7"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6z"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M7 17V9M12 17V3M17 17v-6"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>',
+  tool: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4.5 4.5 0 0 0-6 5.6L3 17.6V21h3.4l5.7-5.7a4.5 4.5 0 0 0 5.6-6L14.5 12.5l-3-3 3.2-3.2z"/></svg>',
+  tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.6 13.4L11 3H4v7l9.6 10.4a2 2 0 002.8 0l4.2-4.2a2 2 0 000-2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>',
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>',
+  money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9.5v0M18 14.5v0"/></svg>',
+  server: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5v0M7 16.5v0"/></svg>'
+};
+
+const modules = [
+  {
+    id: 'dashboard', name: '工作台', icon: 'dashboard', phase: 'blue',
+    badge: { n: 3, type: 'red' },
+    subs: [
+      { name: '角色工作台', badge: { n: 5, type: 'blue' }, ai: true },
+      { name: '晨会视图', ai: true },
+      { name: '经营简报', ai: true },
+      { name: '待办清单', badge: { n: 5, type: 'blue' } },
+      { name: '跟进与管道' },
+      { name: '审批中心', badge: { n: 3, type: 'red' } }
+    ],
+    roles: ['sales', 'manager', 'finance', 'exec', 'admin'],
+    intro: '按《外贸CRM工作台最终设计方案》实施的角色驱动工作台：氛围条（每日一句 + 我方放假倒计时 + 客户国家假日）、今日提醒胶囊条（红类呼吸灯）、KPI 四卡（红涨绿跌 + 迷你趋势）、SVG 梯形销售漏斗（数量+金额+转化率胶囊+对标偏差）、管道健康度、AI 经营建议、外贸资讯推送（商机一键转线索）、全球业务地图、多币种汇率看板、全局搜索与快捷操作、角色专属模块区。通用模块人人可见，数据范围按角色（本人→团队→全公司→全局）自动切换。',
+    merge: 'V3.8：角色工作台按工作台最终设计方案重构（10 通用模块 + 25 角色专属模块落地）；V3.6 移植 GoodJob 角色工作台；AI 晨报并入经营简报，审批中心保留'
+  },
+  {
+    id: 'acquisition', name: '获客中心', icon: 'funnel', phase: 'teal',
+    badge: { n: 12, type: 'blue' },
+    subs: [
+      { name: '线索池', badge: { n: 12, type: 'blue' } },
+      { name: '社媒运营', ai: true },
+      { name: '网站询盘', ai: true },
+      { name: '渠道分析' }
+    ],
+    roles: ['sales', 'manager', 'exec', 'admin'],
+    intro: '所有获客渠道统一管理：线索导入去重、社媒内容与互动、独立站表单、渠道归因分析。',
+    merge: '合并：目标线索 + 社媒运营 + 社媒获客（3项合1），新增网站询盘与渠道分析'
+  },
+  {
+    id: 'customer', name: '客户管理', icon: 'users', phase: 'teal',
+    subs: [
+      { name: '客户档案', ai: true },
+      { name: '客户画像', ai: true }
+    ],
+    roles: ['sales', 'manager', 'exec', 'admin'],
+    intro: '客户数据中心（低频维护，与产品知识库对称）：360° 档案、联系人、资质、交易历史聚合、AI 画像评分。客户的静态属性归这里，动态的推进动作（商机/跟进/复购）在商机中心。',
+    merge: '瘦身：商机与复购移出 → 商机中心；客户管理回归纯数据定位'
+  },
+  {
+    id: 'pipeline', name: '商机中心', icon: 'target', phase: 'teal',
+    badge: { n: 5, type: 'blue' },
+    subs: [
+      { name: '销售管道', badge: { n: 5, type: 'blue' }, ai: true },
+      { name: '跟进任务', ai: true },
+      { name: '售后与复购', ai: true }
+    ],
+    roles: ['sales', 'manager', 'exec', 'admin'],
+    intro: '交易推进引擎（高频操作，与报价中心对称）。业务员的日常视角是「我手上在谈哪些单子」：看板推进阶段（询盘→报价→寄样→谈判→成交），商机卡内嵌客户上下文与沟通时间线，不用跳回客户档案；复购提醒直接生成商机进入管道。',
+    merge: '升级：商机管理（独立但内嵌客户上下文）+ 售后复购 + 新增跟进任务'
+  },
+  {
+    id: 'comms', name: '沟通中心', icon: 'chat', phase: 'teal',
+    badge: { n: 2, type: 'blue' },
+    subs: [
+      { name: '邮件管理', ai: true },
+      { name: 'WhatsApp', ai: true },
+      { name: '社媒私信', ai: true },
+      { name: '沟通时间线', ai: true }
+    ],
+    roles: ['sales', 'manager', 'exec', 'admin'],
+    intro: '统一沟通界面。跟同一个客户的邮件、WhatsApp、社媒私信记录不再散落三处，「沟通时间线」按客户聚合全部往来。',
+    merge: '合并：邮件中心 + WhatsApp 消息 + 社媒收件箱，新增按客户聚合的沟通时间线'
+  },
+  {
+    id: 'product', name: '产品知识库', icon: 'box', phase: 'amber',
+    subs: [
+      { name: '产品库（PIM）', ai: true },
+      { name: 'RAG 知识库问答', ai: true }
+    ],
+    roles: ['sales', 'manager', 'exec', 'admin'],
+    intro: '分类树 + PIM 列表 + RAG 问答三合一：分类树解决「找得到」，PIM 解决「数据准」（成本/包装体积/装箱率，是秒报价取数来源），RAG 问答解决「问得出」——业务员直接用自然语言问产品问题，答案带文档来源引用。',
+    merge: '升级：产品 + 产品资料合并为产品知识库（左分类树 + 中 PIM 列表 + RAG 问答入口）'
+  },
+  {
+    id: 'quote', name: '报价中心', icon: 'tag', phase: 'amber',
+    badge: { n: 2, type: 'amber' },
+    subs: [
+      { name: '快速报价', ai: true },
+      { name: '报价管理', badge: { n: 2, type: 'amber' }, ai: true }
+    ],
+    roles: ['sales', 'manager', 'exec', 'admin'],
+    intro: '秒级响应的报价引擎。报价从产品模块独立——外贸成单拼的就是响应速度：客户询盘到达后 30 秒内出一份有依据的报价单。成本、包装体积、历史成交价自动取数，AI 给出建议价格区间。',
+    merge: '独立：原「产品与报价」拆分，报价升级为独立模块，新增快速报价（秒报价）'
+  },
+  {
+    id: 'fulfillment', name: '订单履约', icon: 'truck', phase: 'amber',
+    badge: { n: 8, type: 'amber' },
+    subs: [
+      { name: '样品管理', ai: true },
+      { name: '合同订单', ai: true },
+      { name: '生产跟踪', ai: true },
+      { name: '物流管理', ai: true },
+      { name: '单证管理', ai: true }
+    ],
+    roles: ['sales', 'manager', 'finance', 'exec', 'admin'],
+    intro: '样品确认到发货的全链路，5 个子菜单按业务顺序排列：样品 → 合同 → 生产 → 物流 → 单证。样品是订单的前置确认环节（寄样快递、样品费收款、确认后转单），放在流程最前。收款在「财务经营」模块确认后回写订单，收款门禁自动放行生产/发货节点。',
+    merge: '合并：合同订单 + 生产跟踪 + 物流管理 + 单证管理；样品管理从产品知识库移入；收款管理归集到财务经营（V3.6）'
+  },
+  {
+    id: 'finance', name: '财务经营', icon: 'money', phase: 'amber',
+    badge: { n: 4, type: 'red' },
+    subs: [
+      { name: '订单与回款', badge: { n: 4, type: 'red' }, ai: true },
+      { name: '提成与对账', ai: true }
+    ],
+    roles: ['manager', 'finance', 'exec', 'admin'],
+    intro: '订单收款闭环 + 提成对账（移植自 GoodJob 原版）：应收逾期队列自动识别逾期/今日到期/待补账期；销售只登记收款，财务核对流水与汇率后确认入账；汇率版本台账按生效日锁定；提成按产品规则月度计提，对账单可锁定/解锁。',
+    merge: '新增：收款管理从订单履约归集于此，按 GoodJob 财务经营扩充（订单与回款 + 提成与对账）'
+  },
+  {
+    id: 'aihub', name: 'AI Agent', icon: 'spark', phase: 'purple',
+    subs: [
+      { name: 'Agent 对话', ai: true },
+      { name: '销售打法', ai: true, demo: true },
+      { name: '业务记忆', ai: true, demo: true },
+      { name: '自动触发', ai: true, demo: true },
+      { name: '运行质量', ai: true, demo: true }
+    ],
+    roles: ['sales', 'manager', 'finance', 'exec', 'admin'],
+    intro: '目标驱动的执行型助手（移植自 GoodJob 原版）：说出最终目标，Agent 拆解计划、逐步执行、汇报结果；外部动作（发邮件等）必须人工批准。V3.10：Agent 对话下 4 个子类（销售打法/业务记忆/自动触发/运行质量）是预置的 skills 分类，可按需手动添加各种 skills——分类不受限，可创建任意自定义分类（客户服务/产品知识/售后支持…），Agent 能力持续生长。',
+    merge: '重组：原 AI 智能中心（AI助手/知识库/智能提取/数据查询/自动报告）清空——知识库→产品知识库 RAG 问答，智能提取→获客中心·网站询盘，数据查询→Agent 对话，自动报告→工作台经营简报 + 自动触发；V3.9 四子类支持手动添加 skills；V3.10 支持自定义分类（预置 4 类 + 自定义不限）'
+  },
+  {
+    id: 'tools', name: '工具中心', icon: 'tool', phase: 'purple',
+    subs: [
+      { name: '名片 OCR 识别', ai: true },
+      { name: '官网链接登记' },
+      { name: '汇率换算' },
+      { name: '客户去重' },
+      { name: '跟进话术生成', ai: true },
+      { name: 'HS 编码速查' }
+    ],
+    roles: ['sales', 'manager', 'finance', 'exec', 'admin'],
+    intro: '高频小工具集合（移植自 GoodJob 原版）：名片 OCR 直接产出线索进线索池；官网链接登记零网页访问、人工核验；汇率换算、客户去重、话术生成、HS 编码速查随手可用。',
+    merge: '新增：来自 GoodJob 原版工具中心（名片 OCR、官网链接登记、汇率换算、客户去重、跟进话术生成、HS 编码速查）'
+  },
+  {
+    id: 'insight', name: '数据洞察', icon: 'chart', phase: 'purple',
+    subs: [
+      { name: '数据分析' },
+      { name: '数据大屏' }
+    ],
+    roles: ['manager', 'finance', 'exec', 'admin'],
+    intro: '经营洞察：漏斗分析、转化率、毛利、复购、AI 成本看板；管理层实时数据大屏。',
+    merge: '合并：数据分析 + 数据大屏'
+  },
+  {
+    id: 'system', name: '系统管理', icon: 'gear', phase: 'gray',
+    subs: [
+      { name: '账号与权限' },
+      { name: 'AI 配置', ai: true, demo: true },
+      { name: '系统设置', demo: true },
+      { name: '数据库维护', demo: true }
+    ],
+    roles: ['admin'],
+    intro: '系统管理与运行维护（全部移植自 GoodJob 原版）：账号与数据权限（账号列表/角色/业务数据范围/权限模板/批量停用）；AI 配置（12 家供应商预设 + 免费兜底智谱 GLM-4-Flash，Key 按账号隔离）；系统设置（公司资料 + 系统更新）；数据库维护（迁移/备份 + 授权码 + 逐表进度）。仅超级管理员。',
+    merge: '合并：权限中心 + 旧系统设置（账号部分）；V3.7 起 AI 配置/系统设置/数据库维护并入系统管理为二级导航（内容移植自 GoodJob 原版，不设独立一级导航）'
+  }
+];
+
+const roles = [
+  { id: 'sales',  name: '销售业务员', defaults: ['dashboard', 'pipeline', 'quote', 'comms'] },
+  { id: 'manager', name: '销售经理', defaults: ['dashboard', 'pipeline', 'fulfillment'] },
+  { id: 'finance', name: '财务', defaults: ['dashboard', 'finance', 'insight'] },
+  { id: 'exec', name: '管理层', defaults: ['dashboard', 'insight', 'pipeline'] },
+  { id: 'admin', name: '超级管理员', defaults: ['dashboard', 'system'] }
+];
+
+const phaseColors = {
+  blue: '#185FA5', teal: '#0F6E56', amber: '#854F0B', purple: '#534AB7', gray: '#5F5E5A'
+};
+
+let currentRole = 'manager';
+let expanded = { dashboard: true, pipeline: true, fulfillment: true, finance: true, system: true };
+let activePage = { module: 'dashboard', sub: '角色工作台' };
+
+/* ============ 侧边栏渲染 ============ */
+function renderSidebar() {
+  const nav = document.getElementById('sidebarNav');
+  const visible = modules.filter(m => m.roles.includes(currentRole));
+  // 角色切换时重置展开状态为该角色默认值
+  nav.innerHTML = visible.map(m => {
+    const isExp = expanded[m.id];
+    const badgeHtml = m.badge
+      ? `<span class="nav-badge badge-${m.badge.type}">${m.badge.n}</span>` : '';
+    const arrow = m.subs.length
+      ? `<span class="nav-arrow"></span>` : '';
+    const subs = m.subs.map(s => {
+      const b = s.badge ? `<span class="nav-badge badge-${s.badge.type}">${s.badge.n}</span>` : '';
+      const ai = s.ai ? '<span class="sub-ai">AI</span>' : '';
+      const dm = s.demo ? '<span class="sub-ai" style="background:#FEF0C7;color:#854F0B">▶</span>' : '';
+      const act = (activePage.module === m.id && activePage.sub === s.name) ? 'active' : '';
+      return `<div class="sub-item ${act}" onclick="goPage('${m.id}','${s.name}')">${s.name}${ai}${dm}${b}</div>`;
+    }).join('');
+    return `
+      <div class="nav-group">
+        <div class="nav-item ${isExp ? 'expanded' : ''}" onclick="toggleModule('${m.id}')">
+          <span class="nav-icon">${icons[m.icon]}</span>
+          <span class="nav-label">${m.name}</span>
+          ${badgeHtml}${arrow}
+        </div>
+        <div class="sub-list ${isExp ? 'open' : ''}">${subs}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleModule(id) {
+  expanded[id] = !expanded[id];
+  renderSidebar();
+}
+
+function goPage(moduleId, subName) {
+  activePage = { module: moduleId, sub: subName };
+  expanded[moduleId] = true;
+  renderSidebar();
+  renderContent();
+  document.getElementById('content').scrollTop = 0;
+}
+
+/* ============ 内容区渲染 ============ */
+function renderContent() {
+  const c = document.getElementById('content');
+  const m = modules.find(x => x.id === activePage.module);
+  const crumb = `${m.name} / ${activePage.sub}`;
+  document.title = `${activePage.sub} · NexFab AI 外贸 CRM`;
+
+  if (activePage.module === 'dashboard' && activePage.sub === '角色工作台') {
+    c.innerHTML = renderOverview();
+  } else if (activePage.module === 'dashboard' && activePage.sub === '晨会视图') {
+    c.innerHTML = renderMorningMeeting();
+  } else if (activePage.module === 'dashboard' && activePage.sub === '经营简报') {
+    c.innerHTML = renderBriefing();
+  } else if (activePage.module === 'dashboard' && activePage.sub === '待办清单') {
+    c.innerHTML = renderTodos();
+  } else if (activePage.module === 'dashboard' && activePage.sub === '审批中心') {
+    c.innerHTML = renderApprovals();
+  } else if (activePage.module === 'quote' && activePage.sub === '快速报价') {
+    c.innerHTML = renderQuickQuote();
+  } else if (activePage.module === 'pipeline' && activePage.sub === '销售管道') {
+    c.innerHTML = renderPipeline();
+  } else if (activePage.module === 'product' && activePage.sub === '产品库（PIM）') {
+    c.innerHTML = renderPim();
+  } else if (activePage.module === 'product' && activePage.sub === 'RAG 知识库问答') {
+    c.innerHTML = renderRag();
+  } else if (activePage.module === 'aihub' && activePage.sub === 'Agent 对话') {
+    c.innerHTML = renderAgent();
+  } else if (activePage.module === 'aihub') {
+    // 按分类名动态路由：预置 4 类 + 用户自定义分类
+    const _cid = Object.keys(skillCats).find(cid => skillCats[cid].name === activePage.sub);
+    c.innerHTML = _cid ? renderSkills(_cid) : renderAgent();
+  } else if (activePage.module === 'tools' && activePage.sub === '名片 OCR 识别') {
+    c.innerHTML = renderTools();
+  } else if (activePage.module === 'finance' && activePage.sub === '订单与回款') {
+    c.innerHTML = renderFinanceFlow();
+  } else if (activePage.module === 'finance' && activePage.sub === '提成与对账') {
+    c.innerHTML = renderCommission();
+  } else if (activePage.module === 'system' && activePage.sub === '账号与权限') {
+    c.innerHTML = renderAccounts();
+  } else if (activePage.module === 'system' && activePage.sub === 'AI 配置') {
+    c.innerHTML = renderAiConfig();
+  } else if (activePage.module === 'system' && activePage.sub === '系统设置') {
+    c.innerHTML = renderSettings();
+  } else if (activePage.module === 'system' && activePage.sub === '数据库维护') {
+    c.innerHTML = renderDbMaint();
+  } else {
+    c.innerHTML = renderBlueprint(m);
+  }
+}
+
+/* ============ 工作台 V3.8（按《外贸CRM工作台最终设计方案》实施） ============ */
+const atmoQuotes = [
+  '今天的报价单，就是下个月的回款单。',
+  '客户的一句「在考虑」，值得打一通电话。',
+  '样品寄出去的不是货，是下一次成交的机会。',
+  '汇率每波动 1%，都是利润在说话。',
+  '跟得上节奏的客户，不会等你犹豫完。'
+];
+
+/* 假日数据表（演示；实际由 Holiday 表维护，我方与客户国共用一表） */
+const cnHoliday = { name: '中秋', sm: 9, sd: 25, em: 9, ed: 27, days: 3 };
+const countryHolidays = {
+  '英国': { name: '夏末银行假日', m: 8, d: 31, days: 1 },
+  '美国': { name: '劳动节', m: 9, d: 7, days: 1 },
+  '德国': { name: '统一日', m: 10, d: 3, days: 1 },
+  '日本': { name: '敬老节', m: 9, d: 21, days: 1 },
+  '印度': { name: '甘地诞辰', m: 10, d: 2, days: 1 },
+  '巴西': { name: '独立日', m: 9, d: 7, days: 1 },
+  '澳大利亚': { name: '劳动节', m: 10, d: 5, days: 1 }
+};
+let focusCountry = '英国';
+
+function daysUntil(m, d) {
+  const now = new Date();
+  const t = new Date(now.getFullYear(), m - 1, d);
+  return Math.ceil((t - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+}
+
+function switchCountry(c) {
+  focusCountry = c;
+  const h = countryHolidays[c];
+  const until = daysUntil(h.m, h.d);
+  const item = document.getElementById('atmoCountry');
+  const hint = document.getElementById('atmoHint');
+  if (item) item.innerHTML = `${h.name} ${h.m}.${h.d}·${h.days}天 还有 ${until} 天`;
+  if (hint) {
+    if (until <= 14) {
+      hint.textContent = `${c}客户${h.name}放假 ${h.days} 天：期间客户不回复、物流停摆，报价/签单/催款请提前，在途订单交期做好预期——客户放假前是催单、发货、节日营销的黄金窗口。`;
+      hint.classList.add('show');
+    } else { hint.classList.remove('show'); }
+  }
+}
+
+function sparkline(pts, color) {
+  const w = 128, h = 26, max = Math.max(...pts), min = Math.min(...pts);
+  const rng = (max - min) || 1, step = w / (pts.length - 1);
+  const y = p => (h - 3 - (p - min) / rng * (h - 6)).toFixed(1);
+  const pl = pts.map((p, i) => `${(i * step).toFixed(1)},${y(p)}`).join(' ');
+  const li = pts.length - 1;
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pl}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${(li * step).toFixed(1)}" cy="${y(pts[li])}" r="2.2" fill="${color}"/></svg>`;
+}
+
+/* 销售漏斗（SVG 梯形逻辑 → CSS clip-path 实现；金额为主角） */
+const funnelStages = [
+  { name: '线索', n: 214, amt: '$536K', w: 100 },
+  { name: '询盘', n: 96, amt: '$238K', w: 82, conv: ['44.9%','▼ 3.8pt','down'] },
+  { name: '报价', n: 42, amt: '$128K', w: 64, conv: ['43.8%','▲ 2.1pt','up'] },
+  { name: '样品', n: 14, amt: '$52K', w: 46, conv: ['33.3%','▼ 1.2pt','down'] },
+  { name: '成交', n: 6, amt: '$24.6K', w: 30, conv: ['42.9%','▲ 0.9pt','up'], hot: true }
+];
+
+const stageStay = [
+  { name: '询盘', days: 2.1, pct: 25 },
+  { name: '报价', days: 4.6, pct: 55 },
+  { name: '样品', days: 12.4, pct: 100, warn: '卡点' },
+  { name: '谈判', days: 6.2, pct: 74 }
+];
+
+const mapBubbles = [
+  { name: '美国', amt: '$384K', x: 18, y: 38, size: 46, cust: 42, mom: '+6.2%', risk: true },
+  { name: '巴西', amt: '$86K', x: 30, y: 72, size: 30, cust: 11, mom: '+11.4%', risk: false },
+  { name: '德国', amt: '$210K', x: 50, y: 30, size: 38, cust: 28, mom: '+9.1%', risk: false },
+  { name: '印度', amt: '$95K', x: 66, y: 52, size: 30, cust: 15, mom: '-2.3%', risk: false },
+  { name: '东南亚', amt: '$205K', x: 74, y: 58, size: 37, cust: 23, mom: '+38.2%', risk: false },
+  { name: '澳大利亚', amt: '$54K', x: 84, y: 78, size: 27, cust: 9, mom: '+4.8%', risk: false }
+];
+
+const wbFxRates = [
+  ['EUR', '1.084', 'up', '▲ 0.3%'],
+  ['GBP', '1.271', 'down', '▼ 0.2%'],
+  ['JPY', '149.2', 'up', '▲ 0.5%'],
+  ['INR', '83.9', 'down', '▼ 0.1%'],
+  ['BRL', '5.42', 'up', '▲ 0.8%'],
+  ['AUD', '0.665', 'down', '▼ 0.4%']
+];
+
+const roleModules = {
+  sales: [
+    ['跟进优先级队列', 'AI 按意向度 × 时效排序的今日跟进名单，含建议动作和话术'],
+    ['我的业绩进度', '目标完成率进度条、月度趋势、与团队均值对比'],
+    ['样品协同', '寄样申请、物流跟踪、客户测试反馈跟进'],
+    ['开发信 & 客户沟通工具', 'AI 生成开发信、邮件模板、跟进话术库'],
+    ['备忘录 & 个人知识', '仅本人可见（绝对隐私）'],
+    ['计划任务 & 训练清单', '个人计划、产品知识训练']
+  ],
+  manager: [
+    ['晨会视图', '团队昨日战报 + 今日重点 + 待同步事项，一屏投屏'],
+    ['团队业绩排行', '成员业绩榜（销售可看自己排名，高管看全局）'],
+    ['团队风险预警', '超期跟进、卡点商机、低活跃成员预警'],
+    ['团队日报管理', '销售提交日报 / 经理批阅管理'],
+    ['商机干预 & 分配', '公海池、商机改派、介入协助'],
+    ['团队漏斗分析', '团队漏斗 vs 行业均值（高管可看全局口径）']
+  ],
+  finance: [
+    ['应收账款账龄分析', '账龄分段表（0-30/31-60/61-90/90+），红黄绿分级'],
+    ['收款确认队列', '销售登记水单 → 财务确认核销'],
+    ['提成与对账', '销售提成计算、月度对账单（销售可查本人）'],
+    ['汇率管理', '汇率版本维护、锁汇、敞口监控'],
+    ['合同管理', '合同台账、归档、法务条款'],
+    ['财务报表', '现金流、利润、退税报表'],
+    ['履约交付监控', '订单履约进度与收款联动'],
+    ['发票与税务', '形式发票、商业发票、退税申报']
+  ],
+  exec: [
+    ['全球市场分布', '全球热力图（销售/经理看自己区域，高管看全球）'],
+    ['经营趋势分析', '12 个月销售额/毛利趋势、同比环比'],
+    ['战略风险预警', '关税敞口、大客户集中度、汇率敞口'],
+    ['客户结构分析', '客户分层（大客户/成长/长尾）、行业分布、集中度'],
+    ['产品线贡献度', '3D 打印机 vs 耗材各产品线销售额/毛利贡献'],
+    ['销售预测', '基于管道加权 + AI 预测下季度/年度业绩']
+  ],
+  admin: [
+    ['账号与权限管理', '账号生命周期、角色分配、字段级权限'],
+    ['系统配置', '业务参数、审批流、氛围条 API/国家/假期数据配置'],
+    ['审计日志', '敏感操作全量审计'],
+    ['数据库维护', '备份、归档、性能监控'],
+    ['导入导出管控', '数据导入导出审批与水印'],
+    ['集成与 API 管理', '邮件/WhatsApp/资讯源/一言 API 等集成配置']
+  ]
+};
+
+const roleBadgeName = { sales: '销售', manager: '经理', finance: '财务', exec: '高管', admin: '管理员' };
+
+const wbData = {
+  sales: {
+    greet: '早上好，Alex 👋', scope: '本人',
+    desc: '今天是 8 月 21 日 · 当前视角：销售业务员（数据范围：本人）。氛围条关注你负责的英国市场；AI 已按意向度 × 时效排好今天的优先行动。',
+    capsules: [
+      { cls: 'cap-yellow', emoji: '📋', num: '6', label: '今日待办', sub: '2 条高优先级', go: "goPage('dashboard','待办清单')" },
+      { cls: 'cap-red breath', emoji: '⚠️', num: '2', label: '超期跟进', sub: '最久超 2 天，处理前持续提醒', go: "goPage('dashboard','待办清单')" },
+      { cls: 'cap-blue', emoji: '🔔', num: '3', label: '商机提醒', sub: '客户已读未回复', go: "goPage('pipeline','销售管道')" }
+    ],
+    kpis: [
+      { label: '本月销售额', value: '$48.6K', delta: ['up', '▲ 12.4%'], foot: '完成率 81% · 目标 $60,000', spark: [3, 4, 3.5, 5, 4.5, 5.5, 6] },
+      { label: '本月新增询盘', value: '38', delta: ['up', '▲ 6'], foot: '独立站 24 / 社媒 14', spark: [4, 5, 4, 6, 5, 7, 7] },
+      { label: '进行中报价单', value: '5', delta: ['down', '▼ 2'], foot: '3 张客户已查看', spark: [6, 5, 6, 4, 5, 4, 5] },
+      { label: '本月回款', value: '$15.2K', delta: ['up', '▲ 8.1%'], foot: '本月目标 $20K', spark: [1, 2, 2, 3, 2.5, 3, 3.5] }
+    ],
+    todos: [
+      ['pri-red', '10:00 跟进 Müller GmbH — DDP 报价疑虑', '客户跟进 · 对方已查看报价 3 次', '去跟进', '打开跟进记录'],
+      ['pri-red', 'TechNova Ltd 样品已签收 7 天，未反馈', '样品跟进 · AI 建议发送测试反馈询问邮件', '去跟进', '打开样品跟进'],
+      ['pri-amber', '回复 InfraBuild（澳洲）DDP 询盘', 'AI 提取完成 · 置信度 92% · 待人工确认', '确认', '打开需求确认']
+    ],
+    advice: [
+      ['pri-red', '9 条询盘卡在「等我方确认」超 3 天，今天清掉', '个人行动建议 · 影响金额约 $86K（按加权预测）'],
+      ['pri-amber', 'TechNova 样品签收 7 天未反馈', 'AI 已生成询问邮件草稿，引用已审核产品资料，发送前需你确认']
+    ],
+    news: [
+      { tag: ['tag-biz', '商机'], title: '欧洲教育市场招标：桌面级 3D 打印机 200 台，9 月 15 日截止', meta: 'AI 识别为高匹配商机 · 匹配度 87%', biz: ['一键转线索', '已转入线索池并生成跟进任务（演示）'] },
+      { tag: ['tag-industry', '行业'], title: 'PLA 原料价格本周上涨 4.2%，ABS/树脂持稳', meta: '影响你 2 张未发送报价的成本构成', biz: ['关联报价提醒', '已推送成本刷新提醒（演示）'] },
+      { tag: ['tag-policy', '政策'], title: '美国拟对华 3D 打印机关税上调，征求意见期 30 天', meta: '影响你在途商机 3 个 · 客户 2 家', biz: ['一键转商机', '已生成商机预警并关联客户（演示）'] }
+    ]
+  },
+  manager: {
+    greet: '早上好，陈经理 👋', scope: '团队',
+    desc: '今天是 8 月 21 日 · 当前视角：销售经理（数据范围：团队）。团队 8 月预计成交 $302K；美国关税预警建议今日晨会同步。',
+    capsules: [
+      { cls: 'cap-blue', emoji: '📥', num: '12', label: '待回复询盘', sub: '团队今日 · 平均响应 3.2 小时', go: "goPage('acquisition','网站询盘')" },
+      { cls: 'cap-red breath', emoji: '⚠️', num: '7', label: '风险商机', sub: '3 个卡样品阶段，处理前持续提醒', go: "goPage('pipeline','销售管道')" },
+      { cls: 'cap-yellow', emoji: '🌐', num: '1', label: '关税预警', sub: '待晨会同步', go: "goPage('dashboard','晨会视图')" }
+    ],
+    kpis: [
+      { label: '本月销售额', value: '$386K', delta: ['up', '▲ 9.2%'], foot: '团队 · 完成率 86% · 目标 $450K', spark: [5, 5.5, 6, 5.5, 6.5, 7, 7.2] },
+      { label: '本月新增询盘', value: '152', delta: ['up', '▲ 18'], foot: '团队 · 独立站 96 / 社媒 56', spark: [15, 18, 16, 20, 19, 22, 24] },
+      { label: '进行中报价单', value: '23', delta: ['up', '▲ 3'], foot: '团队 · 平均停留 2.1 天', spark: [18, 20, 19, 21, 20, 22, 23] },
+      { label: '本月回款', value: '$94K', delta: ['up', '▲ 15.6%'], foot: '团队 · 本月目标 $120K', spark: [2, 3, 4, 4, 5, 5.5, 6] }
+    ],
+    todos: [
+      ['pri-red', '审批 Q-2026-0892 · Nordic AB 低毛利报价', '毛利 8.2% 低于 10% 底线 · Alex 提交', '审批', '打开审批详情'],
+      ['pri-amber', '晨会同步美国关税预警', '影响团队商机 12 个 · AI 已生成解读', '查看', '打开关税预警解读'],
+      ['pri-blue', '复盘张三样品阶段 2 个成功案例', '组内样品转化率低于均值 4pt', '复盘', '打开案例复盘']
+    ],
+    advice: [
+      ['pri-red', '组内样品阶段转化率低于团队均值 4pt，建议复盘张三的成功案例', '团队管理建议 · 样品阶段平均停留 12.4 天为最大卡点'],
+      ['pri-amber', '美国关税预警影响商机 12 个，建议今日晨会同步并排查在途报价', '竞品调价 + 受影响商机名单已生成，可一键导出晨会材料']
+    ],
+    news: [
+      { tag: ['tag-policy', '政策'], title: '美国拟对华 3D 打印机关税上调，征求意见期 30 天', meta: '团队受影响商机 12 个 · 已生成晨会同步项', biz: ['生成晨会同步项', '已加入今日晨会待同步事项（演示）'] },
+      { tag: ['tag-industry', '行业'], title: '竞品 Hatchbox 宣布欧洲区耗材调价 +6%', meta: '受影响商机 5 个 · 建议排查在途报价竞争力', biz: ['查看受影响商机', '已筛选 5 个受影响商机（演示）'] },
+      { tag: ['tag-biz', '商机'], title: '东南亚 3D 打印教育采购需求环比 +38%', meta: '团队区域市场情报 · AI 已生成解读', biz: ['一键转线索', '已转入公海池待分配（演示）'] }
+    ]
+  },
+  finance: {
+    greet: '早上好，王会计 👋', scope: '全公司',
+    desc: '今天是 8 月 21 日 · 当前视角：财务（数据范围：全公司）。今日 1 笔收款到期、9 笔待确认；EUR 波动 1.8%，建议本周锁汇。',
+    capsules: [
+      { cls: 'cap-yellow', emoji: '💰', num: '9', label: '待确认收款', sub: '合计 $58,300 · 销售已登记水单', go: "goPage('finance','订单与回款')" },
+      { cls: 'cap-red breath', emoji: '⚠️', num: '2', label: '严重逾期', sub: '账龄超 90 天，处理前持续提醒', go: "goPage('finance','订单与回款')" },
+      { cls: 'cap-blue', emoji: '💱', num: '1', label: '汇率预警', sub: 'EUR 波动 1.8% · 敞口 $42K', go: "goPage('tools','汇率换算')" }
+    ],
+    kpis: [
+      { label: '本月销售额', value: '$486K', delta: ['up', '▲ 8.6%'], foot: '全公司 · 环比', spark: [5, 5.5, 5.2, 6, 6.3, 6.5, 6.8] },
+      { label: '本月新增询盘', value: '162', delta: ['up', '▲ 21'], foot: '全公司 · 独立站 104 / 社媒 58', spark: [16, 19, 17, 21, 20, 23, 25] },
+      { label: '进行中报价单', value: '26', delta: ['up', '▲ 2'], foot: '全公司 · 含 1 张低毛利待审', spark: [22, 24, 23, 25, 24, 25, 26] },
+      { label: '本月回款', value: '$142K', delta: ['up', '▲ 12.3%'], foot: '待确认 $58.3K · 目标达成 71%', spark: [2, 3, 3.5, 4, 5, 5, 6] }
+    ],
+    todos: [
+      ['pri-red', '确认 2 笔收款水单（Nordic AB / Pacific Steel）', '销售已登记 · 核对流水与汇率后入账', '去确认', '打开收款确认'],
+      ['pri-amber', 'EUR 敞口 $42K，评估本周锁汇', '汇率版本台账 · 快照 8/20 16:00', '处理', '打开汇率管理'],
+      ['pri-blue', '生成 8 月提成对账单初稿', '按财务汇率版本折算 · 3 人待核', '生成', '打开提成对账']
+    ],
+    advice: [
+      ['pri-red', 'EUR 敞口 $42K，建议本周锁汇', '财务建议 · EUR/USD 单日波动 1.8%，创近 3 个月新高'],
+      ['pri-amber', '2 笔应收账龄超 90 天，建议启动催收流程', '涉及 Nordic AB $210K、Pacific Steel $110K · 已通知对应销售']
+    ],
+    news: [
+      { tag: ['tag-fx', '汇率'], title: 'EUR/USD 单日波动 1.8%，创近 3 个月新高', meta: '未锁汇敞口 $42K', biz: ['评估锁汇', '已打开汇率版本台账（演示）'] },
+      { tag: ['tag-policy', '政策'], title: '出口退税率调整征求意见：部分塑料制品拟下调', meta: '影响耗材类订单毛利测算 · 涉及在途订单 14 单', biz: ['查看影响订单', '已筛选 14 个受影响订单（演示）'] },
+      { tag: ['tag-policy', '政策'], title: '欧盟海关申报新规 10 月生效：低值货物申报字段变更', meta: '影响形式发票与商业发票模板', biz: ['查看新规解读', '已生成新规解读与模板变更清单（演示）'] }
+    ]
+  },
+  exec: {
+    greet: '早上好，李总 👋', scope: '全局',
+    desc: '今天是 8 月 21 日 · 当前视角：管理层（数据范围：全局）。本月目标达成 81%；东南亚环比 +38% 值得关注。',
+    capsules: [
+      { cls: 'cap-green', emoji: '🎯', num: '81%', label: '本月目标达成', sub: '缺口 $114K · 距月底 10 天', go: "goPage('insight','数据分析')" },
+      { cls: 'cap-red breath', emoji: '⚠️', num: '3', label: '战略风险', sub: '含关税敞口，处理前持续提醒', go: "goPage('insight','数据分析')" },
+      { cls: 'cap-blue', emoji: '📈', num: '3', label: '市场情报', sub: 'AI 已生成解读', go: "goPage('dashboard','经营简报')" }
+    ],
+    kpis: [
+      { label: '本月销售额', value: '$486K', delta: ['up', '▲ 8.6%'], foot: '全局 · 目标 $600K · 达成 81%', spark: [5, 5.5, 5.2, 6, 6.3, 6.5, 6.8] },
+      { label: '本月新增询盘', value: '162', delta: ['up', '▲ 21'], foot: '全局 · 环比', spark: [16, 19, 17, 21, 20, 23, 25] },
+      { label: '进行中报价单', value: '26', delta: ['up', '▲ 2'], foot: '全局 · 加权预测 $86.2K', spark: [22, 24, 23, 25, 24, 25, 26] },
+      { label: '本月回款', value: '$142K', delta: ['up', '▲ 12.3%'], foot: '全局 · 待确认 $58.3K', spark: [2, 3, 3.5, 4, 5, 5, 6] }
+    ],
+    todos: [
+      ['pri-red', '决策东南亚备货方案', '环比 +38% · AI 已生成备货与物流专线评估', '查看', '打开备货评估'],
+      ['pri-amber', '审阅 8 月经营简报', 'AI 三段式建议 · 含关税敞口分析', '审阅', '打开经营简报'],
+      ['pri-blue', '大客户集中度评估', 'Top3 客户占 41%，接近 45% 预警线', '评估', '打开客户结构分析']
+    ],
+    advice: [
+      ['pri-red', '东南亚市场环比 +38%，建议增加备货并评估专线物流', '战略建议 · 全球 3D 打印市场 2027 年预计达 $45B，头部厂商已布局东南亚'],
+      ['pri-amber', '大客户集中度 Top3 占 41%，接近预警线', '建议培育中部客户 · AI 已圈定 12 家高潜力成长客户名单']
+    ],
+    news: [
+      { tag: ['tag-industry', '行业'], title: '全球 3D 打印市场规模 2027 年预计达 $45B（CAGR 19.3%）', meta: 'AI 已生成解读：桌面级设备与教育市场为增量主力', biz: ['查看解读', '已生成战略解读报告（演示）'] },
+      { tag: ['tag-policy', '政策'], title: '美国拟对华 3D 打印机关税上调，征求意见期 30 天', meta: '在美收入占比 38% · 关税敞口已纳入战略风险', biz: ['查看敞口分析', '已打开战略风险预警（演示）'] },
+      { tag: ['tag-industry', '行业'], title: '头部厂商加速东南亚布局：本地化组装 + 关税规避', meta: '竞品动态 · 与我方东南亚 +38% 增长相互印证', biz: null }
+    ]
+  },
+  admin: {
+    greet: '早上好，管理员 👋', scope: '全局',
+    desc: '今天是 8 月 21 日 · 当前视角：超级管理员（数据范围：全局）。7 项服务在线；有 5 项待处理审批和 1 条异地登录告警。',
+    capsules: [
+      { cls: 'cap-green', emoji: '✅', num: '7', label: '系统运行正常', sub: '7 项服务在线 · 运行 46 天', go: "goPage('system','数据库维护')" },
+      { cls: 'cap-yellow', emoji: '📝', num: '5', label: '待处理审批', sub: '3 账号 2 权限', go: "goPage('system','账号与权限')" },
+      { cls: 'cap-red breath', emoji: '🚨', num: '1', label: '异地登录告警', sub: 'IP 已记录，处理前持续提醒', go: "goPage('system','账号与权限')" }
+    ],
+    kpis: [
+      { label: '本月销售额', value: '$486K', delta: ['up', '▲ 8.6%'], foot: '全局 · 数据口径', spark: [5, 5.5, 5.2, 6, 6.3, 6.5, 6.8] },
+      { label: '本月新增询盘', value: '162', delta: ['up', '▲ 21'], foot: '全局 · 数据口径', spark: [16, 19, 17, 21, 20, 23, 25] },
+      { label: '进行中报价单', value: '26', delta: ['up', '▲ 2'], foot: '全局 · 数据口径', spark: [22, 24, 23, 25, 24, 25, 26] },
+      { label: '本月回款', value: '$142K', delta: ['up', '▲ 12.3%'], foot: '全局 · 数据口径', spark: [2, 3, 3.5, 4, 5, 5, 6] }
+    ],
+    todos: [
+      ['pri-red', '复核异地登录告警（账号 zhang3）', '登录 IP 47.98.x.x · 与常用设备不符', '复核', '打开审计日志'],
+      ['pri-amber', '处理 5 项待审批（3 账号 2 权限）', '账号生命周期 + 权限模板变更', '去审批', '打开账号与权限'],
+      ['pri-blue', '检查昨日数据库备份任务', 'SQL.GZ · 保留策略 30 份 · 全部成功', '查看', '打开数据库维护']
+    ],
+    advice: [
+      ['pri-amber', '3 个账号 90 天未登录，建议清理', '系统建议 · 含 1 个仍持有导出权限的账号'],
+      ['pri-blue', '昨日 AI 调用 1,284 次，建议采纳率 76%', '成本 $12.6，在月度预算内 · 资讯采集任务 8/8 在线']
+    ],
+    news: [
+      { tag: ['tag-sys', '系统'], title: '资讯采集任务：8 个信源全部在线，今日已抓取 214 条', meta: '按行业词库（3D 打印机 / PLA 耗材）过滤后分发 41 条', biz: null },
+      { tag: ['tag-sys', '系统'], title: '行业订阅词库：「树脂耗材」「教育市场」待审核词 2 个', meta: '词库配置 · 审核后生效于每日 8:30 简报', biz: ['配置词库', '已打开资讯源配置（演示）'] },
+      { tag: ['tag-sys', '系统'], title: '每日一句一言 API：近 7 日成功率 99.2%', meta: '失败自动降级为本地 10 句轮换 · 无需处理', biz: null }
+    ]
+  }
+};
+
+function renderOverview() {
+  const d = wbData[currentRole] || wbData.manager;
+  const roleName = (roles.find(r => r.id === currentRole) || {}).name || '';
+  const now = new Date();
+  const wd = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
+  const dateStr = `${now.getMonth() + 1}月${now.getDate()}日 星期${wd}`;
+  const cnUntil = daysUntil(cnHoliday.sm, cnHoliday.sd);
+  const cnText = `我方${cnHoliday.name}放假 ${cnHoliday.sm}.${cnHoliday.sd}-${cnHoliday.em}.${cnHoliday.ed}·${cnHoliday.days}天 还有 ${cnUntil} 天`;
+  const ch = countryHolidays[focusCountry];
+  const chUntil = daysUntil(ch.m, ch.d);
+  const quote = atmoQuotes[now.getDate() % atmoQuotes.length];
+  const bench = currentRole === 'sales' ? '团队均值' : currentRole === 'manager' ? '行业均值' : '公司均值';
+  const showComms = ['sales', 'manager', 'admin'].includes(currentRole);
+
+  const caps = d.capsules.map(c => `
+    <div class="cap ${c.cls}" onclick="${c.go}">
+      <span class="cap-emoji">${c.emoji}</span>
+      <div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span class="cap-num">${c.num}</span><span class="cap-label">${c.label}</span></div>
+        <div class="cap-sub">${c.sub}</div>
+      </div>
+    </div>`).join('');
+
+  const kpis = d.kpis.map(k => `
+    <div class="kpi-card">
+      <div class="kpi-label">${k.label}<span class="scope-tag">${d.scope}</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between">
+        <span class="kpi-value">${k.value}</span>
+        <span class="kpi-delta ${k.delta[0]}">${k.delta[1]}</span>
+      </div>
+      ${sparkline(k.spark, '#185FA5')}
+      <div class="kpi-foot">${k.foot}</div>
+    </div>`).join('');
+
+  const funnelRows = funnelStages.map((s, i) => {
+    const conv = s.conv ? `
+      <div class="funnel-conv">
+        <span class="fc-pill">↓ ${s.conv[0]}</span>
+        <span>vs 基准 <span class="${s.conv[2] === 'up' ? 'dev-up' : 'dev-down'}">${s.conv[1]}</span></span>
+      </div>` : '<div class="funnel-conv" style="color:#d1d5db">进入漏斗</div>';
+    const bg = s.hot
+      ? 'linear-gradient(180deg,#F6B352,#E8861A)'
+      : `linear-gradient(180deg,hsl(214,52%,${66 - i * 4}%),hsl(214,62%,${52 - i * 4}%))`;
+    return `
+    <div class="funnel-row">
+      <div class="funnel-wrap"><div class="funnel-bar" style="width:${s.w}%;background:${bg};clip-path:polygon(9% 0,91% 0,78% 100%,22% 100%)">
+        <div class="fb-line">${s.name} ${s.n} 条<span class="fb-amt">${s.amt}</span></div>
+      </div></div>
+      ${conv}
+    </div>`;
+  }).join('');
+
+  const stayRows = stageStay.map(s => `
+    <div class="stage-row">
+      <span>${s.name}</span>
+      <div class="stage-track"><div class="stage-fill ${s.warn ? 'warn' : ''}" style="width:${s.pct}%"></div></div>
+      <span class="stage-days">${s.days} 天${s.warn ? ` <span class="warn">⚠️ ${s.warn}</span>` : ''}</span>
+    </div>`).join('');
+
+  const todoRows = d.todos.map(t => `
+      <div class="task-item">
+        <span class="task-pri ${t[0]}"></span>
+        <div class="task-body">
+          <div class="task-name">${t[1]}</div>
+          <div class="task-meta">${t[2]}</div>
+        </div>
+        <button class="task-act" onclick="toast('${t[4]}')">${t[3]}</button>
+      </div>`).join('');
+
+  const adviceRows = d.advice.map(a => `
+      <div class="task-item">
+        <span class="task-pri ${a[0]}"></span>
+        <div class="task-body">
+          <div class="task-name">${a[1]}</div>
+          <div class="task-meta">${a[2]}</div>
+        </div>
+      </div>`).join('');
+
+  const bubbles = mapBubbles.map(b => `
+    <div class="map-bubble" style="left:${b.x}%;top:${b.y}%" onclick="toast('${b.name}：本月成交 ${b.amt} · 客户 ${b.cust} 家 · 环比 ${b.mom} · ${b.risk ? '受关税影响市场，注意报价与交期' : '增长健康'}')">
+      <div class="map-dot ${b.risk ? 'risk' : ''}" style="width:${b.size}px;height:${b.size}px">${b.amt}</div>
+      <div class="map-lbl">${b.name}</div>
+    </div>`).join('');
+
+  const newsRows = d.news.map(n => `
+      <div class="news-item">
+        <span class="news-tag ${n.tag[0]}">${n.tag[1]}</span><span class="news-title">${n.title}</span>
+        <div class="news-meta">${n.meta}${n.biz ? ` · <a href="#" style="color:#0F6E56" onclick="toast('${n.biz[1]}');return false">${n.biz[0]} →</a>` : ''}</div>
+      </div>`).join('');
+
+  const fxRows = wbFxRates.map(f => `
+    <div class="fx-card">
+      <div class="fx-pair"><span>USD/${f[0]}</span><span style="color:#c0c6cf">09:32</span></div>
+      <div class="fx-rate"><span>${f[1]}</span><span class="fx-chg ${f[2]}">${f[3]}</span></div>
+    </div>`).join('');
+
+  const modRows = (roleModules[currentRole] || []).map(m => `
+    <div class="role-mod-card" onclick="toast('演示原型：${m[0]} 页面')">
+      <span class="rm-badge rm-${currentRole}">${roleBadgeName[currentRole]}专属</span>
+      <div class="rm-name">${m[0]}</div>
+      <div class="rm-desc">${m[1]}</div>
+    </div>`).join('');
+
+  return `
+  <div class="atmo-bar">
+    <div class="atmo-quote"><span class="marquee">✦ ${quote}</span></div>
+    <span class="atmo-item">📅 <b>${dateStr}</b></span>
+    <span class="atmo-item ${cnUntil <= 15 ? 'hot' : ''}" title="下单预期管理：倒计时内新订单交期需预留假期">🇨🇳 ${cnUntil <= 15 ? `<b>${cnText}</b>` : cnText}</span>
+    <span class="atmo-item ${chUntil <= 14 ? 'hot' : ''}">
+      <select class="atmo-select" onchange="switchCountry(this.value)">
+        ${Object.keys(countryHolidays).map(c => `<option ${c === focusCountry ? 'selected' : ''}>${c}</option>`).join('')}
+      </select>
+      <span id="atmoCountry">${ch.name} ${ch.m}.${ch.d}·${ch.days}天 还有 ${chUntil} 天</span>
+    </span>
+  </div>
+  <div class="atmo-hint ${chUntil <= 14 ? 'show' : ''}" id="atmoHint">${focusCountry}客户${ch.name}放假 ${ch.days} 天：期间客户不回复、物流停摆，报价/签单/催款请提前，在途订单交期做好预期——客户放假前是催单、发货、节日营销的黄金窗口。</div>
+  <div class="page-head">
+    <div class="breadcrumb">工作台 / 角色工作台</div>
+    <div class="page-title">${d.greet}</div>
+    <div class="page-desc">${d.desc} <span style="color:#534AB7">右上角切换角色可查看 5 个角色的差异化工作台。</span></div>
+  </div>
+  <div class="cap-row">${caps}</div>
+  <div class="kpi-grid">${kpis}</div>
+  <div class="panel-grid">
+    <div class="panel">
+      <div class="panel-title">销售漏斗<span class="scope-tag">通用 · 数据范围：${d.scope} · 对标：${bench}</span></div>
+      ${funnelRows}
+      <div class="funnel-sum">总体转化 <b>2.8%</b> <span class="dev-down">▼ 0.6pt</span> vs ${bench} · 平均客单价 <b>$4.1K</b></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">今日待办 <span class="more" onclick="goPage('dashboard','待办清单')">全部</span></div>
+      ${todoRows}
+      <div style="margin-top:10px;padding:9px 12px;background:#EEEDFE;border-radius:8px;font-size:11px;color:#534AB7;line-height:1.7">AI 待办洞察：客户已读未回复 3 天，建议电话跟进（Müller GmbH）· 超期项已标红并置顶</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">管道健康度<span class="scope-tag">通用</span></div>
+      <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">各阶段商机平均停留时长（阈值 7 天）</div>
+      ${stayRows}
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;font-size:12px;color:#374151">
+        <span>加权预测金额 <b style="font-size:16px;color:#111827">$86,200</b></span>
+        <span style="font-size:11px;color:#9ca3af">按各阶段历史转化率计算</span>
+      </div>
+      <div style="margin-top:10px;padding:9px 12px;background:#EEEDFE;border-radius:8px;font-size:11px;color:#534AB7;line-height:1.7">AI 提示：TechNova Ltd（英国）样品寄出 12 天未反馈，今天电话确认；样品阶段停留 12.4 天为最大卡点</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">AI 经营建议<span class="scope-tag">通用 · 按「${roleName}」生成</span></div>
+      ${adviceRows}
+    </div>
+    <div class="panel">
+      <div class="panel-title">全球业务地图<span class="scope-tag">通用 · ${currentRole === 'sales' ? '本人区域' : currentRole === 'manager' ? '团队区域' : currentRole === 'finance' ? '财务视角' : '全球'}</span></div>
+      <div class="map-wrap"><div class="map-grid"></div>${bubbles}</div>
+      <div class="map-legend">
+        <span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:rgba(24,95,165,.85);margin-right:4px"></i>气泡大小 = 本月成交额</span>
+        <span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:rgba(239,159,39,.92);margin-right:4px"></i>橙色 = 受关税影响市场</span>
+        <span style="margin-left:auto;color:#c0c6cf">点击气泡查看市场详情</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">外贸资讯 · 行业资讯推送<span class="scope-tag">每日 8:30 · 按「${roleName}」定制</span></div>
+      ${newsRows}
+    </div>
+    <div class="panel">
+      <div class="panel-title">多币种 & 汇率看板<span class="scope-tag">通用 · ${currentRole === 'finance' ? '管理' : currentRole === 'admin' ? '配置' : '查看'}</span></div>
+      <div class="fx-grid">${fxRows}</div>
+      ${currentRole === 'finance'
+        ? '<button class="task-act" style="margin-top:12px;padding:6px 14px" onclick="toast(\'已锁定今日汇率版本：EUR 1.084 / GBP 1.271 / JPY 149.2 …（报价与收款共用此版本，演示）\')">锁定今日汇率版本</button>'
+        : currentRole === 'admin'
+        ? '<button class="task-act" style="margin-top:12px;padding:6px 14px" onclick="toast(\'打开汇率源配置（演示）\')">配置汇率源</button>'
+        : '<div style="margin-top:10px;font-size:11px;color:#9ca3af">财务可锁定汇率版本；版本锁定后报价与收款共用同一汇率。</div>'}
+    </div>
+    <div class="panel">
+      <div class="panel-title">全局搜索 & 快捷操作<span class="scope-tag">通用 · 结果按权限过滤</span></div>
+      <div class="quick-ops">
+        <div class="qo-search"><span style="font-size:13px">🔍</span><input placeholder="搜索客户 / 订单 / 询盘 / 报价" onkeydown="if(event.key==='Enter')toast('搜索结果已按「${roleName}」权限过滤（演示）')"></div>
+        <button class="qo-btn" onclick="toast('新建客户（演示）')">＋ 新建客户</button>
+        <button class="qo-btn" onclick="goPage('quote','快速报价')">＋ 新建报价</button>
+        <button class="qo-btn" onclick="toast('新建跟进（演示）')">＋ 新建跟进</button>
+      </div>
+      ${showComms ? `
+      <div class="qo-ch">
+        <button class="qo-btn" onclick="goPage('comms','邮件管理')">📧 邮件</button>
+        <button class="qo-btn" onclick="goPage('comms','WhatsApp')">💬 WhatsApp</button>
+        <button class="qo-btn" onclick="goPage('comms','社媒私信')">🌐 社媒消息</button>
+      </div>` : '<div style="margin-top:10px;font-size:11px;color:#9ca3af">客户沟通入口对财务/高管不可见（按权限矩阵）。</div>'}
+    </div>
+  </div>
+  <div class="page-head" style="margin-top:24px;margin-bottom:14px">
+    <div class="page-title" style="font-size:16px">${roleName}专属模块 <span class="scope-tag">仅当前角色可见 · 通用模块数据范围：${d.scope}</span></div>
+  </div>
+  <div class="role-mod-grid">${modRows}</div>`;
+}
+
+function renderBriefing() {
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">工作台 / 经营简报</div>
+    <div class="page-title">经营简报 · 8 月 21 日</div>
+    <div class="page-desc">周期：<span style="color:#185FA5">今日</span> / 本周 / 本月 可切换。AI 生成三段式经营建议（判断依据 → 建议动作 → 业务影响），判断依据可追溯。</div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">高风险金额</div>
+      <div class="kpi-value">¥320K</div>
+      <div class="kpi-foot">2 笔逾期 + 1 笔汇率敞口</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">高优先级待办</div>
+      <div class="kpi-value">7</div>
+      <div class="kpi-foot">3 个涉及重点客户</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">预计成交金额</div>
+      <div class="kpi-value">¥860K</div>
+      <div class="kpi-foot">本月内 · 5 个商机</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">新增线索</div>
+      <div class="kpi-value">12</div>
+      <div class="kpi-foot"><span class="up">+3</span> 较昨日 · 独立站 8 / 社媒 4</div>
+    </div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:1fr">
+    <div class="panel">
+      <div class="panel-title">AI 经营建议（三段式 · 依据可追溯）</div>
+      <div class="task-item">
+        <span class="task-pri pri-red"></span>
+        <div class="task-body">
+          <div class="task-name">建议：今日集中处理 2 笔逾期应收（Nordic AB、Pacific Steel）</div>
+          <div class="task-meta">判断依据：账期已过 12/8 天，两客户近 30 天有邮件互动但未提付款 → 建议动作：财务在「财务经营·订单与回款」发起催收提醒，销售同步邮件跟进 → 业务影响：回收 ¥320K，逾期率从 17% 降至 0%</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-amber"></span>
+        <div class="task-body">
+          <div class="task-name">建议：刷新 3 张未发送报价的汇率快照后再报</div>
+          <div class="task-meta">判断依据：USD/CNY 波动 0.8%（8/20 16:00 快照）→ 建议动作：报价中心批量刷新汇率 → 业务影响：避免 ¥18K 汇兑损失（按三单合计 ¥2.2M 估算）</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">客户动态</div>
+      <div class="task-item">
+        <span class="task-pri pri-red"></span>
+        <div class="task-body">
+          <div class="task-name">Müller GmbH 连续 3 天打开报价单但未回复</div>
+          <div class="task-meta">AI 建议：今日电话跟进，重点确认 DDP 税率疑虑（来源：邮件追踪 + 报价浏览记录）</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-amber"></span>
+        <div class="task-body">
+          <div class="task-name">TechNova Ltd 样品签收 7 天无反馈</div>
+          <div class="task-meta">AI 建议：发送测试反馈询问邮件，已生成草稿待确认</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-blue"></span>
+        <div class="task-body">
+          <div class="task-name">沉默客户预警：4 个客户超 60 天未互动</div>
+          <div class="task-meta">AI 建议：发起复购唤醒流程，其中 Pacific Steel 上次采购周期约 90 天，接近复购窗口</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">风险提醒</div>
+      <div class="task-item">
+        <span class="task-pri pri-red"></span>
+        <div class="task-body">
+          <div class="task-name">PO-2026-0338 生产进度落后计划 2 天</div>
+          <div class="task-meta">交期 9 月 5 日 · AI 预测按当前进度有延期风险，建议今日与工厂确认</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-amber"></span>
+        <div class="task-body">
+          <div class="task-name">USD/CNY 汇率波动 0.8%，3 张未发送报价建议刷新汇率快照</div>
+          <div class="task-meta">来源：汇率连接器 · 快照时间 8 月 20 日 16:00</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">外贸资讯 & 行业资讯 AI 推送<span class="scope-tag">每日 8:30 · 按行业词库（3D 打印机/耗材）定制</span></div>
+      <div class="news-item">
+        <span class="news-tag tag-policy">政策</span><span class="news-title">美国拟对华 3D 打印机关税上调，征求意见期 30 天</span>
+        <div class="news-meta">影响在途商机 12 个 · 涉及客户 8 家 · <a href="#" style="color:#0F6E56" onclick="toast('已生成商机预警并关联 8 家美国客户（演示）');return false">一键转商机 →</a></div>
+      </div>
+      <div class="news-item">
+        <span class="news-tag tag-industry">行业</span><span class="news-title">PLA 原料价格本周上涨 4.2%，ABS/树脂持稳</span>
+        <div class="news-meta">影响 6 张未发送报价的成本构成 · <a href="#" style="color:#0F6E56" onclick="toast('已向 6 张未发送报价的负责人推送成本刷新提醒（演示）');return false">关联报价提醒 →</a></div>
+      </div>
+      <div class="news-item">
+        <span class="news-tag tag-biz">商机</span><span class="news-title">欧洲教育市场招标：桌面级 3D 打印机 200 台，9 月 15 日截止</span>
+        <div class="news-meta">AI 识别为高匹配商机 · 匹配度 87% · <a href="#" style="color:#0F6E56" onclick="toast('已转入线索池并关联客户（演示）');return false">一键转线索 →</a></div>
+      </div>
+      <div class="news-item">
+        <span class="news-tag tag-fx">汇率</span><span class="news-title">EUR/USD 单日波动 1.8%，创近 3 个月新高</span>
+        <div class="news-meta">未锁汇敞口 $42K · 已同步财务视角提醒</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderApprovals() {
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">工作台 / 审批中心</div>
+    <div class="page-title">审批中心</div>
+    <div class="page-desc">所有对外发送、价格调整、低毛利放行、交期承诺和正式单证确认必须经人工或确定性规则审批。AI 仅标注风险，不做决定。</div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:1fr">
+    <div class="panel">
+      <div class="panel-title">待我审批（3）</div>
+      <div class="approval-item">
+        <span class="approval-type type-quote">报价</span>
+        <div class="approval-body">
+          <div class="approval-name">Q-2026-0892 · Nordic AB · FOB 报价<span class="ai-risk">AI：毛利 8.2% 低于 10% 底线</span></div>
+          <div class="approval-meta">5,000 件 · 目标毛利售价模式 · Alex 提交 · 2 小时前 · <a href="#" style="color:#185FA5" onclick="toast('打开计算步骤');return false">查看计算步骤</a></div>
+        </div>
+        <button class="task-act" onclick="toast('已通过审批（演示）')">通过</button>
+      </div>
+      <div class="approval-item">
+        <span class="approval-type type-quote">折扣</span>
+        <div class="approval-body">
+          <div class="approval-name">Müller GmbH · 双重折扣叠加<span class="ai-risk">AI：等级折扣 12% + 数量折扣 8%，叠加后 19% 超上限</span></div>
+          <div class="approval-meta">规则版本 v2.3 · 叠加方式：顺序相乘 · 昨日提交</div>
+        </div>
+        <button class="task-act" onclick="toast('已通过审批（演示）')">通过</button>
+      </div>
+      <div class="approval-item">
+        <span class="approval-type type-order">放行</span>
+        <div class="approval-body">
+          <div class="approval-name">PO-2026-0341 · 提前排产申请</div>
+          <div class="approval-meta">收款门禁：预付款 30% 已到账（约定 30%）· 剩余尾款见单后 30 天</div>
+        </div>
+        <button class="task-act" onclick="toast('已通过审批（演示）')">通过</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============ 晨会视图 / 待办清单演示 ============ */
+function renderMorningMeeting() {
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">工作台 / 晨会视图</div>
+    <div class="page-title">晨会四卡 · 8 月 21 日 09:00</div>
+    <div class="page-desc">主管 / 管理层视角：开晨会前 AI 已生成优先级结论、高风险金额、待协同事项与今日动作，会前 10 分钟扫完。</div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">优先级结论</div>
+      <div class="kpi-value" style="font-size:18px;line-height:1.5">先催 2 笔逾期回款，再处理 Nordic 低毛利报价审批</div>
+      <div class="kpi-foot">AI 结论 · 依据 7 项数据</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">高风险金额</div>
+      <div class="kpi-value">¥320K</div>
+      <div class="kpi-foot">2 笔逾期应收</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">待协同</div>
+      <div class="kpi-value">2</div>
+      <div class="kpi-foot">财务确认收款 ×1 · 工厂交期 ×1</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">今日动作</div>
+      <div class="kpi-value">6</div>
+      <div class="kpi-foot">3 个重点客户 · 2 个审批 · 1 个交期确认</div>
+    </div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:1fr">
+    <div class="panel">
+      <div class="panel-title">客户动态明细</div>
+      <div class="task-item">
+        <span class="task-pri pri-red"></span>
+        <div class="task-body">
+          <div class="task-name">Nordic AB · 逾期 12 天（¥210K）</div>
+          <div class="task-meta">今日动作：财务发起催收提醒 + Alex 邮件同步跟进 · 上次互动 8/18</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-amber"></span>
+        <div class="task-body">
+          <div class="task-name">PO-2026-0338 · 生产进度落后 2 天（交期 9/5）</div>
+          <div class="task-meta">今日动作：与工厂确认排产 · 风险升级路径：落后超 4 天上报管理层</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderTodos() {
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">工作台 / 待办清单</div>
+    <div class="page-title">待办清单</div>
+    <div class="page-desc">快速新增支持自然语言（如「明天 10 点跟进重点客户报价」）；筛选：今天 / 逾期 / 我负责 / 客户跟进；历史清单自动折叠归档。个人待办仅本人可见，任何管理角色不可越权。</div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:1fr">
+    <div class="panel">
+      <div class="panel-title">快速新增（自然语言）</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <input id="todoInput" placeholder="例如：明天 10 点跟进 Müller GmbH 的 DDP 报价" style="flex:1;min-width:260px;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit">
+        <button class="task-act" style="padding:9px 20px" onclick="toast('AI 解析：截止 明天 10:00 · 关联客户 Müller GmbH · 类型 报价跟进（演示）')">AI 解析并创建</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">今天（5）· 逾期（2）· 历史清单已归档（12）</div>
+      <div class="task-item">
+        <span class="task-pri pri-red"></span>
+        <div class="task-body">
+          <div class="task-name">10:00 跟进 Müller GmbH — DDP 报价疑虑</div>
+          <div class="task-meta">客户跟进 · 今天 · 来源：经营简报建议</div>
+        </div>
+        <button class="task-act" onclick="toast('已完成（演示）')">完成</button>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-red"></span>
+        <div class="task-body">
+          <div class="task-name">逾期 · 催收 Nordic AB 回款</div>
+          <div class="task-meta">逾期 <span class="overdue">2 天</span> · 财务协同 · 关联订单 PO-2026-0312</div>
+        </div>
+        <button class="task-act" onclick="toast('已完成（演示）')">完成</button>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-blue"></span>
+        <div class="task-body">
+          <div class="task-name">16:00 与工厂确认 PO-2026-0338 排产</div>
+          <div class="task-meta">交期协同 · 今天 · 风险：进度落后 2 天</div>
+        </div>
+        <button class="task-act" onclick="toast('已完成（演示）')">完成</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">AI 待办洞察（自动生成）<span class="scope-tag">来源：邮件追踪 / 报价浏览 / 样品物流</span></div>
+      <div class="task-item">
+        <span class="task-pri pri-red"></span>
+        <div class="task-body">
+          <div class="task-name">Müller GmbH 已读未回复 3 天，建议电话跟进</div>
+          <div class="task-meta">依据：邮件追踪 + 报价浏览 3 次 · <a href="#" style="color:#185FA5" onclick="toast('已生成跟进待办（演示）');return false">加入待办</a></div>
+        </div>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-amber"></span>
+        <div class="task-body">
+          <div class="task-name">TechNova Ltd 样品签收 7 天无反馈</div>
+          <div class="task-meta">依据：样品物流签收记录 · AI 已生成询问邮件草稿待确认</div>
+        </div>
+      </div>
+      <div class="task-item">
+        <span class="task-pri pri-blue"></span>
+        <div class="task-body">
+          <div class="task-name">Pacific Steel 接近 90 天复购窗口</div>
+          <div class="task-meta">依据：上次采购周期约 90 天 · 建议发起复购唤醒</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============ 快速报价（秒报价）演示 ============ */
+const qqProducts = {
+  'PLA-301 白色耗材 1.75mm': { cost: 3.42, cbm: 0.0048, hist: '$4.90 – $5.10', last: '$4.92（2026/05，3,000 件）' },
+  'ABS-205 黑色耗材 1.75mm': { cost: 3.68, cbm: 0.0048, hist: '$5.20 – $5.45', last: '$5.30（2026/06，8,000 件）' },
+  'PETG-310 透明耗材 1.75mm': { cost: 3.95, cbm: 0.0051, hist: '$5.60 – $5.85', last: '—（该客户首次询价）' }
+};
+let qq = { product: 'PLA-301 白色耗材 1.75mm', qty: 5000, term: 'FOB', country: '德国', status: 'idle', secs: 0 };
+
+function renderQuickQuote() {
+  const terms = ['EXW', 'FOB', 'CIF', 'DDP'].map(t =>
+    `<button class="${qq.term === t ? 'on' : ''}" onclick="qqSet('term','${t}')">${t}</button>`).join('');
+  let resultHtml = '';
+  if (qq.status === 'loading') {
+    resultHtml = `<div class="qq-result"><div class="qq-loading">正在取数：产品最新成本版本 · 包装体积折算海运费 · 该客户历史成交价 · 汇率快照 …</div></div>`;
+  } else if (qq.status === 'done') {
+    const p = qqProducts[qq.product];
+    const freight = qq.term === 'EXW' ? 0 : (qq.term === 'FOB' ? 0.06 : qq.term === 'CIF' ? 0.14 : 0.26);
+    const unit = (p.cost * (1 + freight) * 1.42).toFixed(2);
+    resultHtml = `
+    <div class="qq-result">
+      <div class="qq-price"><span class="big">$${unit}</span><span class="unit">/ 件 · ${qq.term} Shanghai · ${qq.qty.toLocaleString()} 件</span></div>
+      <div class="qq-meta">生成耗时 ${qq.secs} 秒 · 汇率快照 7.12（8/20 16:00）· 成本版本 v3（8/12 更新）</div>
+      <div style="margin-top:14px; font-size:12px; color:#374151; font-weight:500">成本构成（可展开明细）</div>
+      <div class="cost-bar">
+        <span style="width:58%; background:#185FA5"></span><span style="width:13%; background:#378ADD"></span><span style="width:8%; background:#0F6E56"></span><span style="width:21%; background:#AFA9EC"></span>
+      </div>
+      <div class="cost-legend">
+        <i style="background:#185FA5"></i>产品成本 58%（$${p.cost}）&nbsp;&nbsp;
+        <i style="background:#378ADD"></i>包装 13% &nbsp;&nbsp;
+        <i style="background:#0F6E56"></i>国内运费 8% &nbsp;&nbsp;
+        <i style="background:#AFA9EC"></i>费用分摊+利润预留 21%
+      </div>
+      <div class="qq-ai">
+        <b>AI 建议价格区间：$${(unit * 0.99).toFixed(2)} – $${(unit * 1.03).toFixed(2)}</b><br>
+        依据：该客户历史成交价 ${p.hist}（最近一次：${p.last}）；近 30 天同产品对德报价均值 $${(p.cost * 1.44).toFixed(2)}；当前汇率波动 0.8%，建议锁定 7 天报价有效期。低于 $${(p.cost * 1.28).toFixed(2)} 将触发低毛利审批（底线毛利率 10%）。
+      </div>
+      <div class="qq-actions">
+        <button class="qq-gen" onclick="toast('已生成英文报价单 PDF（演示），可发送或转入报价管理走审批')">生成报价单 PDF</button>
+        <button class="qq-gen gray" onclick="toast('已转入报价管理，保存为草稿版本（演示）')">存为报价草稿</button>
+        <span class="qq-done">✓ 用时 ${qq.secs} 秒，无需人工查成本表</span>
+      </div>
+    </div>`;
+  }
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">报价中心 / 快速报价</div>
+    <div class="page-title">快速报价 · 秒报价</div>
+    <div class="page-desc">客户询盘拼的就是响应速度。选产品、填数量、选贸易条款——成本版本、包装体积、历史成交价、汇率快照全部自动取数，30 秒内出一份有依据的报价单。</div>
+  </div>
+  <div class="qq-form">
+    <div class="qq-row">
+      <div class="qq-field">
+        <label>产品（从产品知识库 PIM 自动带出成本与包装数据）</label>
+        <select onchange="qqSet('product', this.value)">
+          ${Object.keys(qqProducts).map(k => `<option ${qq.product === k ? 'selected' : ''}>${k}</option>`).join('')}
+        </select>
+      </div>
+      <div class="qq-field" style="max-width:160px">
+        <label>数量（件）</label>
+        <input type="number" value="${qq.qty}" min="100" step="500" onchange="qqSet('qty', +this.value || 5000)">
+      </div>
+      <div class="qq-field" style="max-width:170px">
+        <label>目的国</label>
+        <select onchange="qqSet('country', this.value)">
+          ${['德国', '英国', '美国', '澳大利亚'].map(c => `<option ${qq.country === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="qq-row" style="align-items:flex-end">
+      <div class="qq-field" style="max-width:300px">
+        <label>贸易条款</label>
+        <div class="qq-term">${terms}</div>
+      </div>
+      <div class="qq-field" style="max-width:220px">
+        <button class="qq-run" onclick="qqRun()">&#9889; 开始秒报价</button>
+      </div>
+      ${qq.status === 'done' ? '<span class="qq-timer">换任何参数都可重新秒出结果</span>' : ''}
+    </div>
+  </div>
+  ${resultHtml}`;
+}
+
+function qqSet(k, v) { qq[k] = v; renderContent(); }
+
+/* ============ 产品知识库 · 产品库（分类树 + PIM） ============ */
+const pimTree = [
+  { id: 'all', name: '全部产品', n: 128 },
+  { id: 'PLA', name: 'PLA 耗材', n: 18 },
+  { id: 'ABS', name: 'ABS 耗材', n: 12 },
+  { id: 'PETG', name: 'PETG 耗材', n: 9 },
+  { id: 'TPU', name: 'TPU 耗材', n: 7 },
+  { id: 'FDM', name: '桌面级 FDM 打印机', n: 14 },
+  { id: 'IND', name: '工业级 FDM 打印机', n: 8 },
+  { id: 'ACC', name: '喷嘴与挤出机配件', n: 22 },
+  { id: 'PLAT', name: '打印平台', n: 11 }
+];
+const pimProducts = [
+  { sku: 'PLA-301', name: '白色耗材 1.75mm', fam: 'PLA', famName: 'PLA 耗材', ver: 'v3', updated: '08-12', status: 'ok', statusTxt: '已发布', docs: ['TDS v2.1', 'SDS v1.4', 'REACH', '图片 12 张'], box: '60×40×40cm · 24 卷/箱', cbm: '0.096 m³/箱', gw: '12.6 kg/箱', rate: '94%', conflict: '' },
+  { sku: 'PLA-305', name: '黑色耗材 1.75mm', fam: 'PLA', famName: 'PLA 耗材', ver: 'v3', updated: '08-12', status: 'ok', statusTxt: '已发布', docs: ['TDS v2.1', 'SDS v1.4', '图片 12 张'], box: '60×40×40cm · 24 卷/箱', cbm: '0.096 m³/箱', gw: '12.6 kg/箱', rate: '94%', conflict: '' },
+  { sku: 'ABS-205', name: '黑色耗材 1.75mm', fam: 'ABS', famName: 'ABS 耗材', ver: 'v2', updated: '07-28', status: 'ok', statusTxt: '已发布', docs: ['TDS v1.8', 'SDS v1.2', 'UL94 认证'], box: '58×39×38cm · 20 卷/箱', cbm: '0.086 m³/箱', gw: '11.2 kg/箱', rate: '91%', conflict: '' },
+  { sku: 'PETG-310', name: '透明耗材 1.75mm', fam: 'PETG', famName: 'PETG 耗材', ver: 'v1', updated: '06-15', status: 'warn', statusTxt: 'TDS 已过期', docs: ['TDS v1.0（已过期）', 'SDS v1.1'], box: '60×40×40cm · 24 卷/箱', cbm: '0.096 m³/箱', gw: '13.1 kg/箱', rate: '93%', conflict: '' },
+  { sku: 'TPU-405', name: '弹性耗材 1.75mm', fam: 'TPU', famName: 'TPU 耗材', ver: 'v1', updated: '06-02', status: 'miss', statusTxt: '资料待补', docs: ['SDS v1.0'], box: '55×36×34cm · 18 卷/箱', cbm: '0.067 m³/箱', gw: '9.8 kg/箱', rate: '106%', conflict: 'AI 检测：装箱率 106% > 100%，箱规与单卷尺寸矛盾，请复核包装数据' },
+  { sku: 'FDM-D1', name: '桌面 FDM 打印机 220×220×250', fam: 'FDM', famName: '桌面级 FDM 打印机', ver: 'v4', updated: '08-01', status: 'ok', statusTxt: '已发布', docs: ['说明书 EN', 'CE / FCC', '图片 28 张'], box: '1 台/箱 · 木箱', cbm: '0.142 m³/台', gw: '18.5 kg', rate: '—', conflict: '' },
+  { sku: 'ACC-N05', name: '硬化钢喷嘴 0.5mm（10 件装）', fam: 'ACC', famName: '喷嘴与挤出机配件', ver: 'v2', updated: '07-19', status: 'ok', statusTxt: '已发布', docs: ['规格书', 'ROHS'], box: '30×20×8cm · 100 盒/箱', cbm: '0.048 m³/箱', gw: '6.4 kg/箱', rate: '88%', conflict: '' }
+];
+let pim = { fam: 'all', sku: 'PLA-301' };
+
+function renderPim() {
+  const tree = pimTree.map(t => `
+    <div class="pim-fam ${pim.fam === t.id ? 'on' : ''}" onclick="pimSet('fam','${t.id}')">
+      <span>${t.name}</span><span class="n">${t.n}</span>
+    </div>`).join('');
+  const rows = pimProducts
+    .filter(p => pim.fam === 'all' || p.fam === pim.fam)
+    .map(p => `
+    <tr class="row ${pim.sku === p.sku ? 'sel' : ''}" onclick="pimSet('sku','${p.sku}')">
+      <td class="pim-sku">${p.sku}</td><td>${p.name}</td><td>${p.famName}</td>
+      <td>${p.ver}</td><td>${p.updated}</td>
+      <td><span class="pill pill-${p.status}">${p.statusTxt}</span></td>
+    </tr>`).join('');
+  const sel = pimProducts.find(p => p.sku === pim.sku);
+  const detail = sel ? `
+  <div class="pim-detail">
+    <div class="pim-detail-head"><b>${sel.sku}</b><span style="color:#6b7280;font-size:12px">${sel.name} · ${sel.famName}</span>
+      <button class="task-act" style="margin-left:auto" onclick="goPage('quote','快速报价')">用此产品报价 →</button>
+    </div>
+    <div class="pim-grid">
+      <div class="pim-cell"><div class="k">包装规格</div><div class="v">${sel.box}</div></div>
+      <div class="pim-cell"><div class="k">体积</div><div class="v">${sel.cbm}</div></div>
+      <div class="pim-cell"><div class="k">毛重</div><div class="v">${sel.gw}</div></div>
+      <div class="pim-cell"><div class="k">装箱率</div><div class="v">${sel.rate}${sel.conflict ? ' <span style="color:#B42318">⚠</span>' : ''}</div></div>
+    </div>
+    <div class="pim-docs">${sel.docs.map(d => {
+      const stale = d.includes('过期');
+      return `<span class="pim-doc ${stale ? 'stale' : ''}" onclick="toast('${stale ? 'TDS 已过期：该资料已被 RAG 问答排除，需更新后重新审核' : '打开文档预览'}')">${d}</span>`;
+    }).join('')}</div>
+    ${sel.conflict ? `<div class="qq-ai" style="margin-top:12px"><b>AI 参数冲突检测</b> · ${sel.conflict}</div>` : ''}
+  </div>` : '';
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">产品知识库 / 产品库（PIM）</div>
+    <div class="page-title">产品库 · 分类树 + PIM 列表</div>
+    <div class="page-desc">左侧分类树按「一级分类 → 产品族 → SKU」导航；点行查看产品档案详情（规格 / 包装 / 成本版本 / 资料状态）。这里的成本与包装数据就是「快速报价」的取数来源。</div>
+  </div>
+  <div class="pim-wrap">
+    <div class="pim-tree">
+      <div class="pim-tree-title">产品分类树</div>
+      ${tree}
+    </div>
+    <div class="pim-main">
+      <div class="pim-list">
+        <table class="pim-table">
+          <thead><tr><th>SKU</th><th>产品</th><th>产品族</th><th>成本版本</th><th>更新</th><th>资料状态</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="6" style="color:#9ca3af">该分类暂无产品</td></tr>'}</tbody>
+        </table>
+      </div>
+      ${detail}
+    </div>
+  </div>`;
+}
+function pimSet(k, v) { pim[k] = v; renderContent(); }
+
+/* ============ 产品知识库 · RAG 问答 ============ */
+const ragQA = {
+  'PLA-301 的耐温范围是多少？TDS 在哪？': {
+    a: '<b>PLA-301（白色耗材 1.75mm）长期使用温度 ≤ 55°C，热变形温度约 60°C（0.45 MPa）</b>；打印推荐温度 190–220°C，热床 0–60°C。存储要求：密封避光，环境湿度 < 50%。TDS 文档为 <b>v2.1（2026-07 更新）</b>，可在产品库 PLA-301 详情页的文档区直接下载。',
+    cites: ['TDS v2.1 · §3 热性能', 'TDS v2.1 · §5 打印参数']
+  },
+  '发德国的 PLA 耗材需要哪些认证？': {
+    a: '根据已审核资料，发德国（欧盟）的 PLA 耗材需要：<b>① REACH 附录 XVII 合规声明；② EN 71-3（若涉及玩具用途）；③ CE 标识（仅当耗材作为 3D 打印机整机配件出口时随整机）</b>。PLA-301 / 305 均已有 REACH 文档；注意 <b>PETG-310 的 TDS v1.0 已过期</b>，其出口资料包暂不完整，报价前建议先补档。',
+    cites: ['REACH 合规声明（PLA-301）', 'EU 出口要求 FAQ v3 · Q12', '产品库 · PETG-310 资料状态']
+  },
+  'TPU-405 可以做食品接触应用吗？': {
+    a: null,
+    none: '知识库中<b>没有足够资料</b>回答这个问题：TPU-405 目前仅挂载 SDS v1.0，无食品接触（FDA / EU 10/2011）相关测试报告。我不会猜测或引用无关文档——建议联系供应商获取迁移测试报告，上传后我可以基于新资料重新回答。'
+  }
+};
+let rag = { q: null };
+function renderRag() {
+  const chips = Object.keys(ragQA).map(q =>
+    `<button class="rag-chip ${rag.q === q ? 'on' : ''}" onclick="ragAsk('${q.replace(/'/g, "\\'")}')">${q}</button>`).join('');
+  let answer = '';
+  if (rag.q) {
+    const item = ragQA[rag.q];
+    if (item.none) {
+      answer = `<div class="rag-q">${rag.q}</div><div class="rag-none">🚫 ${item.none}</div>`;
+    } else {
+      answer = `
+      <div class="rag-q">${rag.q}</div>
+      <div class="rag-a">${item.a}
+        <div class="rag-cite">来源引用（点击查看原文片段）：<br>${item.cites.map(c => `<span class="c" onclick="toast('打开引用片段：${c}')">${c}</span>`).join('')}</div>
+      </div>`;
+    }
+  }
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">产品知识库 / RAG 知识库问答</div>
+    <div class="page-title">RAG 知识库问答</div>
+    <div class="page-desc">用自然语言问产品问题，答案只引用已审核、未过期的产品文档（TDS / SDS / 证书 / FAQ），并标注具体来源；资料不足时明确说不知道——绝不编造。</div>
+  </div>
+  <div class="rag-panel">
+    <div class="rag-chips">${chips}</div>
+    ${answer || '<div class="qq-loading">点上方任一示例问题体验（也可以在 AI 助手中直接输入产品问题）</div>'}
+    <div class="rag-note">引用范围 = 产品库中挂载在产品上的文档 · 文档过期 / 未审核即从可引用范围剔除 · 全局知识由 AI Agent·系统知识 引用</div>
+  </div>`;
+}
+function ragAsk(q) { rag.q = q; renderContent(); }
+
+/* ============ AI Agent 演示 ============ */
+const agQuickTasks = [
+  '高风险客户跟进',
+  '启动搜客并跟踪',
+  '分析商机管道',
+  '生成开发信草稿',
+  '整理本周待办'
+];
+const agPlans = {
+  '高风险客户跟进': {
+    goal: '整理我当前的高风险客户，并给出下一步跟进建议',
+    steps: [
+      ['扫描商机与跟进记录，筛选沉默客户', '128 条商机 · 2.1s'],
+      ['关联报价浏览行为与沟通时间线', '3 个客户命中', 'done'],
+      ['生成跟进建议（引用销售打法 v3）', 'done'],
+      ['创建跟进任务并写入待办', '外部动作 · 需批准']
+    ],
+    result: '已识别 3 个高风险客户：<b>Müller GmbH</b>（报价浏览 3 次未回复）、<b>Vela Marine</b>（已报价 9 天沉默）、<b>TechNova Ltd</b>（认证疑问未解决）。跟进建议已生成，写入待办前需要你批准。'
+  },
+  '启动搜客并跟踪': {
+    goal: '在德国搜索 LED 照明进口商，目标 20 家，并持续跟踪到清洗结束',
+    steps: [
+      ['解析目标市场与关键词', '德国 · LED importer', 'done'],
+      ['调用已启用的免费搜客来源', '命中 47 家', 'done'],
+      ['按规模 / 主营匹配度清洗', '保留 23 家', 'done'],
+      ['写入搜客清单并启动跟踪', '外部动作 · 需批准']
+    ],
+    result: '已找到 47 家候选，清洗后保留 23 家（超过 20 家目标）。前 5 家含官网与邮箱完整度 90%+。写入搜客清单需要你批准。'
+  },
+  '分析商机管道': {
+    goal: '查看当前客户与商机管道，找出最值得优先推进的机会',
+    steps: [
+      ['读取商机管道全部 7 个在谈商机', 'done'],
+      ['计算成交概率与金额加权', 'done'],
+      ['结合历史转化率排序', 'done']
+    ],
+    result: '最值得优先推进：<b>Gulf Traders</b>（$58,900，概率 85%，已到合同阶段）——建议立即生成 PI 并触发 30% 预付收款计划。其次是 <b>Pacific Steel</b>（目标价与报价差 5%，有折中方案）。',
+    plain: true
+  },
+  '生成开发信草稿': {
+    goal: '为当前客户生成一版专业、简洁的开发信草稿',
+    steps: [
+      ['读取客户画像与最近 3 次沟通', 'done'],
+      ['匹配话术模板（首次开发 · 欧洲市场）', 'done'],
+      ['生成中英双语草稿', 'done'],
+      ['发送给客户', '外部动作 · 需批准']
+    ],
+    result: '开发信草稿已生成（英文，引用已审核产品资料与客户所在市场数据）。<b>草稿仅保存到沟通中心，发送前需人工确认</b>。'
+  },
+  '整理本周待办': {
+    goal: '读取我的待办，补充一条本周最重要的客户跟进任务',
+    steps: [
+      ['读取待办清单（5 条待办）', 'done'],
+      ['按截止时间与商机金额排序', 'done'],
+      ['补充 Gulf Traders PI 跟进任务', 'done']
+    ],
+    result: '本周最重要的一条：<b>Gulf Traders PI 签回跟进</b>（$58,900，30% 预付到账后解锁生产）。已加入今日待办置顶。',
+    plain: true
+  }
+};
+let ag = { task: null, approved: false, running: false };
+/* ============ V3.9 AI Agent · skills 可扩展容器 ============ */
+const skillCats = {
+  playbook: {
+    name: '销售打法', icon: '📖', tag: 'playbook', tagTxt: '打法', builtin: true,
+    desc: '团队沉淀的销售方法论（Playbook）——Agent 对话时按老销售的打法执行。<b>按需手动添加新打法 skill</b>，新人 Agent 自动继承团队经验。预置分类之一，不满意可自定义新分类。',
+    items: [
+      { name: '首因建立信任打法', icon: '🤝', src: 'builtin', on: true, params: '{"首次接触":"先价值后产品","信任锚点":"同行业案例","禁忌":"首封邮件不谈价格"}', desc: '首封开发信先亮同行案例建立信任，第二轮才引入产品价值点。' },
+      { name: '价值锚定报价打法', icon: '⚓', src: 'builtin', on: true, params: '{"报价前置":"先锚定价值量","参考":"历史成交价区间","让步":"每次让步换取承诺"}', desc: '报价前先锚定价值（节省工时/良率提升），让步必须换取客户承诺。' },
+      { name: '催单窗口打法', icon: '⏰', src: 'builtin', on: true, params: '{"触发":"客户国假期≤14天","动作":"补货高峰提醒","话术":"假期前后产能收紧"}', desc: '客户国家节假日窗口期主动催单，与工作台假日告警联动。' },
+      { name: '沉默客户唤醒打法', icon: '🔔', src: 'custom', on: false, params: '{"触发":"沉默>30天","首触":"行业资讯切入","频次":"3次/月"}', desc: '对 30 天以上沉默客户用行业资讯重新切入，避免硬推销。（演示：自定义 skill）' }
+    ]
+  },
+  memory: {
+    name: '业务记忆', icon: '🧠', tag: 'memory', tagTxt: '记忆', builtin: true,
+    desc: 'Agent 执行时自动引用的业务记忆——客户偏好、历史决策、价格底线。<b>手动添加记忆 skill</b> 让 Agent 记得更多业务上下文，可查看、可关闭。预置分类之一。',
+    items: [
+      { name: '客户偏好记忆', icon: '🎯', src: 'builtin', on: true, params: '{"记录":"沟通渠道偏好","决策":"价格敏感度","禁忌":"不记录隐私信息"}', desc: '记录客户沟通渠道偏好、价格敏感度、决策链，Agent 跟进时自动引用。' },
+      { name: '价格底线记忆', icon: '💎', src: 'builtin', on: true, params: '{"来源":"审批通过的底价","保护":"低于底价需审批","版本":"按产品+客户"}', desc: '沉淀审批通过的底价与数量梯度，Agent 报价时自动对标且不越界。' },
+      { name: '汇率决策记忆', icon: '💱', src: 'builtin', on: true, params: '{"来源":"财务汇率版本台账","规则":"报价/收款/提成同版本","更新":"生效日切换"}', desc: '引用财务汇率版本台账，报价折算与提成核算保持同一版本可追溯。' },
+      { name: '售后承诺记忆', icon: '🛠️', src: 'custom', on: false, params: '{"记录":"客诉处理结论","跟进":"承诺到期提醒","权限":"仅管理员写"}', desc: '记录售后客诉处理结论与承诺事项，Agent 复购沟通时引用避免重复承诺。（演示：自定义 skill）' }
+    ]
+  },
+  trigger: {
+    name: '自动触发', icon: '⏱️', tag: 'trigger', tagTxt: '触发', builtin: true,
+    desc: '规则化触发 Agent 任务——符合条件即自动生成任务在后台执行（如沉默客户自动唤醒）。<b>手动添加触发规则 skill</b> 即可扩展自动化场景。预置分类之一。',
+    items: [
+      { name: '沉默客户自动唤醒', icon: '📴', src: 'builtin', on: true, params: '{"条件":"沉默>30天","动作":"生成唤醒方案","频率":"每周一8:00"}', desc: '沉默超 30 天客户自动生成唤醒方案，Agent 后台执行并推送给对应销售。' },
+      { name: '样品签收跟进', icon: '📦', src: 'builtin', on: true, params: '{"条件":"签收7天无反馈","动作":"发送反馈询问","升级":"14天转主管"}', desc: '样品签收 7 天无反馈自动发送询问邮件，14 天未回自动升级主管。' },
+      { name: '复购窗口提醒', icon: '🔄', src: 'builtin', on: true, params: '{"条件":"消耗周期-30天","动作":"生成复购商机","渠道":"邮件+WhatsApp"}', desc: '按消耗周期预测复购窗口，临近时自动生成复购商机进入管道。' },
+      { name: '询盘夜间响应', icon: '🌙', src: 'custom', on: false, params: '{"条件":"时区差异>8小时","动作":"首轮AI回复","升级":"人工8:00跟进"}', desc: '客户时区差异大时，夜间询盘由 Agent 首轮回复，次日人工跟进。（演示：自定义 skill）' }
+    ]
+  },
+  quality: {
+    name: '运行质量', icon: '📊', tag: 'quality', tagTxt: '质量', builtin: true,
+    desc: 'Agent 执行治理——任务成功率、外部动作批准率、纠错记录。<b>治理 skill 决定采集哪些质量指标</b>，看板实时可视化。预置分类之一。',
+    items: [
+      { name: '任务成功率监控', icon: '✅', src: 'builtin', on: true, params: '{"指标":"任务成功率","目标":"≥90%","维度":"按任务类型"}', desc: '按任务类型统计成功率，低于目标自动标记异常并通知管理员。' },
+      { name: '外部动作批准率', icon: '🛂', src: 'builtin', on: true, params: '{"指标":"人工批准率","目标":"≤30%需优化","记录":"批准/拒绝原因"}', desc: '统计外部动作人工批准率与拒绝原因，识别 Agent 越权风险。' },
+      { name: '纠错记录追溯', icon: '🔍', src: 'builtin', on: true, params: '{"记录":"用户纠错内容","回灌":"纠错进记忆库","审计":"保留90天"}', desc: '记录用户每次纠错，纠错内容回灌记忆库并保留审计轨迹。' },
+      { name: '成本效率看板', icon: '💹', src: 'custom', on: false, params: '{"指标":"每次任务token成本","预警":"超均值2x","报告":"每周一"}', desc: '监控 Agent 任务 token 成本与耗时，异常波动自动周报。（演示：自定义 skill）' }
+    ]
+  }
+};
+let skSrc = 'custom';
+let skCatEditId = null;
+let skCatColorVal = 'custom-teal';
+
+/* ---- 分类 Tab 栏（预置 + 自定义，可增删） ---- */
+function skCatBarHtml(curCat) {
+  const tabs = Object.keys(skillCats).map(cid => {
+    const C = skillCats[cid];
+    const on = cid === curCat;
+    const acts = C.builtin ? '' : `
+      <span class="ct-x" title="重命名分类" onclick="event.stopPropagation();skCatRename('${cid}')">✎</span>
+      <span class="ct-x ct-del" title="删除分类" onclick="event.stopPropagation();skCatDel('${cid}')">×</span>`;
+    return `<span class="sk-cat-tab ${on ? 'on' : ''} ${C.builtin ? 'builtin' : 'custom'}" onclick="goPage('aihub','${C.name}')">${C.icon} ${C.name}${acts}</span>`;
+  }).join('');
+  return `
+  <div class="sk-cat-bar">
+    <span style="font-size:11px;color:#9CA3AF;font-weight:600">分类</span>
+    ${tabs}
+    <span class="sk-cat-add" onclick="skCatAddOpen()">＋ 新分类</span>
+  </div>`;
+}
+
+/* ---- 添加 Skill 弹窗（所属分类可自由选择） ---- */
+function skModalHtml(cat) {
+  const opts = Object.keys(skillCats).map(cid =>
+    `<option value="${cid}" ${cid === cat ? 'selected' : ''}>${skillCats[cid].icon} ${skillCats[cid].name}${skillCats[cid].builtin ? '（内置）' : ''}</option>`).join('');
+  return `
+  <div class="sk-modal-mask" id="skModal">
+    <div class="sk-modal">
+      <div class="skm-h">添加 Skill <span class="x" onclick="skModalClose()">×</span></div>
+      <div class="skm-b">
+        <label>所属分类</label>
+        <select id="skTargetCat" class="sk-select">${opts}</select>
+        <label>Skill 名称</label>
+        <input id="skName" placeholder="如：大客户攻坚打法">
+        <div class="sk-row">
+          <div><label>图标（emoji）</label><input id="skIcon" placeholder="🚀" style="width:90px"></div>
+          <div><label>来源</label>
+            <div class="src-pick">
+              <span id="skSrcBuiltin" onclick="skSrcPick('builtin')">内置模板</span>
+              <span id="skSrcCustom" class="on" onclick="skSrcPick('custom')">自定义</span>
+            </div>
+          </div>
+        </div>
+        <label>功能描述（Agent 会怎么用）</label>
+        <textarea id="skDesc" placeholder="这个 skill 让 Agent 做什么？"></textarea>
+        <label>参数配置（JSON）</label>
+        <textarea id="skParams" placeholder='{"触发":"...","动作":"..."}'></textarea>
+      </div>
+      <div class="skm-f">
+        <button class="sk-btn-cancel" onclick="skModalClose()">取消</button>
+        <button class="sk-btn-ok" onclick="skSave()">添加 Skill</button>
+      </div>
+    </div>
+  </div>`;
+}
+function skAddOpen(cat) { skSrc = 'custom'; skSrcPick('custom'); document.getElementById('skModal').classList.add('show'); }
+function skModalClose() { const m = document.getElementById('skModal'); if (m) m.classList.remove('show'); }
+function skSrcPick(v) {
+  skSrc = v;
+  const b = document.getElementById('skSrcBuiltin'), c = document.getElementById('skSrcCustom');
+  if (b) b.classList.toggle('on', v === 'builtin');
+  if (c) c.classList.toggle('on', v === 'custom');
+}
+function skSave() {
+  const name = (document.getElementById('skName').value || '').trim();
+  if (!name) { toast('请填写 Skill 名称'); return; }
+  const cat = document.getElementById('skTargetCat').value;
+  const icon = (document.getElementById('skIcon').value || '').trim() || '🧩';
+  const desc = (document.getElementById('skDesc').value || '').trim() || '（待补充描述）';
+  const params = (document.getElementById('skParams').value || '').trim() || '{"待配置":true}';
+  skillCats[cat].items.push({ name, icon, src: skSrc === 'builtin' ? 'builtin' : 'custom', on: true, desc, params });
+  skModalClose(); goPage('aihub', skillCats[cat].name); toast('已添加 Skill：' + name);
+}
+
+/* ---- 分类管理：新建 / 重命名 / 删除 ---- */
+function skCatAddOpen() { skCatEditId = null; renderCatModal('新建分类'); }
+function skCatRename(cid) { skCatEditId = cid; renderCatModal('重命名分类'); }
+function renderCatModal(title) {
+  const editing = skCatEditId ? skillCats[skCatEditId] : null;
+  skCatColorVal = editing && editing.tag && editing.tag.indexOf('custom-') === 0 ? editing.tag : 'custom-teal';
+  const html = `
+  <div class="sk-modal-mask show" id="skCatModal">
+    <div class="sk-modal">
+      <div class="skm-h">${title} <span class="x" onclick="skCatModalClose()">×</span></div>
+      <div class="skm-b">
+        <label>分类名称</label>
+        <input id="skCatName" placeholder="如：客户服务 / 产品知识 / 售后支持…" value="${editing ? editing.name : ''}">
+        <div class="sk-row">
+          <div><label>图标（emoji）</label><input id="skCatIcon" placeholder="🚀" style="width:90px" value="${editing ? editing.icon : ''}"></div>
+          <div><label>标签色</label>
+            <div class="src-pick" id="skCatColorPick">
+              <span class="ctc ${skCatColorVal === 'custom-teal' ? 'on' : ''}" onclick="skCatColor('custom-teal')">青</span>
+              <span class="ctc ${skCatColorVal === 'custom-blue' ? 'on' : ''}" onclick="skCatColor('custom-blue')">蓝</span>
+              <span class="ctc ${skCatColorVal === 'custom-orange' ? 'on' : ''}" onclick="skCatColor('custom-orange')">橙</span>
+              <span class="ctc ${skCatColorVal === 'custom-purple' ? 'on' : ''}" onclick="skCatColor('custom-purple')">紫</span>
+            </div>
+          </div>
+        </div>
+        <label>一句话描述（这个分类放什么 skill）</label>
+        <textarea id="skCatDesc" placeholder="如：客户服务相关的技能：售后跟进、客诉处理话术…">${editing ? (editing.descPlain || '') : ''}</textarea>
+      </div>
+      <div class="skm-f">
+        <button class="sk-btn-cancel" onclick="skCatModalClose()">取消</button>
+        <button class="sk-btn-ok" onclick="skCatSave()">${editing ? '保存修改' : '创建分类'}</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+function skCatColor(v) {
+  skCatColorVal = v;
+  document.querySelectorAll('#skCatColorPick .ctc').forEach(s => s.classList.toggle('on', s.getAttribute('onclick').indexOf(v) > -1));
+}
+function skCatModalClose() { const m = document.getElementById('skCatModal'); if (m) m.remove(); }
+function skCatSave() {
+  const name = (document.getElementById('skCatName').value || '').trim();
+  if (!name) { toast('请填写分类名称'); return; }
+  const icon = (document.getElementById('skCatIcon').value || '').trim() || '🧩';
+  const desc = (document.getElementById('skCatDesc').value || '').trim() || '暂无描述';
+  if (skCatEditId && skillCats[skCatEditId]) {
+    const C = skillCats[skCatEditId];
+    if (Object.keys(skillCats).some(cid => cid !== skCatEditId && skillCats[cid].name === name)) { toast('分类名已存在'); return; }
+    C.name = name; C.icon = icon; C.tag = skCatColorVal; C.tagTxt = '自定义'; C.descPlain = desc;
+    C.desc = '<b>自定义分类</b>——' + desc + '。可继续添加 skill，也可重命名 / 删除本分类。';
+    goPage('aihub', name); toast('分类已重命名：' + name);
+  } else {
+    if (Object.keys(skillCats).some(cid => skillCats[cid].name === name)) { toast('分类名已存在'); return; }
+    const cid = 'c' + Date.now();
+    skillCats[cid] = {
+      name, icon, tag: skCatColorVal, tagTxt: '自定义', builtin: false,
+      desc: '<b>自定义分类</b>——' + desc + '。可继续添加 skill，也可重命名 / 删除本分类。',
+      descPlain: desc, items: []
+    };
+    goPage('aihub', name); toast('已创建分类：' + name);
+  }
+  skCatModalClose();
+}
+function skCatDel(cid) {
+  const C = skillCats[cid];
+  if (C.builtin) { toast('内置分类不可删除，可停用其 skill'); return; }
+  const n = C.items.length;
+  if (!confirm('删除分类「' + C.name + '」？其中 ' + n + ' 个 skill 将一并删除。')) return;
+  delete skillCats[cid];
+  goPage('aihub', 'Agent 对话'); toast('已删除分类：' + C.name);
+}
+
+/* ---- skills 页面 ---- */
+function renderSkills(cat) {
+  const C = skillCats[cat];
+  const onCount = C.items.filter(i => i.on).length;
+  const cards = C.items.map((s, i) => `
+    <div class="sk-card ${s.on ? '' : 'off'}">
+      <div class="skc-head">
+        <div class="skc-ico">${s.icon}</div>
+        <div class="skc-info">
+          <div class="skc-name">${s.name}</div>
+          <span class="skc-src ${s.src}">${s.src === 'builtin' ? '内置' : '自定义'}</span>
+        </div>
+      </div>
+      <div class="skc-desc">${s.desc}</div>
+      <div class="skc-params">${s.params}</div>
+      <div class="skc-foot">
+        <span class="skc-tag ${C.tag}">${C.tagTxt}</span>
+        <span class="skc-act" onclick="skEdit('${cat}',${i})">配置</span>
+        ${s.src === 'custom' ? `<span class="skc-del" onclick="skDel('${cat}',${i})">删除</span>` : ''}
+        <span class="sk-toggle ${s.on ? 'on' : ''}" onclick="skToggle('${cat}',${i})"></span>
+      </div>
+    </div>`).join('');
+  const builtinN = C.items.filter(i => i.src === 'builtin').length;
+  const customN = C.items.length - builtinN;
+  const catIds = Object.keys(skillCats);
+  const customCatN = catIds.filter(cid => !skillCats[cid].builtin).length;
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">AI Agent / ${C.name}</div>
+    <div class="page-title">${C.icon} ${C.name} <span style="font-size:11px;color:${C.builtin ? '#534AB7' : '#0F6E56'};font-weight:600;background:${C.builtin ? '#EEEDFE' : '#D1FAE5'};padding:2px 10px;border-radius:10px;vertical-align:middle">skills 容器 · ${C.builtin ? '预置分类' : '自定义分类'}</span></div>
+    <div class="page-desc">${C.desc}</div>
+  </div>
+  <div class="sk-page">
+    ${skCatBarHtml(cat)}
+    <div class="sk-add-bar">
+      <span class="sk-tip">需要 Agent 按你的方式执行？<b>手动添加 skill</b> 即可扩展——分类自己定：不满意预置的四大类，<b>点上方「＋ 新分类」创建任意分类</b>（如客户服务 / 产品知识 / 售后支持），skill 可加到任意分类。</span>
+      <button class="sk-add-btn" onclick="skAddOpen('${cat}')">＋ 添加 Skill</button>
+    </div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi-card"><div class="kpi-label">${C.name} Skills</div><div class="kpi-value">${C.items.length}</div><div class="kpi-foot">内置 ${builtinN} · 自定义 ${customN}</div></div>
+      <div class="kpi-card"><div class="kpi-label">已启用</div><div class="kpi-value">${onCount}</div><div class="kpi-foot">Agent 对话执行时自动生效</div></div>
+      <div class="kpi-card"><div class="kpi-label">全部分类</div><div class="kpi-value">${catIds.length}</div><div class="kpi-foot">预置 4 · 自定义 ${customCatN}，可自由增删</div></div>
+    </div>
+    ${C.items.length ? `<div class="sk-grid">${cards}</div>` : `<div class="sk-empty">该分类还没有 skill，点上方「＋ 添加 Skill」添加第一个。</div>`}
+    <div class="sk-agent-hint">💡 skills 在 <b>Agent 对话</b> 能力面板中生效：启用的打法指导 Agent 怎么谈，记忆让 Agent 记得住客户，触发规则让 Agent 自动干活，运行质量让治理看得见；<b>自定义分类的 skills 同样即时生效</b>。点能力面板对应胶囊可回到本页继续管理。</div>
+  </div>
+  ${skModalHtml(cat)}`;
+}
+function skToggle(cat, i) {
+  const it = skillCats[cat].items[i]; it.on = !it.on; renderContent();
+  toast((it.on ? '已启用' : '已停用') + '：' + it.name);
+}
+function skDel(cat, i) {
+  const it = skillCats[cat].items[i];
+  if (it.src === 'builtin') { toast('内置 skill 不可删除，可停用'); return; }
+  skillCats[cat].items.splice(i, 1); renderContent(); toast('已删除：' + it.name);
+}
+function skEdit(cat, i) { toast('skill 配置编辑器（演示）：' + skillCats[cat].items[i].name); }
+
+function renderAgent() {
+  let chat = `<div class="ag-row"><div class="mini-ava">AI</div><div class="bub ag-bubble">今天想推进什么？告诉我你最终想完成什么，我会持续执行到得到结果。</div></div>`;
+  let plan = '';
+  if (ag.task && agPlans[ag.task]) {
+    const p = agPlans[ag.task];
+    chat += `<div class="ag-row self"><div class="bub ag-bubble">${p.goal}</div></div>`;
+    const steps = p.steps.map(([name, meta, st], i) => {
+      const state = ag.approved || p.plain ? (st === 'done' || i < p.steps.length - (p.plain ? 0 : 1) || ag.approved ? 'done' : 'wait') : (i < p.steps.length - 1 ? 'done' : 'wait');
+      const running = !ag.approved && !p.plain && i === p.steps.length - 1;
+      return `<div class="ag-step ${running ? 'run' : state}"><span class="st">${state === 'done' ? '✓' : running ? '·' : ''}</span>${name}<span class="meta">${meta}</span></div>`;
+    }).join('');
+    const approval = (!p.plain && !ag.approved)
+      ? `<div class="ag-approve">⚠️ 下一步是外部动作（写入 / 发送），按规则需人工批准 <button onclick="agApprove()">批准执行</button></div>`
+      : '';
+    chat += `<div class="ag-row"><div class="mini-ava">AI</div><div class="bub ag-bubble">
+      <div style="margin-bottom:8px">任务计划：</div>
+      <div class="ag-steps">${steps}</div>
+      ${approval}
+      ${(ag.approved || p.plain) ? `<div style="margin-top:10px">${p.result}</div>` : ''}
+    </div></div>`;
+  }
+  const caps = Object.keys(skillCats).map(cid => {
+    const C = skillCats[cid];
+    const onN = C.items.filter(i => i.on).length;
+    return `<div class="ag-cap" onclick="goPage('aihub','${C.name}')" title="管理「${C.name}」skills">${C.icon} ${C.name} <span class="skc-add-tag">＋ 添加</span><b>${onN} 条启用</b></div>`;
+  }).join('');
+  const sysCap = `<div class="ag-cap">系统知识<b>产品库 · 已同步</b></div>`;
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">AI Agent / Agent 对话</div>
+    <div class="page-title">Agent 对话</div>
+    <div class="page-desc">说出最终目标，Agent 拆解计划、逐步执行、汇报结果。外部动作必须人工批准，随时可暂停 / 取消。左侧能力面板 = 已启用的 skills（打法 / 记忆 / 触发 / 质量），点胶囊可添加与管理（演示：点击左下快捷任务体验）。</div>
+  </div>
+  <div class="ag-grid">
+    <div class="ag-side">
+      <h4>NEXFAB AGENT</h4>
+      <button class="ag-new" onclick="agReset()">+ 新对话</button>
+      <h4>能力面板 <span style="font-size:10px;color:#534AB7;font-weight:400">· 已启用 skills</span></h4>
+      ${caps}${sysCap}
+      <div class="sk-agent-hint" style="margin-top:8px">四类 skills 均为可扩展容器：进入对应子页可<b>手动添加</b>你的专属 skill。</div>
+      <h4>快捷任务</h4>
+      ${agQuickTasks.map(t => `<button class="ag-quick" onclick="agRun('${t}')">${t}</button>`).join('')}
+    </div>
+    <div class="ag-main">
+      <div class="ag-head">
+        <div class="who"><div class="ava">AI</div><div><b>NexFab Agent</b><small>说出目标，我会持续执行到得到结果</small></div></div>
+        <span class="sub-ai" style="background:#EEEDFE;color:#534AB7;padding:3px 10px;border-radius:10px;font-size:10px">执行中</span>
+      </div>
+      <div class="ag-msgs">${chat}</div>
+      <div class="ag-note">安全边界：外部动作（发邮件、写入主数据）必须人工批准 · 业务记忆可随时关闭 · 运行质量纳入治理统计 · 旧「AI 智能中心」的知识库 / 智能提取 / 数据查询 / 自动报告已分别并入产品知识库 RAG 问答、获客中心、Agent 对话与自动触发</div>
+    </div>
+  </div>`;
+}
+function agRun(t) { ag = { task: t, approved: false }; renderContent(); }
+function agApprove() { ag.approved = true; renderContent(); toast('已批准外部动作，Agent 继续执行'); }
+function agReset() { ag = { task: null, approved: false }; renderContent(); }
+
+/* ============ 工具中心（名片 OCR）演示 ============ */
+const tcTools = [
+  ['OCR', '名片 OCR 识别', 'dry-run', true],
+  ['WEB', '官网链接登记', '已接入', true],
+  ['FX', '汇率换算', '本地参考', true],
+  ['DUP', '客户去重', '已接入', true],
+  ['TXT', '跟进话术生成', '模板', true],
+  ['HS', 'HS 编码速查', '本地参考', true]
+];
+const ocrFields = [
+  ['客户名称', 'Müller Industrie GmbH', 98],
+  ['主联系人', 'Thomas Müller', 97],
+  ['职位', 'Purchasing Manager', 93],
+  ['邮箱', 't.muller@mueller-industrie.de', 96],
+  ['电话', '+49 89 1234 5678', 92],
+  ['WhatsApp', '+49 172 345 6789', 78],
+  ['国家 / 城市', '德国 · 慕尼黑', 95]
+];
+let tc = { state: 'idle', synced: false, fx: { amt: 100, from: 'USD', to: 'CNY' } };
+const fxRates = { USD: 1, EUR: 0.92, CNY: 7.12, GBP: 0.79, AUD: 1.52 };
+function renderTools() {
+  const toolList = tcTools.map(([mark, name, badge, ok]) =>
+    `<div class="tc-item ${name === '名片 OCR 识别' ? 'on' : ''}" ${ok ? `onclick="toast('${name}：P3 工具中心后端最小闭环已接入；真实外部服务仍需单独授权')"` : ''}>
+      <div class="tc-mark">${mark}</div>${name}<span class="tc-badge ${ok ? 'ok' : ''}">${badge}</span>
+    </div>`).join('');
+  let workbench = '';
+  if (tc.state === 'idle') {
+    workbench = `<div class="tc-upload">📇 等待上传名片<div><button class="btn" onclick="ocrRun()">加载演示名片</button></div><div style="font-size:10.5px;margin-top:8px">支持 JPG / PNG，识别在浏览器完成，字段仅作为候选数据</div></div>`;
+  } else if (tc.state === 'loading') {
+    workbench = `<div class="qq-loading">正在识别名片（OCR）……</div>`;
+  } else {
+    const fields = ocrFields.map(([k, v, conf]) =>
+      `<div class="tc-field"><span class="k">${k}</span><span class="v">${v}</span><span class="conf ${conf < 85 ? 'low' : ''}">${conf}%${conf < 85 ? ' · 需确认' : ''}</span></div>`).join('');
+    const dup = `<div style="margin-top:10px;font-size:11.5px;color:#374151">重复检查：邮箱域名 <b>mueller-industrie.de</b> 与现有客户 Müller GmbH 相似度 41% —— <span style="color:#0F6E56;font-weight:600">判定为新客户</span>，可同步</div>`;
+    workbench = `
+      <div class="tc-cards">
+        <div class="tc-stat"><span>当前任务</span><b>名片 OCR</b></div>
+        <div class="tc-stat"><span>已识别字段</span><b>7 / 7</b></div>
+        <div class="tc-stat"><span>平均置信度</span><b>92.7%</b></div>
+        <div class="tc-stat"><span>重复检查</span><b style="color:#0F6E56">新客户</b></div>
+      </div>
+      <div class="tc-fields">${fields}</div>
+      ${dup}
+      <div class="tc-sync">
+        <span>同步目标：线索池 · 来源「名片 OCR」 · 初始阶段「新线索」 · 分配当前团队</span>
+        ${tc.synced ? '<b style="color:#0F6E56">✓ 已同步到线索池</b>' : '<button onclick="ocrSync()">确认同步</button>'}
+      </div>`;
+  }
+  const fxRes = (tc.fx.amt * fxRates[tc.fx.to] / fxRates[tc.fx.from]).toFixed(2);
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">工具中心 / 名片 OCR 识别</div>
+    <div class="page-title">名片 OCR 识别</div>
+    <div class="page-desc">展会名片拍下来，识别 → 重复检查 → 人工确认后同步到线索池。P3 后端已补齐六项工具最小闭环；OCR、HS、汇率和话术仍按本地参考 / dry-run / 人工确认边界运行。</div>
+  </div>
+  <div class="tc-grid">
+    <div class="tc-list">${toolList}</div>
+    <div class="tc-main">
+      ${workbench}
+      <div style="margin-top:18px;padding-top:14px;border-top:1px dashed #e5e7eb">
+        <div style="font-size:12.5px;font-weight:600;color:#111827;margin-bottom:4px">随手查 · 汇率换算</div>
+        <div class="tc-fx">
+          <input type="number" value="${tc.fx.amt}" onchange="fxSet('amt', this.value)">
+          <select onchange="fxSet('from', this.value)">${['USD','EUR','CNY','GBP','AUD'].map(c => `<option ${c === tc.fx.from ? 'selected' : ''}>${c}</option>`).join('')}</select>
+          <span style="color:#9ca3af">→</span>
+          <select onchange="fxSet('to', this.value)">${['CNY','USD','EUR','GBP','AUD'].map(c => `<option ${c === tc.fx.to ? 'selected' : ''}>${c}</option>`).join('')}</select>
+          <span class="res">${fxRes} ${tc.fx.to}</span>
+          <span style="font-size:10px;color:#9ca3af">参考汇率快照 8/20 16:00</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function ocrRun() {
+  tc.state = 'loading'; tc.synced = false; renderContent();
+  setTimeout(() => { tc.state = 'done'; renderContent(); }, 800);
+}
+function ocrSync() { tc.synced = true; renderContent(); toast('已同步到线索池：Müller Industrie GmbH（新线索）'); }
+function fxSet(k, v) { tc.fx[k] = (k === 'amt' ? Number(v) : v); renderContent(); }
+
+function qqRun() {
+  qq.status = 'loading'; renderContent();
+  const t0 = performance.now();
+  setTimeout(() => {
+    qq.secs = ((performance.now() - t0) / 1000 + 6.4).toFixed(1);
+    qq.status = 'done'; renderContent();
+  }, 900);
+}
+
+/* ============ 财务经营演示（移植自 GoodJob）============ */
+const finNodes = [
+  ['报价确认', '5 单'], ['订单', '3 单'], ['合同', '3 份'], ['单证', '7 套'], ['发货', '2 票'], ['收款', '待确认 2 笔'], ['日志', '今日 14 条']
+];
+const finOrders = [
+  { id: 'PO-2026-0312', cust: 'Nordic AB（瑞典）', amt: '$28,500', got: '$8,550', status: 'red', st: '逾期 12 天 · 尾款 $19,950' },
+  { id: 'PO-2026-0338', cust: 'Müller GmbH（德国）', amt: '$46,200', got: '$46,200', status: 'green', st: '已收全款 · 生产中' },
+  { id: 'PO-2026-0341', cust: 'TechNova Ltd（英国）', amt: '$12,800', got: '$3,840', status: 'amber', st: '今日到期 · 尾款 $8,960' }
+];
+const finPending = [
+  { id: 'PO-2026-0341', sales: 'Alex', amt: '$3,840', cur: 'USD', rate: '7.16', date: '8/20', src: 'manual' },
+  { id: 'PO-2026-0339', sales: 'Emma', amt: '€5,200', cur: 'EUR', rate: '—', date: '8/21', src: 'pending' }
+];
+let finConfirmed = [];
+const finRates = [
+  ['USD/CNY', '7.16', '2026-08-01', 'finance'],
+  ['USD/CNY', '7.09', '2026-07-01', 'finance'],
+  ['EUR/CNY', '7.82', '2026-08-01', 'finance']
+];
+
+function renderFinanceFlow() {
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">财务经营 / 订单与回款</div>
+    <div class="page-title">订单收款闭环</div>
+    <div class="page-desc">报价确认后，订单、合同、单据、发货、收款和操作日志统一处理。销售只登记收款；财务核对流水和汇率后确认入账——确认后才计入应收、回款和提成对账。收款门禁：已收金额由本模块回写订单，达标自动放行生产/发货。</div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:1fr;margin-bottom:22px">
+    <div class="panel" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      ${finNodes.map(([n, v], i) => `<span style="font-size:12px;color:#5f5e5a">${n}<b style="color:#185FA5;margin-left:4px">${v}</b></span>${i < finNodes.length - 1 ? '<span style="color:#d1d5db">→</span>' : ''}`).join('')}
+      <button class="task-act" style="margin-left:auto" onclick="toast('AI 风险研判：2 笔逾期应收集中 在 Nordic AB 与 Pacific Steel，客户近 30 天有互动但未提付款，建议今日催收（演示）')">AI 风险研判</button>
+    </div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:1fr">
+    <div class="panel">
+      <div class="panel-title">应收与逾期队列（按订单收款日自动识别）</div>
+      ${finOrders.map(o => `
+      <div class="task-item">
+        <span class="task-pri pri-${o.status}"></span>
+        <div class="task-body">
+          <div class="task-name">${o.id} · ${o.cust}</div>
+          <div class="task-meta">合同金额 ${o.amt} · 已收 ${o.got} · ${o.st}</div>
+        </div>
+        <button class="task-act" onclick="toast('打开订单收款明细（演示）')">明细</button>
+      </div>`).join('')}
+    </div>
+    <div class="panel">
+      <div class="panel-title">待财务确认（${finPending.length - finConfirmed.length}）<span style="font-size:11px;color:#854F0B;font-weight:400;margin-left:6px">销售登记不直接改变已收金额</span></div>
+      ${finPending.map((p, i) => `
+      <div class="task-item">
+        <span class="task-pri pri-amber"></span>
+        <div class="task-body">
+          <div class="task-name">${p.id} · ${p.sales} 登记 ${p.amt}（${p.cur}）</div>
+          <div class="task-meta">登记于 ${p.date} · 财务汇率 ${p.rate}${p.src === 'pending' ? ' · <span class="overdue">缺汇率版本，待补</span>' : ' · 核对流水后确认入账'}</div>
+        </div>
+        ${finConfirmed.includes(i)
+          ? '<button class="task-act" style="background:#e6f4ef;color:#0F6E56" onclick="toast(\'已确认入账（演示）\')">已确认 ✓</button>'
+          : `<button class="task-act" onclick="finConfirm(${i})">确认入账</button>`}
+      </div>`).join('')}
+    </div>
+    <div class="panel">
+      <div class="panel-title">汇率版本台账（按生效日锁定，可追溯）</div>
+      ${finRates.map(r => `
+      <div class="task-item">
+        <span class="task-pri pri-blue"></span>
+        <div class="task-body">
+          <div class="task-name">${r[0]} · ${r[1]}</div>
+          <div class="task-meta">生效日 ${r[2]} · 来源：${r[3] === 'finance' ? '财务确认版' : '待确认'} · 报价折算 / 收款折算 / 提成核算共用此版本</div>
+        </div>
+      </div>`).join('')}
+      <div style="font-size:12px;color:#5f5e5a;margin-top:8px">操作日志：收款确认、汇率锁定等关键动作全程留痕（权限与审计）。</div>
+    </div>
+  </div>`;
+}
+
+function finConfirm(i) {
+  if (!finConfirmed.includes(i)) finConfirmed.push(i);
+  renderContent();
+  toast('已确认入账：订单已收金额已更新，收款门禁状态同步（演示）');
+}
+
+const commRecords = [
+  { cust: 'Müller GmbH / PLA-301', orig: '$46,200', cny: '¥330,792', rate: '7.16', comm: '¥9,924', st: 'confirmed', src: '同步待核成交' },
+  { cust: 'TechNova Ltd / ABS-205', orig: '$12,800', cny: '¥91,648', rate: '7.16', comm: '¥3,209', st: 'draft', src: '同步待核成交' },
+  { cust: 'Nordic AB / PETG-310', orig: '$28,500', cny: '¥204,060', rate: '7.16', comm: '¥7,346', st: 'draft', src: '同步待核成交' },
+  { cust: '提成调整 · Emma 8月补差', orig: '—', cny: '+¥800', rate: '—', comm: '¥800', st: 'draft', src: '人工调整' }
+];
+const commRules = [
+  ['PLA 耗材', '3.0%'], ['ABS 耗材', '3.5%'], ['PETG 耗材', '3.6%'], ['FDM 打印机', '2.2%']
+];
+
+function renderCommission() {
+  const confirmed = commRecords.filter(r => r.st === 'confirmed').length;
+  const total = commRecords.reduce((s, r) => { const v = Number(r.comm.replace(/[^\d.]/g, '')); return s + (isNaN(v) ? 0 : v); }, 0);
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">财务经营 / 提成与对账</div>
+    <div class="page-title">提成试算与对账</div>
+    <div class="page-desc">对账月份：<b>2026-08</b> · 查看人员：<b>全部</b>（可按人员筛选）。已成交商机按财务汇率版本折算生成计提记录；提成单确认前可调整，月度锁定后不可新增。</div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">本月计提总额</div>
+      <div class="kpi-value">¥${total.toLocaleString()}</div>
+      <div class="kpi-foot">含人工调整 1 笔</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">已确认 / 待确认</div>
+      <div class="kpi-value">${confirmed} / ${commRecords.length - confirmed}</div>
+      <div class="kpi-foot">确认后计入对账单</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">汇率缺失提醒</div>
+      <div class="kpi-value">1</div>
+      <div class="kpi-foot">EUR 记录待补汇率版本</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">本月提成单</div>
+      <div class="kpi-value" style="color:#0F6E56">未锁定</div>
+      <div class="kpi-foot">锁定后不可新增计提</div>
+    </div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:2fr 1fr">
+    <div class="panel">
+      <div class="panel-title">月度计提记录
+        <span class="more" onclick="toast('演示：同步待核成交（从已成交商机按财务汇率折算）')">同步待核成交</span>
+      </div>
+      ${commRecords.map(r => `
+      <div class="task-item">
+        <span class="task-pri ${r.st === 'confirmed' ? 'pri-blue' : 'pri-amber'}"></span>
+        <div class="task-body">
+          <div class="task-name">${r.cust}</div>
+          <div class="task-meta">原币 ${r.orig} · 汇率 ${r.rate} · 结算 ${r.cny} · 来源：${r.src}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:15px;font-weight:700;color:#185FA5">提成 ${r.comm}</div>
+          <div style="font-size:11px;color:${r.st === 'confirmed' ? '#0F6E56' : '#854F0B'}">${r.st === 'confirmed' ? '已确认' : '待确认'}</div>
+        </div>
+      </div>`).join('')}
+      <div style="font-size:12px;color:#5f5e5a;margin-top:8px">AI 异常计提识别：本月无金额跳变；1 条记录缺汇率版本已提醒补录。</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">产品规则（仅管理员可改）</div>
+      ${commRules.map(r => `
+      <div class="task-item">
+        <span class="task-pri pri-blue"></span>
+        <div class="task-body">
+          <div class="task-name">${r[0]}</div>
+          <div class="task-meta">提成比例 ${r[1]} · 按结算金额（¥）计提</div>
+        </div>
+      </div>`).join('')}
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="task-act" style="padding:8px 14px" onclick="toast('演示：导出对账 Excel')">导出对账</button>
+        <button class="task-act" style="padding:8px 14px" onclick="toast('演示：重新计算全部计提')">重新计算</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============ 销售管道演示 ============ */
+const plStages = ['新询盘', '已报价', '寄样中', '谈判中', '已成交'];
+const plDeals = [
+  { id: 1, stage: 0, cust: 'Müller GmbH', country: '德国', src: '网站询盘', owner: 'Alex', prod: 'PLA-301 白色 1.75mm × 5,000卷', amt: '$24,500', days: 1, prob: 62,
+    tl: [['08-20', '客户浏览报价单 3 次，未回复'], ['08-18', 'WhatsApp：问 FOB 汉堡与 DDP 报价差异'], ['08-16', '邮件询盘：PLA 白色 1.75mm，5,000 卷起']],
+    ai: '客户 3 次打开报价未回复，且主动问 DDP——采购意向明确但卡在物流成本。建议 24h 内电话跟进 DDP 方案，可一键引用上次报价版本。' },
+  { id: 2, stage: 0, cust: 'TechNova Ltd', country: '英国', src: 'LinkedIn 私信', owner: 'Ivy', prod: 'PETG-310 透明 1.75mm × 3,000卷', amt: '$16,200', days: 4, prob: 38,
+    tl: [['08-17', 'LinkedIn：询问是否有 UKCA 认证'], ['08-16', '私信首次咨询']],
+    ai: '客户关注认证而非价格，属合规型买家。PETG-310 UKCA 认证资料待补（见产品知识库），建议先确认认证进度再报价。' },
+  { id: 3, stage: 1, cust: 'Pacific Steel', country: '澳大利亚', src: '展会名片', owner: 'Alex', prod: 'TPU-405 弹性耗材 × 2,000卷', amt: '$11,800', days: 6, prob: 71,
+    tl: [['08-15', '已发送 FOB 报价 v2（数量梯度 3 档）'], ['08-14', '客户确认目标价 $5.60/卷，接近底价']],
+    ai: '客户目标价 $5.60 vs 报价 $5.90，差距 5%。历史同类客户接受折中价 $5.72。建议放行 3% 折扣走低毛利审批，或提高数量至 2,500 卷摊薄。' },
+  { id: 4, stage: 1, cust: 'Vela Marine', country: '西班牙', src: '网站询盘', owner: 'Ivy', prod: 'ABS-200 黑色 2.85mm × 8,000卷', amt: '$35,600', days: 9, prob: 44,
+    tl: [['08-12', '已发送 CIF Valencia 报价'], ['08-09', '邮件询盘：8,000 卷年度框架意向']],
+    ai: '已报价 9 天无回复，沉默评分上升。客户提到「年度框架」——大单意向，值得升级跟进层级，建议经理协同邮件。' },
+  { id: 5, stage: 2, cust: 'Nordic Print', country: '瑞典', src: '转介绍', owner: 'Alex', prod: 'PLA-301 灰色 1.75mm × 1,000卷（样）', amt: '$6,400', days: 3, prob: 78,
+    tl: [['08-18', '样品已签收，等待上机测试'], ['08-15', 'DHL 寄出样品 8 卷，运费 $86']],
+    ai: '样品签收 3 天，客户测试周期通常 5-7 天。建议第 5 天主动询问测试结果，附 TDS 摘要邮件模板。' },
+  { id: 6, stage: 3, cust: 'Gulf Traders', country: '阿联酋', src: '网站询盘', owner: 'Ivy', prod: '多 SKU 混柜 × 12,000卷', amt: '$58,900', days: 2, prob: 85,
+    tl: [['08-19', '客户确认数量，要求 30% T/T 预付'], ['08-17', '第三轮议价，锁定 DDP Jebel Ali']],
+    ai: '已到合同阶段。建议立即生成 PI 并触发 30% 预付收款计划；收款门禁达标后自动解锁生产排期。' },
+  { id: 7, stage: 4, cust: 'Hanse 3D', country: '德国', src: '复购', owner: 'Alex', prod: 'PLA-301 白色 1.75mm × 6,000卷', amt: '$29,400', days: 0, prob: 100,
+    tl: [['08-20', 'PI 签回，30% 预付款到账'], ['08-13', '复购提醒：距上次采购 92 天，接近消耗周期']],
+    ai: '复购商机已成交——此单由「售后与复购」的消耗周期预测自动生成，从提醒到成单 7 天。' }
+];
+let plSel = null;
+
+function renderPipeline() {
+  const counts = plStages.map((_, i) => plDeals.filter(d => d.stage === i).length);
+  const funnel = plStages.map((s, i) => {
+    const rate = i === 0 ? '' : `转化 ${Math.round(counts[i] / Math.max(counts[i - 1], 1) * 100)}%`;
+    return `<div class="pl-fstep"><div class="n">${counts[i]}</div><div class="t">${s}</div><div class="r">${rate}</div></div>`;
+  }).join('');
+
+  const board = plStages.map((s, i) => {
+    const cards = plDeals.filter(d => d.stage === i).map(d => `
+      <div class="pl-card ${plSel === d.id ? 'sel' : ''}" onclick="plPick(${d.id})">
+        <div class="cust">${d.cust}<span class="pl-prob">${d.stage === 4 ? '✓' : 'AI ' + d.prob + '%'}</span></div>
+        <div class="prod">${d.prod}</div>
+        <div class="foot">
+          <span class="amt">${d.amt}</span>
+          <span class="pl-days ${d.days > 7 && d.stage !== 4 ? 'late' : ''}">${d.days === 0 ? '今天' : '停留 ' + d.days + ' 天'}</span>
+        </div>
+      </div>`).join('');
+    return `<div class="pl-col"><div class="pl-col-head"><span>${s}</span><span class="n">${counts[i]}</span></div>${cards}</div>`;
+  }).join('');
+
+  const d = plDeals.find(x => x.id === plSel);
+  const detail = !d ? '' : `
+  <div class="pl-detail">
+    <div class="pl-ctx">
+      <div class="item"><div class="k">客户 / 国家</div><div class="v">${d.cust} · ${d.country}</div></div>
+      <div class="item"><div class="k">商机来源</div><div class="v">${d.src}</div></div>
+      <div class="item"><div class="k">负责人</div><div class="v">${d.owner}</div></div>
+      <div class="item"><div class="k">当前阶段</div><div class="v">${plStages[d.stage]}</div></div>
+      <div class="item"><div class="k">AI 成交概率</div><div class="v" style="color:#534AB7">${d.stage === 4 ? '已成交' : d.prob + '%'}</div></div>
+      <div class="item"><div class="k">客户档案</div><div class="v" style="color:#185FA5;cursor:pointer" onclick="toast('演示：跳转客户档案 360° 视图（不离开商机上下文）')">查看 360° →</div></div>
+    </div>
+    <div style="font-size:11px;color:#9ca3af;margin:10px 0 4px">沟通时间线（商机卡内嵌，不跳回客户管理）</div>
+    <div class="pl-timeline">${d.tl.map(t => `<div><span class="d">${t[0]}</span>${t[1]}</div>`).join('')}</div>
+    <div class="qq-ai"><b>AI 下一步建议</b> · ${d.ai}</div>
+    <div class="qq-actions">
+      <button class="pl-adv" ${d.stage >= 4 ? 'disabled' : ''} onclick="plAdvance(${d.id})">推进到「${plStages[Math.min(d.stage + 1, 4)]}」</button>
+      ${d.stage === 1 ? '<button class="qq-gen gray" onclick="toast(\'演示：跳转报价中心 · 引用本商机产品与历史价\')">去报价 →</button>' : ''}
+      ${d.stage === 2 ? '<button class="qq-gen gray" onclick="toast(\'演示：跳转订单履约 · 样品管理\')">去寄样跟踪 →</button>' : ''}
+      ${d.stage === 3 ? '<button class="qq-gen gray" onclick="toast(\'演示：跳转订单履约 · 生成 PI\')">生成 PI →</button>' : ''}
+      <span class="qq-done" style="margin-left:6px">阶段推进即记录跟进，不为录商机而录商机</span>
+    </div>
+  </div>`;
+
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">商机中心 / 销售管道</div>
+    <div class="page-title">销售管道</div>
+    <div class="page-desc">看板推进：询盘 → 报价 → 寄样 → 谈判 → 成交。商机卡内嵌客户上下文与沟通时间线——高频操作，不藏在客户档案的折叠菜单里。点击任意卡片查看详情。</div>
+  </div>
+  <div class="pl-funnel">${funnel}</div>
+  <div class="pl-board">${board}</div>
+  ${detail}`;
+}
+
+function plPick(id) { plSel = plSel === id ? null : id; renderContent(); }
+function plAdvance(id) {
+  const d = plDeals.find(x => x.id === id);
+  if (d.stage < 4) {
+    d.stage += 1; d.days = 0;
+    toast(`已推进到「${plStages[d.stage]}」并自动记录跟进`);
+    renderContent();
+  }
+}
+
+/* ============ 系统管理演示（移植自 GoodJob 原版） ============ */
+
+/* —— AI 配置 —— */
+const aiProviders = [
+  ['DS', 'DeepSeek', '深度求索 · deepseek-chat 极便宜', true, 'deepseek-chat'],
+  ['智', '智谱 GLM', 'glm-4-flash-250414 官方永久免费 · 推荐兜底', true, 'glm-4-flash-250414'],
+  ['SF', '硅基流动', 'SiliconFlow · 新用户赠 2000 万 Tokens', true, 'Qwen/Qwen2.5-7B-Instruct'],
+  ['QW', '通义千问', '阿里 DashScope · qwen 系列免费额度', true, 'qwen-plus'],
+  ['豆', '火山豆包', '火山引擎 Ark · doubao 免费额度', true, 'doubao-lite-4k'],
+  ['K', 'Moonshot Kimi', '月之暗面 · 中文长文免费试用', true, 'moonshot-v1-8k'],
+  ['GQ', 'Groq', '开源模型高速推理 · 免费档', true, 'llama-3.1-8b-instant'],
+  ['OR', 'OpenRouter', '聚合平台 · 含免费模型', true, 'google/gemini-flash-1.5'],
+  ['OL', 'Ollama 本地', '本机运行 · 0 成本、数据私有', true, 'qwen2.5:7b'],
+  ['GM', 'Google Gemini', 'Gemini · flash 免费档', true, 'gemini-1.5-flash'],
+  ['AI', 'OpenAI GPT', 'GPT 系列（付费）', false, 'gpt-4o-mini'],
+  ['CL', 'Claude', 'Anthropic（付费）', false, 'claude-3-5-sonnet'],
+  ['API', '自定义/本地模型', '任意 OpenAI 兼容接口', false, '']
+];
+const aiUseList = [
+  ['leadFinder', '搜', '自动获客', 'Agent 搜客与线索生成'],
+  ['websiteParse', '网', '官网网页解析', '安全策略已永久关闭，系统不会访问企业网页'],
+  ['scoring', '评', '线索评分', '线索池 AI 评分'],
+  ['emailDraft', '信', '开发信草稿', '沟通中心邮件草稿'],
+  ['exam', '题', '资料/考试', '产品知识测验']
+];
+let aiCfg = { prov: 'zhipu', uses: { leadFinder: true, scoring: true, emailDraft: true, exam: false }, tested: false };
+const aiProvModels = { DeepSeek: 'deepseek-chat', '智谱 GLM': 'glm-4-flash-250414', '硅基流动': 'Qwen/Qwen2.5-7B-Instruct', '通义千问': 'qwen-plus', '火山豆包': 'doubao-lite-4k', 'Moonshot Kimi': 'moonshot-v1-8k', Groq: 'llama-3.1-8b-instant', OpenRouter: 'google/gemini-flash-1.5', 'Ollama 本地': 'qwen2.5:7b', 'Google Gemini': 'gemini-1.5-flash', 'OpenAI GPT': 'gpt-4o-mini', Claude: 'claude-3-5-sonnet' };
+
+function renderAiConfig() {
+  const cur = aiProviders.find(p => p[1] === aiCfg.prov) || aiProviders[1];
+  const useCount = Object.values(aiCfg.uses).filter(Boolean).length;
+  const provCards = aiProviders.map(([mark, name, desc, free]) => `
+    <div class="sys-prov ${name === aiCfg.prov ? 'on' : ''}" onclick="aiPick('${name}')">
+      <div class="sys-prov-top">
+        <div class="sys-prov-mark">${mark}</div>
+        <div>${free ? '<span class="sys-tag free">免费</span> ' : ''}${name === aiCfg.prov ? '<span class="sys-tag cur">当前</span>' : '<span class="sys-tag gray">兼容</span>'}</div>
+      </div>
+      <h4>${name}</h4><p>${desc}</p>
+    </div>`).join('');
+  const useRows = aiUseList.map(([k, mark, name, desc]) => `
+    <div class="sys-use ${k === 'websiteParse' ? 'off' : ''}" ${k === 'websiteParse' ? '' : `onclick="aiToggle('${k}')"`}>
+      ${k === 'websiteParse' ? '' : (aiCfg.uses[k] ? '☑' : '☐')} ${name} · <span style="color:#9ca3af">${desc}</span>
+    </div>`).join('');
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">系统管理 / AI 配置</div>
+    <div class="page-title">AI 配置</div>
+    <div class="page-desc">供应商预设一键带入默认参数；API Key 按账号隔离保存、页面不明文回显；AI 能力按模块开关。仅管理员可配置，业务员无感知。</div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">当前供应商</div><div class="kpi-value" style="font-size:18px">${aiCfg.prov}</div><div class="kpi-foot">OpenAI 兼容协议</div></div>
+    <div class="kpi-card"><div class="kpi-label">配置状态</div><div class="kpi-value" style="font-size:18px;color:#0F6E56">已启用</div><div class="kpi-foot">Key 已保存（末四位 7f3a）</div></div>
+    <div class="kpi-card"><div class="kpi-label">默认模型</div><div class="kpi-value" style="font-size:18px">${aiProvModels[aiCfg.prov] || '自定义'}</div><div class="kpi-foot">按账号隔离保存</div></div>
+    <div class="kpi-card"><div class="kpi-label">应用范围</div><div class="kpi-value">${useCount + 1} 个模块</div><div class="kpi-foot">Agent 对话默认启用</div></div>
+  </div>
+  <div class="panel-grid">
+    <div class="panel">
+      <div class="panel-title">供应商预设（13 家）<span class="more" onclick="toast('点击卡片自动带入默认参数；「免费」供应商均可零门槛获取 Key（GoodJob 原版行为）')">说明</span></div>
+      <div class="sys-fallback"><b>免费兜底 · 智谱 GLM-4-Flash-250414（官方永久免费）</b><br>无需信用卡、注册即送免费额度。三步启用：① 智谱开放平台注册（实名免费）→ ② API 密钥中心新建 Key → ③ 点击下方「智谱 GLM」卡片粘贴 Key，勾选自动获客，保存配置。备选：硅基流动（新用户赠 2000 万 Tokens，含 DeepSeek/Qwen/GLM 免费模型）。</div>
+      <div class="sys-prov-grid">${provCards}</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">模型连接参数</div>
+      <div class="sys-form">
+        <div><label>配置名称</label><input value="搜客与邮件专用 Key"></div>
+        <div><label>供应商</label><select>${aiProviders.map(p => `<option ${p[1] === aiCfg.prov ? 'selected' : ''}>${p[1]}</option>`).join('')}</select></div>
+        <div><label>协议</label><select><option>OpenAI 兼容</option><option>Claude Messages</option><option>Gemini 生成</option></select></div>
+        <div><label>模型名称</label><input value="${aiProvModels[aiCfg.prov] || ''}"></div>
+        <div class="full"><label>Base URL</label><input value="https://open.bigmodel.cn/api/paas/v4"></div>
+        <div class="full"><label>API Key（保存后仅显示末四位，页面不回显明文）</label><input type="password" value="················7f3a"></div>
+        <div><label>启用状态</label><select><option>启用 AI 能力</option><option>暂不启用</option></select></div>
+        <div><label>温度</label><input type="number" value="0.1" step="0.1" min="0" max="2"></div>
+      </div>
+      <div class="sys-uses">${useRows}</div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="task-act" style="padding:7px 16px" onclick="aiTest()">${aiCfg.tested ? '测试通过 ✓ 再测一次' : '测试连接'}</button>
+        <button class="task-act" style="padding:7px 16px;background:#534AB7;color:#fff" onclick="toast('配置已保存（演示）：Key 按账号隔离存储，业务员端无感知')">保存配置</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">已覆盖模块</div>
+      ${aiUseList.map(([k, mark, name, desc]) => `
+      <div class="sys-rule">
+        <div class="sys-prov-mark" style="width:26px;height:22px;font-size:9px">${mark}</div>
+        <div style="flex:1"><b>${name}</b><br><span>${desc}</span></div>
+        <span class="sys-tag ${k === 'websiteParse' ? 'gray' : (aiCfg.uses[k] ? 'free' : 'gray')}">${k === 'websiteParse' ? '已关闭' : (aiCfg.uses[k] ? '已启用' : '待启用')}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+function aiPick(name) { aiCfg.prov = name; aiCfg.tested = false; renderContent(); toast(`已带入 ${name} 默认参数（模型 ${aiProvModels[name] || '自定义'}）`); }
+function aiToggle(k) { aiCfg.uses[k] = !aiCfg.uses[k]; renderContent(); }
+function aiTest() { aiCfg.tested = true; renderContent(); toast('测试连接成功：响应 412ms · 模型正常（演示）'); }
+
+/* —— 账号与权限（独立子页，V3.12 从系统设置拆出，消除功能重复） —— */
+function renderAccounts() {
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">系统管理 / 账号与权限</div>
+    <div class="page-title">账号与权限</div>
+    <div class="page-desc">账号生命周期与数据权限：账号列表（角色/业务数据范围/个人数据规则/状态）、新增账号、权限模板、批量停用；数据权限规则：业务员本人、主管团队、管理员全局、超管最高——个人数据（待办/备忘）任何角色仅本人可见，管理员也不越权。仅超级管理员。</div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">启用账号</div><div class="kpi-value">7</div><div class="kpi-foot">共 8 个账号</div></div>
+    <div class="kpi-card"><div class="kpi-label">主管账号</div><div class="kpi-value">1</div><div class="kpi-foot">销售主管 1 人</div></div>
+    <div class="kpi-card"><div class="kpi-label">业务员账号</div><div class="kpi-value">4</div><div class="kpi-foot">1 个已停用</div></div>
+    <div class="kpi-card"><div class="kpi-label">异常登录</div><div class="kpi-value">0</div><div class="kpi-foot">近 7 天</div></div>
+  </div>
+  <div class="panel-grid">
+    <div class="panel">
+      <div class="panel-title">账号列表<span class="more" onclick="toast('新增账号（演示）：创建后按权限模板分配角色与数据范围')">新增账号</span></div>
+      <table class="sys-tbl">
+        <thead><tr><th>账号</th><th>角色</th><th>业务数据范围</th><th>个人数据规则</th><th>状态</th></tr></thead>
+        <tbody>${sysAccounts.map(a => `<tr><td style="color:#185FA5">${a[0]}</td><td>${a[1]}</td><td>${a[2]}</td><td style="color:#6b7280;font-size:11px">${a[3]}</td><td><span class="sys-tag ${a[4] === '启用' ? 'free' : 'gray'}">${a[4]}</span></td></tr>`).join('')}</tbody>
+      </table>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="task-act" onclick="toast('权限模板（演示）：业务员 / 销售主管 / 财务只读 / 管理层只读 / 超管')">权限模板</button>
+        <button class="task-act" style="background:#fff;border:1px solid #d1d5db;color:#374151" onclick="toast('批量停用（演示）：勾选账号后批量停用并回收数据范围')">批量停用</button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;color:#374151">导出审批
+          <span class="sys-tag free" style="cursor:pointer" onclick="toast('导出审批开关（演示）：开启后导出操作需管理员审批')">已开启</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">数据权限规则</div>
+      ${sysRules.map(([r, d, tag]) => `
+      <div class="sys-rule">
+        <div style="flex:1"><b>${r}</b><br><span>${d}</span></div>
+        <span class="sys-tag ${tag === '最高' ? 'cur' : (tag === '全局' ? 'gray' : 'free')}">${tag}</span>
+      </div>`).join('')}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
+        <div style="background:#F6F7F9;border-radius:8px;padding:10px;font-size:11px;color:#374151"><b style="display:block;margin-bottom:4px">业务数据</b>业务员本人；主管团队；管理员全局</div>
+        <div style="background:#F6F7F9;border-radius:8px;padding:10px;font-size:11px;color:#374151"><b style="display:block;margin-bottom:4px">个人数据</b>待办、备忘仅本人可见，管理员也不越权</div>
+        <div style="background:#F6F7F9;border-radius:8px;padding:10px;font-size:11px;color:#374151"><b style="display:block;margin-bottom:4px">账号管理</b>仅管理员和超管；管理员不能管理超管</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* —— 系统设置 —— */
+const sysAccounts = [
+  ['alex@nexfab.com', '业务员', '本人业务数据', '待办/备忘仅本人', '启用'],
+  ['emma@nexfab.com', '业务员', '本人业务数据', '待办/备忘仅本人', '启用'],
+  ['leo@nexfab.com', '业务员', '本人业务数据', '待办/备忘仅本人', '启用'],
+  ['chen@nexfab.com', '销售主管', '本团队业务数据', '待办/备忘仅本人', '启用'],
+  ['wang@nexfab.com', '财务', '财务全局（只读）', '待办/备忘仅本人', '启用'],
+  ['li@nexfab.com', '管理层', '全局只读', '待办/备忘仅本人', '启用'],
+  ['admin@nexfab.com', '超级管理员', '全局业务 + 账号管理', '待办/备忘仅本人', '启用'],
+  ['trainee@nexfab.com', '业务员', '本人业务数据', '待办/备忘仅本人', '已停用']
+];
+const sysRules = [
+  ['业务员', '客户、线索、商机、待办、备忘均仅本人可见；不能管理账号。', '本人'],
+  ['销售主管', '查看本团队客户、商机、问题、案例等业务协作数据；不查看员工待办和备忘。', '团队'],
+  ['管理员 / 财务 / 管理层', '查看全局业务数据并管理账号；不能查看他人待办和备忘。', '全局'],
+  ['超级管理员', '可管理管理员和超级管理员；个人数据仍坚持本人私有。', '最高']
+];
+let sysSet = { phase: 'idle', progress: 0 }; // idle → checking → available → updating → done
+
+function renderSettings() {
+  const updMap = {
+    idle: `<div class="sys-rule"><span>当前版本</span><b style="margin-left:auto">v3.6.0</b></div>
+           <div class="sys-rule"><span>上次检查</span><b style="margin-left:auto">2026-08-18 14:22</b></div>`,
+    checking: `<div class="sys-rule"><span>正在检查更新……</span></div>`,
+    available: `<div class="sys-rule"><span>当前版本</span><b style="margin-left:auto">v3.6.0</b></div>
+                <div class="sys-rule"><span>最新版本</span><b style="margin-left:auto;color:#0F6E56">v3.6.1</b></div>
+                <div style="margin:10px 0;padding:10px 12px;background:#F6F7F9;border-radius:8px;font-size:11.5px;color:#374151;line-height:1.7"><b>v3.6.1 更新内容</b><br>· 财务经营：汇率版本台账支持批量生效<br>· 报价中心：秒报价历史快照导出<br>· 修复样品转订单时数量丢失问题</div>
+                <button class="task-act" style="padding:7px 16px" onclick="sysUpdate()">立即更新</button>`,
+    updating: `<div class="sys-prog-track"><div class="sys-prog-bar" style="width:${sysSet.progress}%"></div></div>
+               <div style="font-size:11.5px;color:#6b7280;margin-top:8px">正在更新（${sysSet.progress}%）· 更新前已自动备份数据库——备份失败绝不覆盖程序</div>`,
+    done: `<div class="sys-rule"><span>更新状态</span><b style="margin-left:auto;color:#0F6E56">✓ 已更新到 v3.6.1</b></div>
+           <div class="sys-rule"><span>备份凭证</span><b style="margin-left:auto;font-size:11px">backup-20260821-0424.sql.gz</b></div>`
+  };
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">系统管理 / 系统设置</div>
+    <div class="page-title">系统设置</div>
+    <div class="page-desc">公司资料（对外单证与邮件抬头的来源）与系统更新；组织架构 / 流程配置 / 模板管理 / 外部集成等扩展设置。账号管理请前往「账号与权限」子页。仅超级管理员。</div>
+  </div>
+  <div class="panel-grid">
+    <div class="panel">
+      <div class="panel-title">公司资料<span class="more" onclick="toast('公司资料已保存（演示）：对外单证 PI/CI 与邮件签名将使用此抬头')">保存</span></div>
+      <div class="sys-form">
+        <div><label>公司名称</label><input value="NexFab Industrial Co., Ltd."></div>
+        <div><label>公司官网</label><input value="https://www.nexfab.com"></div>
+        <div><label>对外邮箱</label><input value="sales@nexfab.com"></div>
+        <div><label>公司电话</label><input value="+86 755 8888 6666"></div>
+        <div class="full"><label>主营产品</label><input value="LED 照明 · 智能家居 · 工业配件（出口欧美 12 年）"></div>
+        <div class="full"><label>公司地址</label><input value="深圳市宝安区西乡街道 XX 大厦 8 楼"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">扩展设置<span class="more" onclick="toast('扩展设置（演示）：配置项与业务模块联动生效')">说明</span></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+        <div style="background:#F6F7F9;border-radius:8px;padding:10px;font-size:11px;color:#374151;cursor:pointer" onclick="toast('组织架构（演示）：部门树 / 汇报关系 / 岗位与角色映射')"><b style="display:block;margin-bottom:4px">🏢 组织架构</b>部门树、汇报关系、岗位与角色映射</div>
+        <div style="background:#F6F7F9;border-radius:8px;padding:10px;font-size:11px;color:#374151;cursor:pointer" onclick="toast('流程配置（演示）：收款门禁 / 报价审批流 / 单证放行规则')"><b style="display:block;margin-bottom:4px">⚙️ 流程配置</b>收款门禁、报价审批流、单证放行规则</div>
+        <div style="background:#F6F7F9;border-radius:8px;padding:10px;font-size:11px;color:#374151;cursor:pointer" onclick="toast('模板管理（演示）：邮件 / 单证 / 报价单模板维护')"><b style="display:block;margin-bottom:4px">📄 模板管理</b>邮件、单证、报价单模板维护</div>
+        <div style="background:#F6F7F9;border-radius:8px;padding:10px;font-size:11px;color:#374151;cursor:pointer" onclick="toast('外部集成（演示）：汇率源 / 物流 / 邮件 / 社媒授权')"><b style="display:block;margin-bottom:4px">🔗 外部集成</b>汇率源、物流、邮件、社媒授权</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">系统更新<span class="more" onclick="sysCheck()">${sysSet.phase === 'idle' ? '检查更新' : (sysSet.phase === 'done' ? '已是最新' : '刷新')}</span></div>
+      ${updMap[sysSet.phase]}
+      <div style="border-top:1px dashed #e5e7eb;margin-top:14px;padding-top:12px">
+        <div style="font-size:12px;font-weight:600;color:#111827;margin-bottom:6px">镜像源配置</div>
+        <div style="display:flex;gap:8px"><input style="flex:1;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:11.5px;font-family:inherit" value="https://gitee.com/nexfab/crm-releases/raw/main/"><button class="task-act" onclick="toast('镜像源已保存（演示）：公网源必须 HTTPS')">保存</button></div>
+        <div style="font-size:10.5px;color:#9ca3af;margin-top:6px">填写带签名 manifest.json 所在目录。正式更新会先备份数据库，备份失败时绝不覆盖程序。</div>
+      </div>
+    </div>
+  </div>`;
+}
+function sysCheck() {
+  if (sysSet.phase === 'idle' || sysSet.phase === 'done') {
+    sysSet.phase = 'checking'; renderContent();
+    setTimeout(() => { sysSet.phase = 'available'; renderContent(); }, 900);
+  }
+}
+function sysUpdate() {
+  sysSet.phase = 'updating'; sysSet.progress = 0; renderContent();
+  const t = setInterval(() => {
+    sysSet.progress += 12;
+    if (sysSet.progress >= 100) { clearInterval(t); sysSet.phase = 'done'; }
+    renderContent();
+  }, 220);
+}
+
+/* —— 数据库维护 —— */
+const dbTables = [
+  ['customers', 312], ['contacts', 847], ['products', 1268], ['quotations', 421], ['orders', 187],
+  ['payments', 342], ['samples', 96], ['activities', 9842], ['users', 8], ['ai_chats', 1284]
+];
+let dbm = { mode: 'migration', file: null, token: '', running: false, idx: 0, logs: ['就绪：等待任务开始'] };
+
+function dbmLog(line) { dbm.logs.push(line); if (dbm.logs.length > 40) dbm.logs.shift(); }
+
+function renderDbMaint() {
+  const doneCount = dbm.running ? dbm.idx : (dbm.idx >= dbTables.length ? dbTables.length : 0);
+  const pct = dbTables.length ? Math.round(doneCount / dbTables.length * 100) : 0;
+  const migControls = `
+    <div class="tc-upload" style="cursor:default">
+      ${dbm.file ? `<div style="color:#374151;font-size:12.5px"><b>📦 ${dbm.file}</b><br><span style="font-size:10.5px;color:#9ca3af">.sql.gz · 仅在浏览器解析，不上传第三方</span></div>` : `<div>📦 选择 MySQL 文件<div><button class="btn" onclick="dbmPick()">选择演示备份文件</button></div><div style="font-size:10.5px;margin-top:8px">.sql / .sql.gz</div></div>`}
+    </div>
+    <div style="margin-top:12px"><label style="display:block;font-size:11px;color:#6b7280;margin-bottom:4px">重复数据处理</label>
+      <select style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit"><option>跳过已有记录</option><option>覆盖相同 ID</option></select></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;font-size:10.5px;color:#6b7280;text-align:center">
+      <div style="background:#F6F7F9;border-radius:8px;padding:8px 4px">数据表<br><b style="font-size:13px;color:#111827">${dbm.file ? 10 : 0}</b></div>
+      <div style="background:#F6F7F9;border-radius:8px;padding:8px 4px">文件记录<br><b style="font-size:13px;color:#111827">${dbm.file ? '14,647' : '0'}</b></div>
+      <div style="background:#F6F7F9;border-radius:8px;padding:8px 4px">可迁移<br><b style="font-size:13px;color:#0F6E56">${dbm.file ? '14,102' : '0'}</b></div>
+      <div style="background:#F6F7F9;border-radius:8px;padding:8px 4px">跳过<br><b style="font-size:13px;color:#854F0B">${dbm.file ? '545' : '0'}</b></div>
+    </div>`;
+  const bakControls = `
+    <div style="background:linear-gradient(135deg,#F0FDF4,#ECFDF5);border:1px solid #BBF7D0;border-radius:10px;padding:14px;font-size:12px;color:#166534;line-height:1.8">
+      <b>服务器允许写入备份文件</b><br>备份由部署配置决定是否开放；格式 <b>SQL.GZ</b>，保留策略 <b>最近 7 份</b>，超期自动清理。
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;font-size:10.5px;color:#6b7280;text-align:center">
+      <div style="background:#F6F7F9;border-radius:8px;padding:8px 4px">格式<br><b style="font-size:12px;color:#111827">SQL.GZ</b></div>
+      <div style="background:#F6F7F9;border-radius:8px;padding:8px 4px">保留<br><b style="font-size:12px;color:#111827">7 份</b></div>
+      <div style="background:#F6F7F9;border-radius:8px;padding:8px 4px">上次备份<br><b style="font-size:12px;color:#111827">8/18</b></div>
+    </div>`;
+  const rows = dbTables.map(([name, total], i) => {
+    let st = '待处理', bar = 0, w = 0, sk = 0;
+    if (dbm.running || dbm.idx > 0) {
+      if (i < dbm.idx) { st = '✓ 完成'; bar = 100; w = total; sk = i === 3 ? 45 : (i > 5 ? 30 : 0); }
+      else if (i === dbm.idx && dbm.running) { st = '写入中'; bar = 60; w = Math.round(total * 0.6); }
+    }
+    return `<tr><td style="color:#185FA5">${name}</td><td>${st === '写入中' ? '<span style="color:#534AB7;font-weight:600">' + st + '</span>' : st}</td><td><div class="sys-prog-track" style="margin:0"><div class="sys-prog-bar" style="width:${bar}%"></div></div></td><td>${total.toLocaleString()}</td><td>${w.toLocaleString()}</td><td>${sk}</td><td>0</td></tr>`;
+  }).join('');
+  const canStart = dbm.mode === 'migration' ? (dbm.file && dbm.token && !dbm.running) : (dbm.token && !dbm.running);
+  const startBtn = `<button class="task-act" style="padding:8px 18px;background:${canStart ? '#534AB7' : '#c7c3e8'};color:#fff;cursor:${canStart ? 'pointer' : 'not-allowed'}" ${canStart ? 'onclick="dbmRun()"' : 'disabled'}>${dbm.running ? '任务执行中…' : (dbm.mode === 'migration' ? '开始迁移' : '创建备份')}</button>`;
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">系统管理 / 数据库维护</div>
+    <div class="page-title">数据库维护</div>
+    <div class="page-desc">迁移数据（导入 MySQL .sql/.sql.gz，仅在浏览器解析，逐表进度实时展示）与本地备份双模式；所有操作需数据库维护授权码；运行记录实时流。仅超级管理员。</div>
+  </div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi-card"><div class="kpi-label">MySQL 连接</div><div class="kpi-value" style="font-size:18px;color:#0F6E56">已连接</div><div class="kpi-foot">Prisma · 延迟 3ms</div></div>
+    <div class="kpi-card"><div class="kpi-label">备份策略</div><div class="kpi-value" style="font-size:18px">允许 · 7 份</div><div class="kpi-foot">由部署配置决定</div></div>
+    <div class="kpi-card"><div class="kpi-label">最近任务</div><div class="kpi-value" style="font-size:18px">8/18 备份成功</div><div class="kpi-foot">nexfab-backup-0818.sql.gz</div></div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:360px 1fr">
+    <div class="panel">
+      <div class="sys-mode-tabs">
+        <div class="sys-mode-tab ${dbm.mode === 'migration' ? 'on' : ''}" onclick="dbmMode('migration')">迁移数据</div>
+        <div class="sys-mode-tab ${dbm.mode === 'backup' ? 'on' : ''}" onclick="dbmMode('backup')">本地备份</div>
+      </div>
+      ${dbm.mode === 'migration' ? migControls : bakControls}
+      <div style="margin-top:14px"><label style="display:block;font-size:11px;color:#6b7280;margin-bottom:4px">数据库维护授权码</label>
+        <input type="password" placeholder="输入部署配置中的授权码" value="${dbm.token ? '········' : ''}" style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit" onchange="dbmToken(this.value)"></div>
+      <div style="margin-top:12px">${startBtn}</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">任务执行 · 逐表进度（${dbm.idx} / ${dbTables.length}）<span style="font-weight:400;font-size:11px;color:#6b7280;margin-left:auto">${pct}%</span></div>
+      <div class="sys-prog-track"><div class="sys-prog-bar" style="width:${pct}%"></div></div>
+      <div style="overflow-x:auto;margin-top:12px">
+      <table class="sys-tbl">
+        <thead><tr><th>数据表</th><th>状态</th><th>进度</th><th>总量</th><th>写入</th><th>跳过</th><th>失败</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div style="font-size:12px;font-weight:600;color:#111827;margin:16px 0 8px">运行记录</div>
+      <div class="sys-log">${dbm.logs.map(l => `<div>${l}</div>`).join('')}</div>
+    </div>
+  </div>
+  <div class="panel-grid" style="grid-template-columns:1fr">
+    <div class="panel">
+      <div class="panel-title">维护记录</div>
+      <table class="sys-tbl">
+        <thead><tr><th>任务</th><th>类型</th><th>状态</th><th>数据量</th><th>文件</th><th>执行时间</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td>全量备份</td><td>备份</td><td><span class="sys-tag free">成功</span></td><td>14.2 MB</td><td>nexfab-backup-0818.sql.gz</td><td>08-18 22:00</td><td style="color:#185FA5;cursor:pointer" onclick="toast('下载备份文件（演示）')">下载</td></tr>
+          <tr><td>旧系统迁移</td><td>迁移</td><td><span class="sys-tag free">成功</span></td><td>9,862 条</td><td>zai-export-20260805.sql</td><td>08-05 15:40</td><td style="color:#185FA5;cursor:pointer" onclick="toast('查看运行记录（演示）')">记录</td></tr>
+          <tr><td>全量备份</td><td>备份</td><td><span class="sys-tag free">成功</span></td><td>13.8 MB</td><td>nexfab-backup-0811.sql.gz</td><td>08-11 22:00</td><td style="color:#185FA5;cursor:pointer" onclick="toast('下载备份文件（演示）')">下载</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+function dbmMode(m) { dbm.mode = m; dbm.running = false; dbm.idx = 0; renderContent(); }
+function dbmPick() { dbm.file = 'nexfab-backup-20260813.sql.gz'; dbmLog('已选择文件 nexfab-backup-20260813.sql.gz · 浏览器解析 10 张表 / 14,647 条记录'); renderContent(); }
+function dbmToken(v) { dbm.token = v ? 'ok' : ''; if (dbm.token) dbmLog('授权码校验通过'); renderContent(); }
+function dbmRun() {
+  dbm.running = true; dbm.idx = 0; dbm.logs = [];
+  dbmLog(dbm.mode === 'migration' ? '任务开始：MySQL 迁移 · 冲突策略=跳过已有记录' : '任务开始：本地备份 · 格式 SQL.GZ');
+  renderContent();
+  const step = () => {
+    if (dbm.idx < dbTables.length) {
+      const [name, total] = dbTables[dbm.idx];
+      dbmLog(`写入 ${name} … ${total.toLocaleString()} 条${dbm.idx === 3 ? '（跳过已有 45 条）' : ''}`);
+      dbm.idx++;
+      renderContent();
+      setTimeout(step, 420);
+    } else {
+      dbm.running = false;
+      dbmLog(dbm.mode === 'migration' ? '迁移完成：14,102 条写入 · 545 条跳过 · 0 条失败 · 耗时 4.2s' : '备份完成：nexfab-backup-0821.sql.gz · 14.6 MB · 保留 7 份策略内');
+      renderContent();
+      toast(dbm.mode === 'migration' ? '迁移完成：10 张表全部成功' : '备份完成：nexfab-backup-0821.sql.gz');
+    }
+  };
+  setTimeout(step, 500);
+}
+
+function renderBlueprint(m) {
+  const pc = phaseColors[m.phase];
+  const cards = m.subs.map(s => {
+    const aiBlock = s.ai ? `
+      <div class="bp-ai"><b>AI</b> · ${aiDesc[m.id + '/' + s.name] || 'AI 能力嵌入'}</div>` : '';
+    return `
+    <div class="bp-card" onclick="toast('演示原型：${s.name} 页面')">
+      <div class="bp-card-head">
+        <div class="bp-card-title">${s.name}</div>
+        ${s.badge ? `<span class="nav-badge badge-${s.badge.type}">${s.badge.n}</span>` : ''}
+      </div>
+      <p>${subDesc[m.id + '/' + s.name] || ''}</p>
+      ${aiBlock}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="page-head">
+    <div class="breadcrumb">${m.name}</div>
+    <div class="page-title">${m.name}</div>
+    <div class="page-desc">${m.intro}</div>
+    <div style="margin-top:10px"><span class="merge-info" style="color:${pc}">${m.merge}</span></div>
+  </div>
+  <div class="blueprint"><div class="bp-list">${cards}</div></div>`;
+}
+
+const subDesc = {
+  'dashboard/角色工作台': '按《工作台最终设计方案》实施（V3.8 重构）：顶部氛围条（每日一句滚动 + 我方放假区间倒计时·下单预期管理 + 客户国家假日可切换）→ 3 枚角色定制提醒胶囊（红类带呼吸灯）→ KPI 四卡（本月销售额/新增询盘/进行中报价/本月回款，红涨绿跌 + 迷你趋势图）→ 双列卡片区（SVG 梯形销售漏斗含转化率胶囊与对标偏差、管道健康度、今日待办+AI 洞察、AI 经营建议、外贸资讯推送含一键转线索、全球业务地图、多币种汇率看板、全局搜索与快捷操作）→ 角色专属模块区（25 个专属模块按角色显示）。点此查看右侧演示 →',
+  'dashboard/晨会视图': '晨会四卡：优先级结论、高风险金额、待协同、今日动作（主管/管理层视角）；附客户动态与风险预警明细。',
+  'dashboard/经营简报': '今日/本周/本月周期切换；三段式经营建议（判断依据→建议动作→业务影响）；焦点指标（高风险金额/高优先级待办/预计成交金额/新增线索）；实时线索漏斗。原 AI 晨报并入此处。',
+  'dashboard/待办清单': '快速新增（自然语言建待办）、筛选（今天/逾期/我负责/客户跟进/历史清单）、历史清单折叠归档、待办洞察。个人待办仅本人可见。点此查看右侧演示 →',
+  'dashboard/跟进与管道': '我的跟进队列（按商机阶段分组、超时预警）+ 管道健康度（阶段分布、停滞商机、预计成交金额）。',
+  'dashboard/审批中心': '待我审批（报价/折扣/低毛利/单证/放行）、我发起的、审批历史。AI 只标注风险，不做决定。点此查看右侧演示 →',
+  'acquisition/线索池': '线索导入（导入时自动去重，复用「工具中心·客户去重」同一规则库）、来源追踪（表单/邮件/社媒/展会/转介绍）、AI 线索评分与分配。',
+  'acquisition/社媒运营': '内容日历、多平台发布、互动管理、线索转化、UTM 归因。原社媒运营+社媒获客合并于此。',
+  'acquisition/网站询盘': '独立站表单自动接入、字段映射、自动转线索、AI 提取询盘结构化需求。',
+  'acquisition/渠道分析': '各渠道询盘量、有效线索率、转化率、获客成本归因，保留首次来源与最终转化来源。',
+  'customer/客户档案': '360° 视图：联系人、时间线、询盘、报价、订单、收款同一页面呈现；来源与负责人可追溯。客户数据中心（低频维护）。',
+  'customer/客户画像': 'AI 评分（展示维度与证据、允许人工修正）、标签体系、采购潜力推测——推测内容明确标注。',
+  'pipeline/销售管道': '看板视图：新询盘 → 已报价 → 寄样中 → 谈判中 → 已成交 + 丢单归因。商机卡内嵌客户上下文与沟通时间线，推进阶段不离开商机页。点此查看右侧演示 →',
+  'pipeline/跟进任务': '今日待跟进、超时预警、跟进记录；与沟通中心联动——邮件/WhatsApp 发送即记录跟进，不为录而录。',
+  'pipeline/售后与复购': '售后客诉处理、消耗周期预测、复购提醒（生成复购商机直接进入管道）、沉默客户激活。',
+  'comms/邮件管理': '邮件收发、模板管理、打开追踪、附件管理、AI 草稿与翻译。',
+  'comms/WhatsApp': '消息收发、群组管理、广播、模板消息、AI 实时翻译与意图识别。',
+  'comms/社媒私信': '多平台统一收件箱（LinkedIn / Facebook / Instagram），互动意图识别、转线索。',
+  'comms/沟通时间线': '按客户聚合所有渠道沟通记录，统一时间线视图——外贸业务员跟单最需要的一页。',
+  'product/产品库（PIM）': '左侧产品分类树（一级分类 → 产品族 → SKU），右侧 PIM 列表：规格参数、包装信息（内盒/外箱尺寸、体积、毛净重、装箱数、装箱率）、图片、TDS/SDS/证书资料状态、成本版本。点开 SKU 即产品档案详情。',
+  'product/RAG 知识库问答': '自然语言问产品问题（「PLA-301 耐温范围和 TDS 在哪」），答案引用具体文档与章节；文档过期/未审核不得用于回答，资料不足明确说不知道。',
+  'fulfillment/样品管理': '样品申请、样品费收款、寄送物流、签收、测试反馈、确认转订单。样品是订单的前置确认环节，保持独立跟进阶段——不被「已寄样」状态代替。',
+  'quote/快速报价': '秒报价：选产品 + 填数量 + 选贸易条款，自动带出最新成本版本、包装体积折算海运费、该客户历史成交价与同产品近期报价，AI 给出建议价格区间，30 秒内生成可发送报价单。点此查看右侧演示 →',
+  'quote/报价管理': 'EXW/FOB/CIF/DDP、多 SKU、数量梯度（每档独立复算）、费用分摊、折扣叠加、底价与毛利审批、版本不可覆盖、英文 PDF。',
+  'fulfillment/合同订单': 'PI 生成、报价转订单（复制快照不重读现价）、订单确认、状态管理、收款门禁控制（已收金额由财务经营回写，达标自动放行生产/发货）。',
+  'finance/订单与回款': '订单收款闭环：闭环节点摘要（报价→订单→合同→单证→发货→收款→日志）；待转订单报价；应收与逾期队列（逾期/今日到期/待补账期自动识别，同步财务风险提示）；合同；最近收款；待财务确认（销售登记、财务核对流水与汇率后入账）；汇率版本台账（按生效日锁定）；操作日志。点此查看右侧演示 →',
+  'finance/提成与对账': '提成试算与对账：对账月份/人员筛选；同步待核成交（按财务汇率折算生成计提）；月度计提记录（待确认/已确认）；计算结果与产品规则（仅管理员维护）；导出对账、重新计算、提成单月度锁定/解锁。点此查看右侧演示 →',
+  'fulfillment/生产跟踪': '生产进度、质检记录、交期管理。收款达到约定条件后才解锁生产节点。',
+  'fulfillment/物流管理': '发货管理、物流追踪、费用记录、装柜明细。',
+  'fulfillment/单证管理': 'CI、PL、装箱单、合同。单证间客户名/产品/数量/金额/箱数/毛净重一致性检查；锁定后只能新版本。',
+  'aihub/Agent 对话': '说出最终目标（「在德国搜索 LED 照明进口商，目标 20 家，并持续跟踪到清洗结束」），Agent 拆解计划、逐步执行、汇报结果。任务计划、检查点恢复、暂停/继续/取消，外部动作须人工批准。左侧能力面板显示所有已启用 skills（含自定义分类），点胶囊管理。点此查看右侧演示 →',
+  'aihub/销售打法': 'V3.10：预置 skills 分类之一——团队打法沉淀为 Playbook skill，可手动添加 / 启用 / 停用 / 配置；分类不设限，可创建任意自定义分类并添加 skill。',
+  'aihub/业务记忆': 'V3.10：预置 skills 分类之一——业务记忆（客户偏好、历史决策、价格底线）为可添加的记忆 skill，Agent 执行时自动引用；可创建自定义分类存放任意记忆 skill。',
+  'aihub/自动触发': 'V3.10：预置 skills 分类之一——触发规则（沉默唤醒、样品签收跟进、复购窗口）为可添加的规则 skill，创建后由 Agent 后台执行；可自定义触发分类。',
+  'aihub/运行质量': 'V3.10：预置 skills 分类之一 + 治理看板——任务成功率、外部动作批准率、纠错记录为可添加的治理 skill；可自定义治理分类。',
+  'tools/名片 OCR 识别': '上传名片 → OCR 识别字段（公司名/联系人/职位/邮箱/电话/WhatsApp/国家）→ 重复检查 → 确认同步到线索池；置信度展示，低置信度字段人工确认。点此查看右侧演示 →',
+  'tools/官网链接登记': '每行登记一个客户官网链接，只保存链接文本、零网页访问；校验仅用授权 API、企业登记数据、搜索 API 返回字段和业务员人工确认。',
+  'tools/汇率换算': '常用币种（USD/EUR/CNY 等）实时汇率换算，报价时随手查。',
+  'tools/客户去重': '存量数据清洗：按邮箱/域名/公司名规则全量扫描（与线索池导入去重共用同一规则库），跨来源合并重复客户档案，批量保留/合并/删除，去重报告可追溯。',
+  'tools/跟进话术生成': '按场景（首次开发/报价跟进/沉默唤醒）生成跟进话术草稿，人工确认后使用。',
+  'tools/HS 编码速查': '按品名/材质快速查询 HS 编码与退税率。',
+  'insight/数据分析': '正式分析看板（工作台「经营简报」的详情入口）：漏斗、报价转订单率、样品转订单率、毛利、回款进度、复购率、AI 成本与采纳率。',
+  'insight/数据大屏': '实时监控大屏：团队看板、成交额、回款、渠道归因。管理层视图。',
+  'system/账号与权限': '账号列表（角色/业务数据范围/个人数据规则/状态）、新增账号、权限模板、批量停用；数据权限规则：业务员本人、主管团队、管理员全局、超管最高——个人数据（待办/备忘）任何角色仅本人可见；导出审批开关。',
+  'system/AI 配置': '供应商预设卡片（DeepSeek/智谱 GLM/硅基流动/通义千问/火山豆包/Kimi/Groq/OpenRouter/Ollama 本地/Gemini/OpenAI/Claude），一键带入默认参数并附申请 Key 直达链接；免费兜底推荐智谱 GLM-4-Flash（官方永久免费）；API Key 按账号隔离保存、不明文回显；AI 能力按模块开关。',
+  'system/系统设置': '公司资料（名称/官网/对外邮箱/主营产品/电话/地址——对外单证与邮件抬头来源）；组织架构、流程配置（收款门禁/审批流）、模板管理、外部集成（汇率/物流/邮件/社媒）；系统更新（当前版本/最新版本/检查更新/立即更新）。',
+  'system/数据库维护': '迁移数据：导入 MySQL .sql/.sql.gz（仅浏览器解析），重复数据跳过或覆盖，逐表进度实时展示；本地备份：SQL.GZ 格式、保留策略由部署配置决定；操作需数据库维护授权码；运行记录实时流；维护历史归档。仅超级管理员。'
+};
+
+const aiDesc = {
+  'dashboard/角色工作台': 'AI 按角色生成经营建议、资讯推送（商机一键转线索）、待办洞察与跟进时机排序',
+  'dashboard/晨会视图': 'AI 每日生成优先级结论与协同建议',
+  'dashboard/经营简报': 'AI 三段式经营建议（判断依据可追溯）',
+  'dashboard/待办清单': 'AI 自然语言解析建待办、逾期风险提示',
+  'dashboard/跟进与管道': 'AI 跟进时机建议、停滞商机预警',
+  'acquisition/社媒运营': '内容草稿生成、互动意图识别与处理优先级建议',
+  'acquisition/网站询盘': '表单内容结构化提取、缺失字段标注',
+  'customer/客户档案': '自动汇总最近沟通要点，生成客户小结',
+  'customer/客户画像': '客户评分（展示维度和证据）、采购潜力推测（标注"推测"）',
+  'pipeline/销售管道': '成交概率预测、下一步动作建议、丢单归因分析',
+  'pipeline/跟进任务': '跟进建议生成、最佳跟进时机提醒',
+  'pipeline/售后与复购': '复购信号识别、沉默客户预警、唤醒邮件草稿',
+  'comms/邮件管理': '邮件草稿生成、中英互译、语气调整',
+  'comms/WhatsApp': '实时翻译、意图识别、快捷回复建议',
+  'comms/社媒私信': '意图识别、建议回复、一键转线索',
+  'comms/沟通时间线': '沟通摘要、关键信息（价格/数量/交期）提取',
+  'product/产品库（PIM）': '产品推荐（说明依据）、参数冲突检测（装箱率/体积矛盾）、TDS/SDS 文档解析入库',
+  'product/RAG 知识库问答': '引用片段展示、资料有效性门禁、资料不足明确说不知道',
+  'quote/快速报价': '建议价格区间（展示依据：成本/历史成交价/汇率快照）、低毛利风险预警',
+  'quote/报价管理': '报价构成与风险解释、报价说明邮件草稿（发送需人工确认）',
+  'fulfillment/样品管理': '样品跟进建议、样品确认后提示转单',
+  'fulfillment/合同订单': '订单数据完整性检查',
+  'finance/订单与回款': 'AI 风险研判（逾期、汇率波动、回款异常模式）',
+  'finance/提成与对账': 'AI 异常计提识别（金额跳变、汇率缺失提醒）',
+  'fulfillment/生产跟踪': '交期风险预警',
+  'fulfillment/物流管理': '物流方案建议、费用估算标记',
+  'fulfillment/单证管理': '单证一致性检查、单证草稿生成（确认后锁定）',
+  'aihub/Agent 对话': '目标驱动执行、任务计划拆解、检查点恢复、外部动作人工批准',
+  'aihub/销售打法': 'Playbook skills 驱动 Agent 按团队打法执行（预置分类，可加可自定义）',
+  'aihub/业务记忆': '记忆 skills 被 Agent 自动引用（预置分类，可加可自定义）',
+  'aihub/自动触发': '触发规则 skills 创建后台任务（预置分类，可加可自定义）',
+  'aihub/运行质量': '治理 skills 采集执行质量数据可视化（预置分类，可加可自定义）',
+  'tools/名片 OCR 识别': '名片字段识别、置信度分级、低置信度人工确认',
+  'tools/跟进话术生成': '场景化话术草稿（首次开发/报价跟进/沉默唤醒）',
+  'system/AI 配置': '供应商连通性测试、参数预检、免费兜底推荐'
+};
+
+/* ============ 角色切换 ============ */
+function renderRoles() {
+  const rs = document.getElementById('roleSwitch');
+  rs.innerHTML = roles.map(r =>
+    `<button class="role-btn ${r.id === currentRole ? 'active' : ''}" onclick="switchRole('${r.id}')">${r.name}</button>`
+  ).join('');
+}
+
+function switchRole(id) {
+  currentRole = id;
+  const r = roles.find(x => x.id === id);
+  expanded = {};
+  r.defaults.forEach(d => expanded[d] = true);
+  const vis = modules.filter(m => m.roles.includes(id));
+  if (!vis.find(m => m.id === activePage.module)) {
+    activePage = { module: vis[0].id, sub: vis[0].subs[0].name };
+  }
+  renderRoles(); renderSidebar(); renderContent();
+  toast(`已切换到「${r.name}」视角 — 默认展开：${r.defaults.map(d => modules.find(m => m.id === d).name).join('、')}`);
+}
+
+/* ============ 对比视图 ============ */
+const oldMenu = [
+  ['01 工作台', 'merge', '→ 01 工作台（角色自适应）'],
+  ['02 目标线索', 'merge', '→ 02 获客中心·线索池'],
+  ['03 客户档案', 'merge', '→ 03 客户管理·客户档案'],
+  ['04 商机管理', 'move', '→ 04 商机中心·销售管道（独立+内嵌客户上下文）'],
+  ['05 产品资料库', 'move', '→ 06 产品知识库（分类树+PIM+RAG问答）'],
+  ['06 报价管理', 'move', '→ 07 报价中心（独立，新增秒报价）'],
+  ['07 样品管理', 'move', '→ 08 订单履约·样品管理'],
+  ['08 合同订单', 'merge', '→ 08 订单履约'],
+  ['09 收款管理', 'move', '→ 09 财务经营·订单与回款（按 GoodJob 扩充）'],
+  ['10 生产跟踪', 'merge', '→ 08 订单履约'],
+  ['11 物流管理', 'merge', '→ 08 订单履约'],
+  ['12 单证管理', 'merge', '→ 08 订单履约'],
+  ['13 售后复购', 'move', '→ 04 商机中心·售后与复购'],
+  ['14 AI 与审批', 'split', '拆分 → 工作台(审批) + AI Agent'],
+  ['15 数据分析', 'merge', '→ 12 数据洞察'],
+  ['16 数据大屏', 'merge', '→ 12 数据洞察'],
+  ['17 自动报告', 'move', '→ 工作台·经营简报 + AI Agent·自动触发'],
+  ['18 RAG 知识库', 'move', '→ 产品知识库·RAG 问答 + Agent 系统知识'],
+  ['19 NL2SQL 查询', 'move', '→ AI Agent·Agent 对话'],
+  ['20 权限中心', 'merge', '→ 13 系统管理·账号与权限'],
+  ['21 社媒运营', 'merge', '→ 02 获客中心·社媒运营'],
+  ['22 社媒获客', 'merge', '→ 02 获客中心·社媒运营'],
+  ['23 社媒收件箱', 'split', '沟通→05 沟通中心 / 获客→02'],
+  ['24 邮件中心', 'merge', '→ 05 沟通中心·邮件管理'],
+  ['25 WhatsApp 消息', 'merge', '→ 05 沟通中心'],
+  ['26 系统设置', 'move', '→ 13 系统管理·系统设置（按 GoodJob 扩充）']
+];
+
+const newMenuData = [
+  ['工作台', 'blue', ['角色工作台', '晨会视图', '经营简报', '待办清单', '跟进与管道', '审批中心']],
+  ['获客中心', 'teal', ['线索池', '社媒运营', '网站询盘', '渠道分析']],
+  ['客户管理', 'teal', ['客户档案', '客户画像']],
+  ['商机中心', 'teal', ['销售管道', '跟进任务', '售后与复购']],
+  ['沟通中心', 'teal', ['邮件管理', 'WhatsApp', '社媒私信', '沟通时间线']],
+  ['产品知识库', 'amber', ['产品库（分类树 + PIM 列表）', 'RAG 知识库问答']],
+  ['报价中心', 'amber', ['快速报价（秒报价）', '报价管理']],
+  ['订单履约', 'amber', ['样品管理', '合同订单', '生产跟踪', '物流管理', '单证管理']],
+  ['财务经营', 'amber', ['订单与回款', '提成与对账']],
+  ['AI Agent', 'purple', ['Agent 对话', '销售打法', '业务记忆', '自动触发', '运行质量']],
+  ['工具中心', 'purple', ['名片 OCR 识别', '官网链接登记', '汇率换算', '客户去重', '跟进话术生成', 'HS 编码速查']],
+  ['数据洞察', 'purple', ['数据分析', '数据大屏']],
+  ['系统管理', 'gray', ['账号与权限', 'AI 配置', '系统设置', '数据库维护']]
+];
+
+function renderCompare() {
+  document.getElementById('oldMenu').innerHTML = oldMenu.map(([n, cls, to]) =>
+    `<div class="old-item"><span class="old-num">${n.split(' ')[0]}</span>${n.split(' ')[1]}<span class="old-tag tag-${cls}">${to}</span></div>`
+  ).join('');
+  document.getElementById('newMenu').innerHTML = newMenuData.map(([name, pc, subs]) => {
+    const color = phaseColors[pc];
+    return `<div class="new-item">
+      <div class="grp"><span class="grp-dot" style="background:${color}"></span>${name}</div>
+      ${subs.map(s => `<div class="grp-sub"><span class="dot">·</span>${s}</div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function toggleCompare() {
+  const v = document.getElementById('compareView');
+  const b = document.getElementById('compareBtn');
+  v.classList.toggle('show');
+  b.classList.toggle('on');
+  if (v.classList.contains('show') && !v.dataset.rendered) {
+    renderCompare(); v.dataset.rendered = 1;
+  }
+}
+
+/* ============ AI 抽屉 ============ */
+function toggleAI() {
+  document.getElementById('aiDrawer').classList.toggle('open');
+}
+
+function aiAsk(q) {
+  document.getElementById('aiInput').value = q;
+  aiSend();
+}
+
+function aiSend() {
+  const input = document.getElementById('aiInput');
+  const q = input.value.trim();
+  if (!q) return;
+  const body = document.getElementById('aiBody');
+  body.insertAdjacentHTML('beforeend',
+    `<div class="ai-msg"><div class="ai-bubble self">${q}</div></div>`);
+  input.value = '';
+  setTimeout(() => {
+    body.insertAdjacentHTML('beforeend',
+      `<div class="ai-msg"><div class="ai-ava">AI</div><div class="ai-bubble">${aiReply(q)}</div></div>`);
+    body.scrollTop = body.scrollHeight;
+  }, 500);
+  body.scrollTop = body.scrollHeight;
+}
+
+function aiReply(q) {
+  if (q.includes('跟进')) return '今日需重点跟进 2 个客户：① Müller GmbH（报价浏览 3 次未回复，建议电话跟进）；② TechNova Ltd（样品签收 7 天无反馈）。已为你生成跟进任务草稿，确认后加入待办。';
+  if (q.includes('报价') && q.includes('利润')) return '报价 Q-2026-0831：FOB 模式，可计价成本 ¥182,400，数量梯度 5,000 件档位，目标毛利率 22%，折扣后单价 $4.87/件。费用构成：材料 61% + 包装 12% + 国内运费 8% + 固定费用分摊 19%。计算步骤与汇率快照（8/20 16:00, 7.12）可展开查看。';
+  if (q.includes('邮件') || q.includes('复购')) return '已找到 4 个沉默超 60 天客户，其中 Pacific Steel 上次采购周期约 90 天，接近复购窗口。邮件草稿已生成（含上次采购产品参考与新品推荐），引用了已审核产品资料，发送前需你确认。';
+  return '这是演示原型。在实际系统中，我可以：查询客户与订单、解释报价构成、起草邮件与单证、检查数据一致性。所有输出带来源引用，关键操作需人工确认。';
+}
+
+/* ============ 工具 ============ */
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); toggleAI(); }
+  if (e.key === 'Escape') {
+    document.getElementById('aiDrawer').classList.remove('open');
+    document.getElementById('compareView').classList.remove('show');
+    document.getElementById('compareBtn').classList.remove('on');
+  }
+});
+
+/* ============ 初始化 ============ */
+renderRoles();
+renderSidebar();
+renderContent();
+</script>
+</body>
+</html>

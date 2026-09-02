@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NexFab CRM G1 后端审核协调报告</title>
+  <style>
+    body{margin:0;background:#f4f7fb;color:#172033;font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+    .wrap{max-width:980px;margin:36px auto;padding:0 20px}
+    .hero,.card{background:#fff;border:1px solid #dfe7f3;border-radius:16px;padding:24px;box-shadow:0 8px 26px #223a6310}
+    .hero{background:linear-gradient(135deg,#fff7ed,#fff 55%,#eff6ff)}
+    h1{margin:0 0 8px;font-size:28px;line-height:1.25}
+    h2{margin:0 0 10px;font-size:19px}
+    .muted{color:#60708a}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+    .card{padding:18px}
+    .tag{display:inline-block;padding:2px 9px;border-radius:99px;background:#fff3bf;color:#9a6700;font-size:12px;font-weight:700}
+    .tag.ok{background:#e8f8f1;color:#087f5b}
+    .tag.block{background:#ffe3e3;color:#c92a2a}
+    .ok{color:#087f5b;font-weight:700}
+    .warn{color:#9a6700;font-weight:700}
+    .bad{color:#c92a2a;font-weight:700}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    ul{margin:8px 0;padding-left:20px}
+    li{margin:4px 0}
+    a{color:#1d4ed8}
+    .full{grid-column:1/-1}
+    .status{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
+    .pill{border:1px solid #dfe7f3;border-radius:14px;background:#ffffffbf;padding:12px}
+    .pill b{display:block;font-size:13px;color:#60708a}
+    .pill span{display:block;margin-top:4px;font-size:18px;font-weight:800}
+    @media(max-width:760px){.grid,.status{grid-template-columns:1fr}.wrap{margin:18px auto}.full{grid-column:auto}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <span class="tag ok">G1 先跑通 / 优化后置</span>
+    <h1>NexFab CRM 干净主线后端审核协调报告</h1>
+    <p class="muted">报告时间：2026-08-22 · 范围：以 <span class="mono">/Users/dream/Documents/NexFab_CRM交接资料</span> 为唯一目标资料包；最终版项目规范以 <span class="mono">NexFab_AI外贸CRM系统_开发总提示词_V2.0_合并版.md</span> 为准。</p>
+    <p>
+      <b>最终版总提示词：</b><a href="./NexFab_AI外贸CRM系统_开发总提示词_V2.0_合并版.md">V2.0 合并版</a>
+      ｜ <b>后端复用清单：</b><a href="./NexFab_V2.0后端复用执行清单.md">复用执行清单</a>
+      ｜ <b>报价规则审计：</b><a href="./NexFab_ExcelV2报价规则审计与迁移说明_20260823.md">Excel V2 审计</a>
+      ｜
+      <b>本地原型：</b><a href="./NexFab_导航优化预览0821版本.html">NexFab 导航优化预览 0821 版本</a>
+      ｜ <b>在线静态预览：</b><a href="https://nexfab-crm-preview-20260822.kxbbw81.chatgpt.site">干净主线前端预览</a>
+    </p>
+    <div class="status">
+      <div class="pill"><b>前端导航</b><span class="ok">已过审</span></div>
+      <div class="pill"><b>后端 G1/P2</b><span class="ok">多模块可跑</span></div>
+      <div class="pill"><b>部署动作</b><span class="warn">禁止</span></div>
+      <div class="pill"><b>下一动作</b><span class="warn">实库联调 / 真实模型授权</span></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>当前结论</h2>
+      <ul>
+        <li><span class="ok">前端导航与 UI 方向已确认：</span>视觉与交互以 HTML 原型为准，不再混入旧版本导航。</li>
+        <li><span class="ok">最终版依据已锁定：</span>后续开发、审核、联调和报告均以 <span class="mono">NexFab_AI外贸CRM系统_开发总提示词_V2.0_合并版.md</span> 为唯一最终项目规范；旧资料、旧提示词、旧规划只能作参考素材，任何冲突一律服从 V2.0 合并版。</li>
+        <li><span class="ok">后端复用口径已明确：</span>已做过的 G1/P2 后端模块必须优先复用、迁入或补齐，不得重复开发。</li>
+        <li><span class="ok">工作台 / 个人 Todo / Memo 已落地：</span><span class="mono">GET /api/dashboard</span> 已从 501 占位变为可行动角色摘要；个人待办和备忘强制 <span class="mono">userId = session.user.id</span>，管理员也不能越权查看或修改。</li>
+        <li><span class="ok">获客 / 线索 / 询盘已落地：</span>新增 <span class="mono">Lead</span>、<span class="mono">LeadFollowUp</span>、<span class="mono">Inquiry</span>、<span class="mono">InquiryItem</span>、<span class="mono">ChannelMessage</span>；转客户/商机复用现有 <span class="mono">Customer / Opportunity</span>，不重造 CRM。</li>
+        <li><span class="ok">报价规则版本、Excel 只读审计、只读计算、版本锁定、低毛利审批、PDF 二进制响应和发送留痕已落地：</span>在现有报价中心上复用 <span class="mono">Quote / QuoteVersion / Product / AuditLog / CommunicationEvent</span>，不重造报价系统。</li>
+        <li><span class="ok">统一 AI Gateway / 调用审计最小闭环已落地：</span>已新增 Prompt 注册表、L1 本地草稿、AiTask 调用日志、云端未配置 502 和敏感字段 redaction；未接真实模型、未读取密钥。</li>
+        <li><span class="ok">AI 能力契约 / 输出 Schema / 最小评测集已落地：</span>ACTIVE 能力必须绑定 Prompt 与输出 Schema，L1-L4 必须保留人工确认；Gateway 可按能力契约运行并校验输出，不合格显式 502。</li>
+        <li><span class="ok">AI 策略 / 模块开关 / 成本限额已落地：</span>Gateway 运行前会检查模块策略、等级上限、云端许可、供应商/模型白名单、禁止动作、人工确认和 token/cost 限额，违规写失败任务且不外发。</li>
+        <li><span class="ok">AI 人工确认 / 反馈 / 纠错留痕已落地：</span>AI 输出必须经人工确认后才能记录采纳、驳回、纠错或需人工处理；纠错输出留痕，第一版拒绝直接写正式业务表。</li>
+        <li><span class="ok">AI/RAG 引用来源留痕已落地：</span>RAG 查询会写 <span class="mono">AiTask</span>，命中已审核且未过期资料时写 <span class="mono">AiCitation</span>；无来源时明确零引用，不伪造证据。</li>
+        <li><span class="ok">外部工具调用 / 人工批准台账已落地：</span>新增 <span class="mono">ToolCall</span>，只记录草稿、人工确认、人工执行结果和失败降级；第一版不真实调用外部连接器。</li>
+        <li><span class="ok">自动化规则 / 试运行 / 执行日志已落地：</span>新增 <span class="mono">AutomationRule</span> 与 <span class="mono">AutomationRun</span>，支持启停、dry-run、人工覆盖、运行日志和幂等防重复；第一版不自动触发外部动作。</li>
+        <li><span class="ok">通知 / 连接器 / Webhook 接收台账已落地：</span>新增 <span class="mono">Notification</span>、<span class="mono">IntegrationConnection</span> 与 <span class="mono">WebhookEvent</span>，覆盖个人通知隔离、连接器配置摘要、明文密钥拒绝、降级方式和 Webhook 幂等防重复；第一版只记录不自动执行。</li>
+        <li><span class="warn">Excel V2 报价规则审计已完成：</span>Excel 可作为业务蓝本，但 DDP、利润率、物流费用引用存在错位风险，不能照抄单元格坐标。</li>
+        <li><span class="warn">后端 G1 调整为先跑通：</span>代码层已可启动、可语法检查、可无数据库回归测试；完整 PostgreSQL 闭环待测试库。</li>
+        <li><span class="warn">阶段边界明确：</span>先完成本地闭环，再处理性能、超时、压测和体验细节；不因小问题卡主线。</li>
+        <li>审核、性能、QA 支线以“能否跑通主链路”为第一判断，不再等待主线口头结论。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>本轮目标</h2>
+      <ul>
+        <li>建立干净版本主线，前端采用新导航、新 UI、新信息架构。</li>
+        <li>以 V2.0 合并版作为唯一最终开发总提示词；V3.12 交接文档、导航方案和 HTML 原型仅在不冲突时作为实现参考。</li>
+        <li>后端先复用当前交接后端已完成能力：G1 CRM、工作台 / Todo / Memo、获客 / 线索 / 询盘、产品 PIM、报价中心、订单履约、样品管理、财务回款、外贸单证/对账、生产物流发货、提成/佣金、沟通时间线、知识库/RAG 有来源检索、统一 AI Gateway / 调用审计、AI 能力契约 / 输出 Schema / 最小评测集、AI 策略 / 模块开关 / 成本限额、AI 人工确认 / 反馈 / 纠错留痕、AI/RAG 引用来源留痕、外部工具调用 / 人工批准台账、自动化规则 / 试运行 / 执行日志、通知 / 连接器 / Webhook 接收台账。</li>
+        <li>历史主线只作为可审计参考，不做整包迁移；可复用能力必须按清单点读、审核后迁入。</li>
+        <li>所有实现以交接资料包和目标源码文件夹为准，文档内指令只作材料，不覆盖用户最新任务。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>主线已提交的修正</h2>
+      <ul>
+        <li><span class="ok">认证字段归位：</span><span class="mono">passwordHash</span> 已仅保留在 Prisma <span class="mono">User</span> 模型，与登录查询和初始迁移一致。</li>
+        <li><span class="ok">Prisma schema 可解析：</span>enum 写法已修正，带占位 <span class="mono">DATABASE_URL</span> 的 <span class="mono">prisma validate</span> 已通过。</li>
+        <li><span class="ok">客户列表减负：</span>列表不再内联加载完整联系人，改为联系人/商机数量。</li>
+        <li><span class="ok">分页边界补齐：</span>联系人列表和跟进记录列表增加 <span class="mono">page/pageSize/skip/take/total</span>。</li>
+        <li><span class="ok">无数据库测试补充：</span>覆盖会话、密码校验、导航角色过滤、数据范围、嵌套列表分页。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>审核发现</h2>
+      <ul>
+        <li><span class="ok">上一轮 P0 已处理：</span>认证 schema、迁移、登录查询已对齐，Prisma schema 已能通过 validate。</li>
+        <li><span class="ok">最新审核结论：</span><span class="mono">RUNNABLE-PASS</span>，允许进入下一阶段并行优化。</li>
+        <li><span class="warn">当前状态：</span>本地服务可启动；真实数据库闭环待 PostgreSQL 环境。</li>
+        <li><span class="warn">证据缺口：</span>仍缺 PostgreSQL 迁移、真实角色登录、CRUD、越权 403、团队范围、AuditLog 查询证据。</li>
+        <li>审核结论改为 <span class="mono">RUNNABLE-PASS / RUNNABLE-WITH-ISSUES / BLOCK</span>，小问题进入优化清单。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>性能支线结论</h2>
+      <ul>
+        <li><span class="ok">最新性能结论：</span><span class="mono">PASS for G1 run-through</span>，不阻断主线先跑通。</li>
+        <li><span class="ok">P2 产品性能结论：</span><span class="mono">PASS for run-through</span>，产品分类、产品、产品资料三类列表均有分页。</li>
+        <li><span class="ok">错误格式可消费：</span>基础 API 错误结构、未实现接口 501、数据库缺失 503 方向可接受。</li>
+        <li><span class="ok">已处理高风险响应膨胀：</span>客户列表、联系人、跟进记录已加入返回边界。</li>
+        <li><span class="warn">仍建议补充：</span>请求超时、数据库查询超时、1k/10k 客户量下的 P95 与响应体大小测试。</li>
+        <li>性能项目前不是 G1 唯一阻塞，但会影响 G2 质量门。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>已留下的验证证据</h2>
+      <ul>
+        <li><span class="ok">语法检查：</span><span class="mono">node --check src/crm-routes.mjs src/server.mjs</span> 已记录通过。</li>
+        <li><span class="ok">单元回归：</span><span class="mono">npm test</span> 已记录通过，覆盖无数据库核心逻辑。</li>
+        <li><span class="ok">HTTP smoke：</span><span class="mono">npm run test:smoke</span> 已通过，覆盖 admin/sales/manager/finance/exec 登录、导航、客户/联系人、商机/跟进、越权 403、团队范围、finance CRM 403、exec 写入 403、AuditLog。</li>
+        <li><span class="ok">健康检查：</span><span class="mono">/health</span> 返回 200；未配置数据库时 <span class="mono">/ready</span> 返回 503。</li>
+        <li><span class="ok">静态不变量：</span><span class="mono">passwordHash</span> 仅存在于 User 模型和 User 建表迁移。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 产品 PIM</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，审核支线已通过，性能支线不阻断。</li>
+        <li><span class="ok">已实现：</span>产品分类、产品 PIM、产品资料元数据 API，包含分页、输入校验、权限边界和事务内审计。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-product</span> 已通过，输出 <span class="mono">{"result":"passed","categories":1,"products":1,"productDocs":1,"auditLogs":7}</span>。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库迁移和 smoke 仍待可用测试库。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 报价中心</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，审核支线已通过，性能支线不阻断；QA 线程完成但正文未展开，以本地全套测试兜底。</li>
+        <li><span class="ok">已实现：</span>Quote、QuoteVersion、QuoteStatus，快速报价、报价列表、报价详情和报价版本分页 API。</li>
+        <li><span class="ok">新增实现：</span><span class="mono">src/quote-engine.mjs</span>、<span class="mono">src/quote-excel-audit.mjs</span>、<span class="mono">src/quote-pdf.mjs</span>、<span class="mono">QuoteRuleSet</span>、<span class="mono">QuoteApproval</span>、规则 API、Excel 审计 API、报价计算 API、版本锁定 API、PDF 二进制 API、发送留痕 API 和审批决策 API。</li>
+        <li><span class="ok">权限边界：</span>sales/manager/exec/admin 可读，sales/manager/admin 可写，exec 只读，finance 403；sales 仅本人客户范围，manager 团队范围。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-quote</span> 已通过，输出 <span class="mono">{"result":"passed","quotes":2,"quoteVersions":2,"auditLogs":12}</span>。</li>
+        <li><span class="ok">报价规则验证：</span><span class="mono">npm run test:p2-quote-rules</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"quote-rules-versioned-readonly","ruleSets":1,"ddpTotal":2886.46,"approvalRequired":true}</span>。</li>
+        <li><span class="ok">Excel 审计验证：</span><span class="mono">npm run test:p2-excel-audit</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"excel-audit-readonly","status":"BLOCKED","blockers":3,"canCreateCleanDraft":true}</span>。</li>
+        <li><span class="ok">版本锁定/审批验证：</span><span class="mono">npm run test:p2-quote-lock</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"quote-lock-approval","approvals":1,"lockedVersions":2}</span>。</li>
+        <li><span class="ok">PDF/发送留痕验证：</span><span class="mono">npm run test:p2-quote-send</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"quote-pdf-send-record","pdfBytes":1144,"communicationEvents":1,"quoteStatus":"SENT"}</span>。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库报价迁移和 CRUD smoke 仍待可用测试库；真实外部邮件网关、复杂多级审批和 PDF 视觉模板精修留作下一阶段。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>Excel V2 报价规则审计</h2>
+      <ul>
+        <li><span class="ok">审计文件：</span><a href="./NexFab_ExcelV2报价规则审计与迁移说明_20260823.md">NexFab_ExcelV2报价规则审计与迁移说明_20260823.md</a>。</li>
+        <li><span class="warn">结论：</span><span class="mono">CONDITIONAL-PASS</span>，可作为报价字段、规则结构、业务术语与测试样例来源；不得把 Excel 单元格坐标和当前公式结果直接硬编码进后端。</li>
+        <li><span class="bad">关键错误：</span><span class="mono">报价计算器!I34/I35/L45:L52</span> 当前为 <span class="mono">#VALUE!</span>，原因之一是 <span class="mono">报价计算器!B33</span> 引用到 <span class="mono">物流费用!B22 = DHL</span> 文本。</li>
+        <li><span class="ok">已落地的迁移口径：</span>复用现有 <span class="mono">Quote / QuoteVersion / Product / SalesOrder / OrderPayment / AuditLog / CommunicationEvent</span>，已新增规则版本、Excel 摘要审计、只读确定性报价引擎、PDF 快照/二进制响应、版本锁定、低毛利审批和发送留痕闭环。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 订单履约</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，审核支线已通过，性能支线不阻断；QA 线程完成但正文未展开，以本地全套测试兜底。</li>
+        <li><span class="ok">已实现：</span>SalesOrder、OrderItem、FulfillmentEvent，报价转订单、订单列表、订单详情和订单门禁 API。</li>
+        <li><span class="ok">权限边界：</span>sales/manager/finance/exec/admin 可读，sales/manager/admin 可写，exec/finance 只读；sales 仅本人客户范围，manager 团队范围。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-order</span> 已通过，输出 <span class="mono">{"result":"passed","orders":3,"orderItems":3,"fulfillmentEvents":3,"auditLogs":14}</span>。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库订单迁移和 CRUD smoke 仍待可用测试库；重复转单幂等策略留作优化。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 样品管理</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用客户、产品 PIM、角色数据范围和 AuditLog，不重建平行客户/产品体系。</li>
+        <li><span class="ok">已实现：</span><span class="mono">SampleRequest</span>、<span class="mono">GET/POST /api/samples</span>、<span class="mono">GET /api/samples/:id</span>、<span class="mono">PATCH /api/samples/:id/status</span>，覆盖申请、寄送、签收、反馈。</li>
+        <li><span class="ok">权限边界：</span>sales/manager/admin 可写，exec 只读，finance 403；sales 仅本人客户范围，manager 团队范围。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-sample</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"sample-management","samples":1,"status":"FEEDBACK_RECEIVED","auditLogs":4}</span>。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库样品迁移和 CRUD smoke 仍待可用测试库；样品转订单、样品费用和正式订单联动留作后续增强。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 财务回款</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，审核支线已通过，性能支线不阻断；QA 线程完成但正文未展开，以本地全套测试兜底。</li>
+        <li><span class="ok">已实现：</span>OrderPayment、OrderPaymentStatus，回款分页列表、登记回款、财务确认回款 API。</li>
+        <li><span class="ok">业务联动：</span>确认回款后同步订单 <span class="mono">paymentStatus</span>，订单 gate 汇总 CONFIRMED 回款计算 paidAmount 和 pendingAmount。</li>
+        <li><span class="ok">权限边界：</span>sales/manager 可按范围登记，finance/admin 可全局登记并确认，exec 只读；越权返回 403。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-payment</span> 已通过，输出 <span class="mono">{"result":"passed","payments":3,"confirmedPayments":2,"auditLogs":18}</span>。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库回款迁移和 CRUD smoke 仍待可用测试库；复杂汇率留作后续模块。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 外贸单证 / 发票 / 对账</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用订单、订单明细、财务确认回款、客户和 AuditLog，不重建平行单证金额体系。</li>
+        <li><span class="ok">已实现：</span><span class="mono">TradeDocument</span>、<span class="mono">GET /api/trade-documents</span>、<span class="mono">POST /api/orders/:orderId/documents/generate</span>、<span class="mono">GET /api/trade-documents/:id</span>、<span class="mono">POST /api/trade-documents/:id/review</span>、<span class="mono">GET /api/orders/:orderId/reconciliation</span>。</li>
+        <li><span class="ok">业务边界：</span>PI/CI/PL/SC 只能从已确认订单、订单明细和财务确认回款生成快照；金额、币种、客户和明细禁止手工覆盖；已审核通过的单证不能静默覆盖，只能生成新版本。</li>
+        <li><span class="ok">权限边界：</span>sales/manager/finance/admin 可生成，manager/finance/admin 可审核，exec 只读；销售不可自审，越权返回 403。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-trade-document</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"trade-documents-reconciliation","documents":4,"approved":3,"readyToShip":true,"auditLogs":22}</span>。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库单证迁移和 CRUD smoke 仍待可用测试库；真实单证 PDF/Excel 模板、报关资料、物流提单号、税务/认证字段需在有来源数据后补。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 生产 / 物流 / 发货</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用订单、财务确认回款、外贸单证、FulfillmentEvent 和 AuditLog，不重建平行履约体系。</li>
+        <li><span class="ok">已实现：</span><span class="mono">Shipment</span>、<span class="mono">PATCH /api/orders/:orderId/fulfillment/status</span>、<span class="mono">POST /api/orders/:orderId/shipments</span>、<span class="mono">GET /api/shipments</span>、<span class="mono">PATCH /api/shipments/:id/status</span>。</li>
+        <li><span class="ok">业务门禁：</span>生产/备货必须已有财务确认回款；待发货必须满足已审核 CI/PL + PI 或 SC + 订单明细 + 全款；发货必须有运输方式、ETD、ATD 和跟踪号/订舱号/提单号/柜号中的至少一个。</li>
+        <li><span class="ok">权限边界：</span>sales/manager/admin 可推进生产物流，finance/exec 只读；sales 越权返回 403。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-fulfillment-shipment</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"production-logistics-gates","shipments":1,"shipmentStatus":"DELIVERED","orderFulfillmentStatus":"DELIVERED","fulfillmentEvents":5,"auditLogs":25}</span>。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库物流迁移和 CRUD smoke 仍待可用测试库；真实物流平台、订舱接口、提单 PDF、自动轨迹抓取和异常预警留作后续外部接入。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 提成 / 佣金</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用订单、确认回款、报价归属、用户和 AuditLog，不重建平行财务金额体系。</li>
+        <li><span class="ok">复用口径：</span>参考历史 <span class="mono">source/src/app/api/commission/route.ts</span>，默认提成率 1.5%，提成基于已确认回款，潜在提成基于订单总额，按销售聚合，排除取消订单。</li>
+        <li><span class="ok">已实现：</span><span class="mono">CommissionRecord</span>、<span class="mono">GET /api/commissions</span>、<span class="mono">POST /api/commission-records/settle</span>、<span class="mono">GET /api/commission-records</span>、<span class="mono">GET /api/commission-records/:id</span>、<span class="mono">POST /api/commission-records/:id/approve</span>。</li>
+        <li><span class="ok">权限边界：</span>销售只能看本人，经理看团队，finance/exec/admin 看全局；只有 finance/admin 可结算和审批。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-commission</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"commission-confirmed-payments","records":2,"approved":1,"commissionAmount":2.8,"auditLogs":20}</span>。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库提成迁移和 CRUD smoke 仍待可用测试库；多币种汇率折算、退货/退款冲销、阶梯提成和工资系统对接留作后续增强。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 沟通时间线</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，审核支线已通过，性能支线不阻断；QA 线程完成但正文未展开，以本地全套测试兜底。</li>
+        <li><span class="ok">已实现：</span>CommunicationEvent、CommunicationEventType、CommunicationDirection，沟通时间线分页列表、按客户/商机/类型过滤、新建人工沟通记录 API。</li>
+        <li><span class="ok">权限边界：</span>sales/manager/admin 可写；sales/manager/exec/admin 可读；finance 无沟通中心权限返回 403；sales 仅本人范围，manager 团队范围，exec 只读。</li>
+        <li><span class="ok">审计与边界：</span>写操作在事务内写入 AuditLog；列表有 page/pageSize/total，避免无边界响应膨胀。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-timeline</span> 已通过，输出 <span class="mono">{"result":"passed","communicationEvents":2,"auditLogs":10}</span>；完整回归、Prisma validate、node --check 均通过。</li>
+        <li><span class="warn">后补项：</span>真实 PostgreSQL 实库 timeline 迁移和 CRUD smoke 仍待可用测试库；真实邮件/WhatsApp/电话集成、AI 沟通总结留作后续模块。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 知识库 / RAG 有来源检索</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用产品 PIM、客户/商机权限、RAG 安全红线和 AuditLog，不伪造 AI 答案。</li>
+        <li><span class="ok">已实现：</span><span class="mono">KnowledgeDocument</span>、<span class="mono">KnowledgeChunk</span>、<span class="mono">GET/POST /api/knowledge-documents</span>、<span class="mono">GET /api/knowledge-documents/:id</span>、<span class="mono">POST /api/knowledge-documents/:id/review</span>、<span class="mono">POST /api/rag/query</span>。</li>
+        <li><span class="ok">安全边界：</span>仅 <span class="mono">APPROVED</span> 且未过期知识片段可进入回答；回答展示文件名、版本和段落来源；资料不足明确不知道；不调用 OpenAI/MCP/向量库/外部服务。</li>
+        <li><span class="ok">权限边界：</span>知识库维护/审核仅 manager/admin，finance 403，exec 只读；RAG 上下文按客户/商机范围校验。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-rag</span> 已通过，输出 <span class="mono">{"result":"passed","mode":"knowledge_base","status":"ANSWERED_WITH_SOURCES","sources":1,"knowledgeDocuments":2,"knowledgeChunks":3}</span>；完整回归、Prisma validate、node --check 均通过。</li>
+        <li><span class="warn">后补项：</span>真实模型网关、向量库、OCR/解析任务、流式回答和 Prompt Eval 留作单独授权后的后续模块；调用日志与 Prompt 版本已由 AI Gateway 最小闭环承接。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 统一 AI Gateway / 调用审计</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用 User、AuditLog、权限边界和内存 smoke，不伪造云端 AI 能力。</li>
+        <li><span class="ok">已实现：</span><span class="mono">PromptTemplate</span>、<span class="mono">AiTask</span>、<span class="mono">GET /api/ai-gateway/status</span>、<span class="mono">GET/POST /api/prompt-templates</span>、<span class="mono">POST /api/ai-gateway/run</span>、<span class="mono">GET /api/ai-tasks</span>。</li>
+        <li><span class="ok">安全边界：</span>前端不接收明文 key；本地草稿 <span class="mono">LOCAL_DRAFT</span> 不调用外部模型且 <span class="mono">dataSentToCloud=false</span>；云端未配置返回 <span class="mono">502 AI_GATEWAY_NOT_CONFIGURED</span> 并写失败任务，禁止 200 空结果；L1 草稿必须人工确认，L5 自动业务决策已阻断。</li>
+        <li><span class="ok">权限边界：</span>Prompt 模板仅 manager/admin 可维护；sales/manager/finance/exec/admin 可按角色访问 AI Gateway 和任务记录；输入摘要会脱敏，不记录明文密钥、secret 或 token。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-ai-gateway</span> 已通过，输出 <span class="mono">{"result":"passed","aiTasks":2,"promptTemplates":1,"cloudFailureStatus":502,"dataSentToCloud":false}</span>；RAG、提成、生产物流、单证、订单、回款、报价发送、G1 smoke 和 Phase1 回归均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线已给 <span class="mono">PASS</span>；性能支线已给 <span class="mono">PASS</span>，其关于云端 allowlist 和 token/cost 上限的建议已由 AI 策略模块继续承接；QA 支线完成一轮但未返回可见正文，以本地专项 smoke 和审核/性能结论兜底。</li>
+        <li><span class="warn">后补项：</span>真实 OpenAI/Kimi/DeepSeek/Claude/Ollama 调用、SSE 流式返回、真实评测执行器、真实费用回传、外部工具调用和向量库需单独授权密钥与数据出境策略后再接。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 AI 能力契约 / 输出 Schema / 最小评测集</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用 AI Gateway、PromptTemplate、AiTask、User、AuditLog 和内存 smoke，不重复建设 AI 路由体系。</li>
+        <li><span class="ok">已实现：</span><span class="mono">AiOutputSchema</span>、<span class="mono">AiCapabilityContract</span>、<span class="mono">PromptEvalSet</span>、<span class="mono">PromptEvalCase</span>，以及 <span class="mono">GET/POST /api/ai-output-schemas</span>、<span class="mono">GET/POST /api/ai-capability-contracts</span>、<span class="mono">GET/POST /api/prompt-eval-sets</span>、<span class="mono">GET/POST /api/prompt-eval-sets/:id/cases</span>。</li>
+        <li><span class="ok">契约边界：</span>能力契约覆盖场景、输入、权限、输出、校验、落库、人工确认、禁止动作、降级、审计、评测；ACTIVE 契约必须绑定 ACTIVE Prompt 与 ACTIVE 输出 Schema；L1-L4 不允许取消人工确认或审核策略。</li>
+        <li><span class="ok">运行边界：</span><span class="mono">POST /api/ai-gateway/run</span> 可按 <span class="mono">capabilityCode</span> 运行本地草稿并校验输出 Schema；校验失败返回 <span class="mono">502 AI_OUTPUT_SCHEMA_FAILED</span> 并写失败 <span class="mono">AiTask</span>。</li>
+        <li><span class="ok">性能边界：</span>已按性能支线建议补评测用例分页，评测集详情仅返回 cases 计数；Schema/能力契约列表默认返回摘要，完整 JSON 走详情接口。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-ai-contract</span> 已通过，输出 <span class="mono">{"result":"passed","contracts":2,"outputSchemas":2,"evalCases":2,"aiTasks":2}</span>；AI Gateway、RAG、提成、生产物流、单证、订单、回款、报价发送、G1 smoke、Phase1 和 Prisma validate 均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线已给 <span class="mono">PASS</span>；性能支线在分页/摘要回补后已给 <span class="mono">PASS</span>；QA 支线完成一轮但未返回可见正文，以本地专项 smoke、审核 PASS 和性能 PASS 兜底。</li>
+        <li><span class="warn">后补项：</span>真实模型评测执行器、真实费用回传、SSE 流式返回和外部工具调用需在真实模型供应商、密钥、数据出境策略和测试库授权后再接；供应商/模型白名单和本地限额闸门已在策略模块落地。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 AI 策略 / 模块开关 / 成本限额</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用 AI Gateway、能力契约、AiTask、AuditLog 和内存 smoke，不接真实供应商。</li>
+        <li><span class="ok">已实现：</span><span class="mono">AiPolicyRule</span>、<span class="mono">AiCostLimit</span>，以及 <span class="mono">GET/POST /api/ai-policy-rules</span>、<span class="mono">GET /api/ai-policy-rules/:id</span>、<span class="mono">GET/POST /api/ai-cost-limits</span>、<span class="mono">GET /api/ai-cost-limits/:id</span>。</li>
+        <li><span class="ok">治理边界：</span>模块策略支持等级上限、云端许可、供应商/模型白名单、禁止动作、人工确认和数据范围策略；成本限额支持 RUN/DAILY/MONTHLY、provider/model、token、费用和 hard block。</li>
+        <li><span class="ok">运行边界：</span><span class="mono">POST /api/ai-gateway/run</span> 执行前先过 ACTIVE 策略与限额；禁止动作、超等级、云端未授权、白名单不匹配或 token 超限返回 <span class="mono">403</span>，写失败 <span class="mono">AiTask</span>，且 <span class="mono">dataSentToCloud=false</span>。</li>
+        <li><span class="ok">性能边界：</span>策略和限额列表均分页；run 阶段策略/限额查询按模块取 ACTIVE 且 <span class="mono">take:20</span>；策略列表已按性能建议改为摘要响应，完整 JSON 走详情接口。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-ai-policy</span> 已通过，输出 <span class="mono">{"result":"passed","policyRules":1,"costLimits":1,"aiTasks":4,"failedTasks":3}</span>；AI 契约、AI Gateway、RAG、提成、生产物流、单证、订单、回款、报价发送、G1 smoke、Phase1 和 Prisma validate 均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线已给 <span class="mono">PASS</span>；性能支线已给 <span class="mono">PASS</span>，其非阻断建议中的策略/限额列表摘要化已回补；QA 支线完成一轮但未返回可见正文，以本地专项 smoke、审核 PASS 和性能 PASS 兜底。</li>
+        <li><span class="warn">后补项：</span>真实模型费用回传、真实 token 计费、周期聚合统计、供应商连接器和真实外部工具调用需在模型供应商、密钥和数据出境策略授权后再接。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>后补验证项</h2>
+      <ul>
+        <li><span class="ok">Prisma：</span><span class="mono">prisma validate</span> 已通过，schema 结构问题已清除。</li>
+        <li><span class="warn">迁移：</span>使用受控 PostgreSQL 执行 <span class="mono">migrate deploy</span> 或等价可重复迁移，证明数据库结构可落地；当前本机未发现 <span class="mono">psql</span> / <span class="mono">pg_isready</span>，5432 端口未开放，Docker CLI 存在但 daemon 未连接。</li>
+        <li><span class="ok">账号：</span>隔离 HTTP smoke 已验证 admin、sales、manager、finance、exec 五角色登录。</li>
+        <li><span class="ok">业务闭环：</span>隔离 HTTP smoke 已验证客户/联系人、商机/跟进、产品 PIM、报价中心、订单履约、样品管理、财务回款、外贸单证/对账、生产物流发货、提成/佣金、沟通时间线、知识库/RAG 有来源检索、统一 AI Gateway / 调用审计、AI 人工确认 / 反馈 / 纠错留痕、AI/RAG 引用来源留痕、外部工具调用 / 人工批准台账、自动化规则 / 试运行 / 执行日志。</li>
+        <li><span class="ok">权限：</span>隔离 HTTP smoke 已验证 sales 越权 403、manager 团队范围、exec 写入 403、finance 403。</li>
+        <li><span class="ok">审计：</span>隔离 HTTP smoke 已验证关键写操作产生 <span class="mono">AuditLog</span>。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 AI 人工确认 / 反馈 / 纠错留痕</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用 AI Gateway、AiTask、能力契约、User、AuditLog 和内存 smoke，不直接写正式业务表。</li>
+        <li><span class="ok">已实现：</span><span class="mono">AiFeedback</span>、<span class="mono">GET/POST /api/ai-tasks/:id/feedback</span>、<span class="mono">GET /api/ai-feedback/:id</span>，并在任务详情返回 <span class="mono">_count.feedbacks</span>。</li>
+        <li><span class="ok">确认边界：</span>必须 <span class="mono">confirmedHumanReview=true</span>；支持 <span class="mono">ADOPT</span>、<span class="mono">REJECT</span>、<span class="mono">CORRECT</span>、<span class="mono">NEEDS_REVIEW</span>；纠错必须保留 <span class="mono">correctedOutput</span>，驳回必须填写原因。</li>
+        <li><span class="ok">安全边界：</span>若请求 <span class="mono">createsFormalWrite=true</span>，第一版返回 <span class="mono">400 FORMAL_WRITE_NOT_SUPPORTED</span>；AI 产出默认不静默写入报价、订单、单证、邮件或社媒正式表。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-ai-feedback</span> 已通过，输出 <span class="mono">{"result":"passed","aiTasks":1,"aiFeedbacks":3,"auditLogs":3}</span>；AI 策略、AI 契约、AI Gateway、RAG、报价发送、订单、回款、单证、生产物流、提成、G1 smoke、Phase1 和 Prisma validate 均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线已给 <span class="mono">PASS</span>；性能支线已给 <span class="mono">PASS</span>；QA 支线完成但无可见正文，以本地专项 smoke、审核 PASS 和性能 PASS 兜底。</li>
+        <li><span class="warn">后补项：</span>纠错回灌知识库、真实人工审核队列 UI、外部发送执行器和正式业务表回写流程需在真实产品流程和权限策略明确后再接。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 AI/RAG 引用来源留痕</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用知识库/RAG、AiTask、KnowledgeDocument、KnowledgeChunk、AuditLog 和内存 smoke，不重建平行来源体系。</li>
+        <li><span class="ok">已实现：</span><span class="mono">AiCitation</span>、<span class="mono">GET /api/ai-tasks/:id/citations</span>、<span class="mono">GET /api/ai-citations/:id</span>，并在任务详情返回 <span class="mono">_count.citations</span>。</li>
+        <li><span class="ok">RAG 边界：</span><span class="mono">POST /api/rag/query</span> 每次写 <span class="mono">AiTask</span>；本地关键词 RAG 不调用外部模型且 <span class="mono">dataSentToCloud=false</span>；仅 <span class="mono">APPROVED</span> 且未过期资料可写引用。</li>
+        <li><span class="ok">引用边界：</span>引用记录保留来源类型、知识文档、知识片段、文件名、版本、段落 locator、confidence 和来源策略；资料不足时写失败 <span class="mono">AiTask</span> 且引用数为 0。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-ai-citation</span> 已通过，输出 <span class="mono">{"result":"passed","aiTasks":2,"aiCitations":1,"citationSource":"CITE-001-FAQ.md"}</span>；RAG、AI Gateway、AI 契约、AI 策略、AI 反馈、报价发送、订单、回款、单证、生产物流、提成、G1 smoke、Phase1 和 Prisma validate 均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线已给 <span class="mono">PASS</span>；性能支线已给 <span class="mono">PASS</span>；QA 支线完成但无可见正文，以本地专项 smoke、审核 PASS 和性能 PASS 兜底。</li>
+        <li><span class="warn">后补项：</span>pgvector、真实模型 RAG、真实引用评分、文档解析/OCR 和引用冲突检测需在真实模型供应商、向量库和文档解析策略授权后再接。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 外部工具调用 / 人工批准台账</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用 AiTask、User、AuditLog 和权限边界，不真实调用外部连接器。</li>
+        <li><span class="ok">已实现：</span><span class="mono">ToolCall</span>、<span class="mono">GET/POST /api/tool-calls</span>、<span class="mono">GET /api/tool-calls/:id</span>、<span class="mono">POST /api/tool-calls/:id/confirm</span>、<span class="mono">POST /api/tool-calls/:id/result</span>。</li>
+        <li><span class="ok">流程边界：</span>创建时只登记待确认工具调用；<span class="mono">executeNow/autoExecute</span> 返回 <span class="mono">400 TOOL_EXECUTION_NOT_SUPPORTED</span>；<span class="mono">requiresHumanConfirmation=false</span> 返回 <span class="mono">400 HUMAN_CONFIRMATION_REQUIRED</span>。</li>
+        <li><span class="ok">确认边界：</span>确认前不能记录执行结果；执行结果必须 <span class="mono">confirmedHumanExecution=true</span>；成功、失败、取消均只做人工结果回填，不自动发送邮件、发布社媒、调用物流或 MCP。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-tool-call</span> 已通过，输出 <span class="mono">{"result":"passed","aiTasks":1,"toolCalls":2,"finalStatus":"EXECUTION_RECORDED","failedStatus":"FAILED"}</span>；AI Gateway、AI 契约、AI 策略、AI 反馈、AI 引用、RAG、报价发送、订单、回款、单证、生产物流、提成、G1 smoke、Phase1 和 Prisma validate 均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线已给 <span class="mono">PASS</span>；性能支线已给 <span class="mono">PASS</span>；QA 支线完成但无可见正文，以本地专项 smoke、审核 PASS 和性能 PASS 兜底。</li>
+        <li><span class="warn">后补项：</span>真实邮件、社媒、物流、日历、MCP 或外部连接器接入前，必须继续沿用 ToolCall 白名单、人工确认和结果回填台账。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 自动化规则 / 试运行 / 执行日志</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用 User、AuditLog 和现有业务/ToolCall 安全口径，不直接触发真实动作。</li>
+        <li><span class="ok">已实现：</span><span class="mono">AutomationRule</span>、<span class="mono">AutomationRun</span>、<span class="mono">GET/POST /api/automation-rules</span>、<span class="mono">GET /api/automation-rules/:id</span>、<span class="mono">PATCH /api/automation-rules/:id/status</span>、<span class="mono">POST /api/automation-rules/:id/run</span>、<span class="mono">GET /api/automation-runs</span>、<span class="mono">GET /api/automation-runs/:id</span>。</li>
+        <li><span class="ok">规则边界：</span>支持 DRAFT/ACTIVE/PAUSED/ARCHIVED、EVENT/SCHEDULE/CONDITION、retryPolicy、dedupePolicy；含 <span class="mono">executeExternal/autoSend/autoPublish</span> 的动作配置会被拒绝。</li>
+        <li><span class="ok">运行边界：</span>支持 dry-run、人工覆盖运行、运行日志和 idempotencyKey 防重复；人工覆盖必须 <span class="mono">confirmedManualOverride=true</span> 且规则为 ACTIVE；第一版只输出 proposedActions，不自动创建待办、发送邮件、发布社媒或调用外部连接器。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-automation</span> 已通过，输出 <span class="mono">{"result":"passed","automationRules":1,"automationRuns":2,"dryRunStatus":"DRY_RUN_RECORDED","manualStatus":"MANUAL_OVERRIDE_RECORDED","duplicatePrevented":true}</span>；ToolCall、AI/RAG、报价发送、订单、回款、单证、生产物流、提成、G1 smoke、Phase1 和 Prisma validate 均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线按 V2.0 唯一基准给出 <span class="mono">CONDITIONAL-PASS</span>，未发现阻断“先跑通”的偏离；性能支线给出 <span class="mono">PASS</span>；主线与 QA 支线已接收最终版基准但未返回可见正文，暂不冒充 PASS。</li>
+        <li><span class="warn">后补项：</span>真实调度器、队列、通知中心、Webhook、连接器、重试 worker 或实际 Todo 创建需在后续授权后接入；接入前必须保持 dry-run、幂等键、人工覆盖和执行日志。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 获客 / 线索 / 询盘</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，参考历史询盘口径但按 V2.0 重建轻量 Lead + Inquiry，不整包迁移旧代码。</li>
+        <li><span class="ok">已实现：</span><span class="mono">Lead</span>、<span class="mono">LeadFollowUp</span>、<span class="mono">Inquiry</span>、<span class="mono">InquiryItem</span>、<span class="mono">ChannelMessage</span>、<span class="mono">GET/POST /api/leads</span>、<span class="mono">POST /api/leads/:id/assign</span>、<span class="mono">POST /api/leads/:id/convert</span>、<span class="mono">GET/POST /api/inquiries</span>。</li>
+        <li><span class="ok">复用边界：</span>Lead 是轻量线索，不长期替代客户；转客户/商机时复用现有 <span class="mono">Customer / Opportunity</span>；同名客户存在时必须人工确认。</li>
+        <li><span class="ok">询盘边界：</span>支持 requirements、missingFields、items、ChannelMessage 和 <span class="mono">aiExtracted</span> 标记；第一版只记录已确认结构化结果，不调用模型、不自动写报价。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-acquisition</span> 已通过，输出 <span class="mono">{"result":"passed","leads":2,"inquiries":1,"customers":2,"opportunities":1,"inquiryItems":2}</span>；G1 smoke、Dashboard、Quote Lock、AI Gateway、Integration、ToolCall、Automation、Phase1 和 Prisma validate/generate 均通过。</li>
+        <li><span class="warn">后补项：</span>CSV/Excel 导入、网站表单真实入口、社媒 API、展会名片 OCR、CustomerFingerprint 指纹库、AI 询盘抽取执行器和线索评分属于后续增强；不得因此重做当前 Lead/Inquiry/CRM 复用底座。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 工作台 / 个人 Todo / Memo</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用既有 Todo/Memo、User、AuditLog 和各业务队列，不新建平行分析系统。</li>
+        <li><span class="ok">已实现：</span><span class="mono">GET /api/dashboard</span>、<span class="mono">GET/POST /api/todos</span>、<span class="mono">GET/PATCH /api/todos/:id</span>、<span class="mono">GET/POST /api/memos</span>、<span class="mono">GET/PATCH /api/memos/:id</span>。</li>
+        <li><span class="ok">工作台内容：</span>聚合个人待办、未读通知、报价审批队列、待确认工具动作、样品事项、待确认回款、自动化运行记录、Webhook 风险和个人备忘；当前为 <span class="mono">LOCAL_SUMMARY_ONLY</span>，不调用 AI 或外部服务。</li>
+        <li><span class="ok">个人数据红线：</span><span class="mono">Todo/Memo</span> 固定按当前会话用户过滤；管理员也不能查看或修改他人的个人待办/备忘。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-dashboard</span> 已通过，输出 <span class="mono">{"result":"passed","todos":1,"memos":1,"unreadNotifications":1,"dashboardMode":"LOCAL_SUMMARY_ONLY"}</span>；Integration、Automation、ToolCall、AI Gateway、G1 smoke、Phase1 和 Prisma validate 均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线按 V2.0 唯一基准给出 <span class="mono">PASS</span>；性能支线给出 <span class="mono">PASS</span>，组合索引和 dashboard 时间窗口属于非阻断优化；QA 支线完成但无可见正文，以本地专项 smoke、审核 PASS 和性能 PASS 兜底。</li>
+        <li><span class="warn">后补项：</span>AI 晨会简报、真实经营分析、AnalyticsAlert、ReportSnapshot、AnalyticsMetricsCache 和 NL2SQL 属于后续增强；不得因此重做当前工作台/Todo/Memo 底座。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>P2 通知 / 连接器 / Webhook 接收台账</h2>
+      <ul>
+        <li><span class="ok">模块状态：</span><span class="mono">RUNNABLE-PASS</span>，复用 User、AuditLog、自动化和 ToolCall 安全边界，不真实调用外部服务。</li>
+        <li><span class="ok">已实现：</span><span class="mono">Notification</span>、<span class="mono">IntegrationConnection</span>、<span class="mono">WebhookEvent</span>、<span class="mono">GET/POST /api/notifications</span>、<span class="mono">PATCH /api/notifications/:id/read</span>、<span class="mono">GET/POST /api/integration-connections</span>、<span class="mono">PATCH /api/integration-connections/:id/status</span>、<span class="mono">GET/POST /api/webhook-events</span>。</li>
+        <li><span class="ok">通知边界：</span>通知列表强制 <span class="mono">recipientId = actor.id</span>，管理员也不能越权查看个人通知；manager/admin 可创建，finance 创建 403。</li>
+        <li><span class="ok">连接器边界：</span>只保存配置摘要、<span class="mono">secretRef</span>、降级方式和健康状态；配置摘要里出现明文 apiKey/token/password/secret/cookie 会被拒绝。</li>
+        <li><span class="ok">Webhook 边界：</span>第一版只记录接收摘要；<span class="mono">processNow/executeActions/autoAcknowledge</span> 会被拒绝；按 provider + idempotencyKey 幂等防重复。</li>
+        <li><span class="ok">验证证据：</span><span class="mono">npm run test:p2-integration</span> 已通过，输出 <span class="mono">{"result":"passed","notifications":1,"integrationConnections":1,"webhookEvents":1,"duplicatePrevented":true,"connectionStatus":"ACTIVE"}</span>；Automation、ToolCall、AI Gateway、G1 smoke、Prisma validate/generate 均通过。</li>
+        <li><span class="ok">支线结论：</span>审核支线按 V2.0 唯一基准给出 <span class="mono">PASS</span>；性能支线给出 <span class="mono">PASS</span>，其关于 Webhook 幂等命中响应摘要化的建议已回补；QA 支线完成但无可见正文，以本地专项 smoke、审核 PASS 和性能 PASS 兜底。</li>
+        <li><span class="warn">后补项：</span>真实邮件、社媒、物流、日历、MCP、外部 Webhook 验签、通知推送 worker 或连接器执行器需单独授权；接入前必须继续沿用 secretRef、allowlist、人工确认、幂等、超时、重试和失败降级台账。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>任务分工</h2>
+      <ul>
+        <li><b>主线：</b><span class="mono">codex://threads/01a0286d-976f-7840-8115-2ca943403408</span>，只修 G1 后端放行项。</li>
+        <li><b>审核支线：</b><span class="mono">codex://threads/01a01e5e-dabf-7b50-8c5b-afed9404437b</span>，负责 PASS/BLOCK 结论。</li>
+        <li><b>性能支线：</b><span class="mono">codex://threads/01a01e59-2e9b-7b70-afcd-ea0fead27572</span>，负责响应边界与性能风险。</li>
+        <li><b>QA 支线：</b><span class="mono">codex://threads/01a0213a-4d82-7f31-88d2-8af1cd26e9ec</span>，负责本地集成验证。</li>
+        <li><span class="ok">2026-08-23 已一次性同步：</span>四个任务均已收到 V2.0 最终版、后端复用清单和 Excel V2 报价规则审计口径；这不是恢复自动巡检。</li>
+        <li><span class="ok">2026-08-23 已再次锁定：</span>用户确认 <span class="mono">NexFab_AI外贸CRM系统_开发总提示词_V2.0_合并版.md</span> 为唯一最终版，四个任务已再次收到“旧版本只作历史参考、冲突一律服从 V2.0”的同步指令。</li>
+        <li><span class="ok">2026-08-23 锁版反馈：</span>审核支线已确认后续只按 V2.0 合并版给 <span class="mono">PASS / CONDITIONAL-PASS / BLOCKED</span>；性能支线已回 <span class="mono">PASS</span>，确认只升级真正阻断“先跑通”的性能问题；主线与 QA 支线本轮已完成接收但未返回可见正文，暂不冒充结论。</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>禁止事项</h2>
+      <ul>
+        <li>禁止部署、SSH、远程服务器操作、生产数据库操作。</li>
+        <li>禁止 Git 提交、推送、合并，除非用户另行明确授权。</li>
+        <li>禁止主线继续大范围读取旧历史源码；旧代码只能由审核支线点读确认。</li>
+        <li>禁止用旧版本导航、旧角色口径覆盖新 HTML 原型。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>超时看门狗</h2>
+      <ul>
+        <li><span class="warn">主线 5 分钟：</span>若当前模块 5 分钟内没有完成或进度，必须先发进度，说明已改文件、剩余文件与验证状态。</li>
+        <li><span class="bad">主线 10 分钟：</span>若超过 10 分钟仍无完成结论，停止扩张，输出卡点、已完成内容、最小可交付版本和下一步需要什么。</li>
+        <li><span class="warn">支线 5 分钟：</span>审核、性能、QA 在收到模块完成信号后 5 分钟内必须给固定结论；不能只写过程。</li>
+        <li><span class="warn">自动拉起状态：</span>Codex heartbeat <span class="mono">nexfab-crm-5</span> 已按用户要求暂停；恢复前不再自动巡检、拉起主线或下发支线任务。</li>
+        <li><span class="warn">后补不阻断：</span>PostgreSQL 实库、P95、超时、复杂审批、体验细节进入优化清单，不阻止先跑通。</li>
+      </ul>
+    </div>
+
+    <div class="card full">
+      <h2>下一步执行口径</h2>
+      <ul>
+        <li>当前本地后端阶段已覆盖：G1 基础 CRM、工作台 / Todo / Memo、获客 / 线索 / 询盘、产品 PIM、报价中心、订单履约、样品管理、财务回款、外贸单证/对账、生产物流发货、提成/佣金、沟通时间线、知识库/RAG 有来源检索、统一 AI Gateway / 调用审计、AI 能力契约 / 输出 Schema / 最小评测集、AI 策略 / 模块开关 / 成本限额、AI 人工确认 / 反馈 / 纠错留痕、AI/RAG 引用来源留痕、外部工具调用 / 人工批准台账、自动化规则 / 试运行 / 执行日志、通知 / 连接器 / Webhook 接收台账；后续不得重复开发这些底座。</li>
+        <li>下一步按 V2.0 进入 PostgreSQL 实库联调，或在单独授权后接真实模型供应商、SSE、真实经营分析、真实评测执行器、真实费用统计、纠错回灌知识库、pgvector/真实 RAG、真实工具连接器、Webhook 验签、通知推送 worker 和自动化调度器；真实外部邮件网关、真实物流接口和多币种汇率可作为后续增强。</li>
+        <li>只要主链路可跑且无真实 P0，就允许进入整体联调；性能、超时、压测和细节问题列优化清单。</li>
+        <li>在线静态预览仅用于前端查看，不代表后端已上线或生产可用。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</body>
+</html>

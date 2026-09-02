@@ -1,0 +1,18 @@
+[Unit]
+Description=NexFab AI CRM V2 Backend
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target redis-server.service
+
+[Service]
+Type=simple
+User=goodjob-crm
+Group=goodjob-crm
+WorkingDirectory=/opt/nexfab-ai-crm/current/backend
+EnvironmentFile=/opt/nexfab-ai-crm/shared/v2-backend.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/nexfab-ai-crm/current/backend/src/server.mjs
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
