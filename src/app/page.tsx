@@ -117,11 +117,11 @@ function installApiBasePathPatch() {
 }
 
 const roleCards = [
-  { role: 'super_admin', email: 'admin@nexfab.com', label: '超级管理员', desc: '拥有系统全部权限，可查看所有数据和系统配置', icon: Shield, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', borderColor: 'role-card-border-emerald' },
-  { role: 'management', email: 'wang@nexfab.com', label: '管理层', desc: '查看整体业务数据、营收分析、团队绩效和风险预警', icon: Crown, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', borderColor: 'role-card-border-amber' },
-  { role: 'sales_manager', email: 'li@nexfab.com', label: '销售经理', desc: '管理销售团队、分配询盘、审批报价、追踪团队目标', icon: Users, color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', borderColor: 'role-card-border-teal' },
-  { role: 'sales', email: 'chen@nexfab.com', label: '销售专员', desc: '跟进询盘、管理客户、创建报价、处理订单和样品', icon: UserCheck, color: 'bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300', borderColor: 'role-card-border-sky' },
-  { role: 'finance', email: 'zhao@nexfab.com', label: '财务人员', desc: '管理收款、跟踪付款、查看利润率和财务报表', icon: Wallet, color: 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300', borderColor: 'role-card-border-rose' },
+  { role: 'super_admin', email: 'admin@nexfab.test', label: '超级管理员', desc: '拥有系统全部权限，可查看所有数据和系统配置', icon: Shield, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', borderColor: 'role-card-border-emerald' },
+  { role: 'management', email: 'exec@nexfab.test', label: '管理层', desc: '查看整体业务数据、营收分析、团队绩效和风险预警', icon: Crown, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', borderColor: 'role-card-border-amber' },
+  { role: 'sales_manager', email: 'manager@nexfab.test', label: '销售经理', desc: '管理销售团队、分配询盘、审批报价、追踪团队目标', icon: Users, color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', borderColor: 'role-card-border-teal' },
+  { role: 'sales', email: 'sales@nexfab.test', label: '销售专员', desc: '跟进询盘、管理客户、创建报价、处理订单和样品', icon: UserCheck, color: 'bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300', borderColor: 'role-card-border-sky' },
+  { role: 'finance', email: 'finance@nexfab.test', label: '财务人员', desc: '管理收款、跟踪付款、查看利润率和财务报表', icon: Wallet, color: 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300', borderColor: 'role-card-border-rose' },
 ]
 
 function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
@@ -201,7 +201,7 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
                       const res = await fetch('/api/auth', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: card.email }),
+                        body: JSON.stringify({ email: card.email, password: 'admin' }),
                       })
                       const data = await res.json()
                       if (data.success && data.data) {
