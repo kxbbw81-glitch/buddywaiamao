@@ -71,10 +71,12 @@ export function CustomerProfileView() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    api<{ items: { id: string; companyName: string }[] }>('/api/customers?limit=200').then((d) => {
-      if (d?.items) {
-        setCustomers(d.items)
-        if (d.items[0] && !customerId) setCustomerId(d.items[0].id)
+    // 注意：/api/customers 返回 { success, data: [...客户数组] }，api() 帮助函数已解包 data；
+    // 分页参数是 pageSize（limit 会被忽略，默认只回 20 条）
+    api<{ id: string; companyName: string }[]>('/api/customers?pageSize=200').then((d) => {
+      if (Array.isArray(d) && d.length > 0) {
+        setCustomers(d)
+        if (!customerId) setCustomerId(d[0].id)
       }
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
