@@ -125,11 +125,12 @@ const roleCards = [
 ]
 
 function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
+  // 修复说明：[可用性]，原因：首屏初始 opacity 为 0，脚本延迟或缓存异常时会呈现空白页。
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950 dark:via-background dark:to-teal-950 flex items-center justify-center p-4 workbench-bg">
       <motion.div
         className="max-w-4xl w-full"
-        initial={{ opacity: 0, y: 30 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
@@ -137,7 +138,7 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
         <div className="text-center mb-10">
           <motion.div
             className="inline-flex items-center gap-3 mb-4"
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={false}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
           >
@@ -147,7 +148,7 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
           </motion.div>
           <motion.h1
             className="text-3xl font-bold mb-2 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent"
-            initial={{ opacity: 0, y: 10 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
@@ -155,7 +156,7 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
           </motion.h1>
           <motion.p
             className="text-muted-foreground text-lg mb-1"
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.35 }}
           >
@@ -163,7 +164,7 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
           </motion.p>
           <motion.p
             className="text-sm text-emerald-600/70 dark:text-emerald-400/70 mb-2"
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
@@ -171,7 +172,7 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
           </motion.p>
           <motion.p
             className="text-sm text-muted-foreground"
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.45 }}
           >
@@ -186,7 +187,7 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
             return (
               <motion.div
                 key={card.role}
-                initial={{ opacity: 0, y: 20 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 + i * 0.1, duration: 0.4 }}
               >
@@ -252,7 +253,7 @@ function RoleSelectionScreen({ onSelect }: { onSelect: (user: User) => void }) {
         {/* Footer */}
         <motion.p
           className="text-center text-xs text-muted-foreground mt-8"
-          initial={{ opacity: 0 }}
+          initial={false}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.1 }}
         >

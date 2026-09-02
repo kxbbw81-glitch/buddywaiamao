@@ -19,7 +19,8 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/"]
+      # 修复说明：[P0-/new 发布健康检查]，原因：当前 Next.js 使用 basePath=/new，根路径 / 返回 404 会导致容器被误判 unhealthy，Nginx 依赖健康状态时入口打不开。
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/new"]
       interval: 30s
       timeout: 10s
       retries: 3
